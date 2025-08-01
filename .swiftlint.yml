@@ -1,0 +1,396 @@
+swiftlint_version: 0.54.0
+
+disabled_rules:
+- identifier_name
+- trailing_newline
+- legacy_objc_type
+- file_length
+- function_body_length
+- type_body_length
+- identifier_name # Apple often uses short loop vars like i, j, etc.
+
+opt_in_rules:
+- attributes
+- closure_spacing
+- empty_count
+- explicit_init
+- fatal_error_message
+- file_header
+- force_unwrapping
+- joined_default_parameter
+- missing_docs
+- modifier_order
+- operator_usage_whitespace
+- overridden_super_call
+- private_outlet
+- redundant_nil_coalescing
+- redundant_type_annotation
+- single_test_class
+- sorted_imports
+- switch_case_alignment
+- toggle_bool
+- unneeded_parentheses_in_closure_argument
+- vertical_parameter_alignment
+- yoda_condition
+- custom_rules
+
+included:
+- Sources
+- Tests
+
+excluded:
+- Carthage
+- Pods
+- .build
+- DerivedData
+
+line_length: 120
+
+type_name:
+  max_length: 70
+  allowed_symbols: "_"
+  excluded:
+  - VM
+  - VC
+  - MD
+  - Id
+  - R
+  - V
+  - P
+  - I
+  - E
+  - M
+  - ID
+  - URL
+
+identifier_name:
+  max_length: 60
+  excluded:
+  - x
+  - y
+  - i
+  - j
+  - iPhone
+  - id
+
+function_parameter_count:
+  warning: 5
+  error: 8
+
+cyclomatic_complexity:
+  ignores_case_statements: true
+
+nesting:
+  type_level:
+    warning: 3
+
+duplicate_imports:
+  severity: error
+
+operator_whitespace:
+  severity: error
+
+redundant_string_enum_value:
+  severity: error
+
+trailing_newline:
+  severity: error
+
+statement_position:
+  severity: error
+
+unused_closure_parameter:
+  severity: error
+
+vertical_whitespace:
+  severity: error
+
+implicit_getter:
+  severity: warning
+
+colon:
+  severity: error
+
+shorthand_operator:
+  severity: error
+
+trailing_comma:
+  severity: error
+
+comma:
+  severity: error
+
+redundant_void_return:
+  severity: error
+
+return_arrow_whitespace:
+  severity: error
+
+opening_brace:
+  severity: error
+
+no_space_in_method_call:
+  severity: error
+
+analyzer_rules:
+- unused_import
+
+custom_rules:
+  no_letUnderscore:
+    included: ".*\\.swift"
+    name: "No let _ = ..."
+    regex: "let[ ][_][ ][=]"
+    message: "Don't use let _ = xxx , use xxx != nil"
+    severity: error
+
+  naming_Singletons:
+    included: ".*\\.swift"
+    name: "Singleton naming"
+    regex: "static (var|let)[ ](instance|sharedInstance)[ ]*[:]"
+    message: "Use shared"
+    severity: error
+
+  no_hardCodedTimeZones:
+    included: ".*\\.swift"
+    name: "Fordiden hardcoded TimeZones"
+    regex: '"UTC"|"GMT"'
+    message: "Use AppConstants.TimeZones..."
+    severity: error
+
+  no_TODO:
+    included: ".*\\.swift"
+    name: "Fordiden TODO/FIX"
+    regex: "TODO|TO DO|FIX"
+    message: "Use #warning"
+    severity: error
+
+  no_hardCodedDateFormats:
+    included: ".*\\.swift"
+    name: "Hardcoded DateFormats"
+    regex: '= "yyyy|DateFormatter(withFormat'
+    message: "Use a DateFormats on AppContants.Date or DateFormatterTypes"
+    severity: error
+
+  no_print:
+    included: ".*\\.swift"
+    name: "Fordiden print"
+    regex: "print[(]"
+    message: "Use DevTools.Log..."
+    severity: warning
+
+  no_hardCodedImages:
+    included: ".*\\.swift"
+    name: "Fordiden hardCoded images"
+    regex: "UIImage[(]named:"
+    message: "Don't use hardCoded images"
+    severity: error
+
+  numbers_smell:
+    regex: '(return |case |\w\(|: |\?\? |\, |== |<=? |>=? |\+= |\-= |\/= |\*= |%= |\w\.\w+ = )\(*-?\d{2,}'
+    message: "Numbers smell; define a constant instead."
+    severity: warning
+
+  multiline_commented_code:
+    regex: '^\s*[a-z]'
+    match_kinds: comment
+    message: "Comment starting with lowercase letter - did you forget to delete old code?"
+    severity: warning
+
+  commented_code:
+    regex: '(?<!:|\/)\/\/\h*[a-z.](?!wiftlint)'
+    message: "Comment starting with lowercase letter - did you forget to delete old code?"
+    severity: warning
+
+  double_space:
+    include: "*.swift"
+    name: "Double space"
+    regex: "([a-z,A-Z] \\s+)"
+    message: "Double space between keywords"
+    match_kinds: keyword
+    severity: warning
+
+  logger_over_all:
+    name: "Logging"
+    regex: '(print|NSLog)\('
+    message: "Project convention favours Logger for logging."
+    match_kinds:
+    - identifier
+    severity: warning
+
+  comments_space:
+    name: "Space after comment"
+    regex: "(^ *//\\w+)"
+    message: "There should be a space after //"
+    severity: warning
+
+  force_https:
+    name: "Force HTTPS over HTTP"
+    regex: "((?i)http(?!s))"
+    match_kinds: string
+    message: "HTTPS should be favored over HTTP"
+    severity: warning
+
+  explicit_failure_calls:
+    name: "Avoid asserting 'false'"
+    regex: '((assert|precondition)\(false)'
+    message: "Use assertionFailure() or preconditionFailure() instead."
+    severity: warning
+
+  multiple_empty_lines:
+    name: "Multiple Empty Lines"
+    regex: '((?:\s*\n){3,})'
+    message: "There are too many line breaks"
+    severity: error
+
+  marks_empty_space:
+    name: "Marks"
+    regex: "(//MARK)"
+    message: "There should be an empty space between // and the MARK."
+    severity: warning
+
+  marks_style:
+    name: "Marks"
+    regex: "(// MARK: -?[a-zA-Z0-9])"
+    message: "Marks should follow the following structure: // MARK: - Comment."
+    severity: warning
+
+  missing_docs:
+    included: ".*.swift"
+    regex: '\n *(?!\/\/\/)(\/\/)?[^\n\/]*\n *(?:@\S+ )*(?:public|open)'
+    name: "Missing Docs"
+    message: "Types, properties and methods with public or open access level should be documented."
+    severity: warning
+
+  inheritance_colon:
+    name: "Inheritance Colon"
+    regex: '\s[A-Z_]\w*(<[\w\s:\.,]+>)?(?: +:\s*|:(?:\s{0}|\s{2,}))([\[|\(]*\S)'
+    message: "Colons should be next to the identifier of the inheriting type"
+    severity: warning
+    match_kinds:
+    - identifier
+    - typeidentifier
+
+  dictionary_type_colon:
+    name: "Dictionary Type Colon"
+    regex: '\[\w+(?:(?:\s{0}|\s{2,}):| :(?:\s{0}|\s{2,})\w)'
+    message: "Colon should be surrounded by a single whitespace in a dictionary literal"
+    severity: warning
+    match_kinds:
+    - typeidentifier
+
+  unnecessary_type:
+    name: "Unnecessary Type"
+    regex: '[ a-zA-Z0-9]*(?:let|var) [ a-zA-Z0-9]*: ([a-zA-Z0-9]*) *= \1'
+    message: "Type Definition Not Needed."
+    severity: warning
+
+    swiftui_state_private:
+      regex: '@(State|StateObject|ObservedObject|EnvironmentObject)\s+var'
+      message: "SwiftUI @State/@StateObject/@ObservedObject/@EnvironmentObject properties should be private"
+
+    swiftui_environment_private:
+      regex: '@Environment\(\\\.\w+\)\s+var'
+      message: "SwiftUI @Environment properties should be private"
+
+    final_class:
+      regex: '^class [a-zA-Z\d]+[^{]+\{'
+      message: "Classes should be marked as final whenever possible. If you actually need it to be subclassable, just add `// swiftlint:disable:next final_class`."
+
+  empty_init_body:
+    included: ".*.swift"
+    regex: 'init\([^\{\n]*\) \{\s+\}'
+    name: "Empty Init Body"
+    message: "Don't use whitespace or newlines for the body of empty initializers – use `init() {}` instead."
+    severity: warning
+
+  empty_method:
+    included: ".*.swift"
+    regex: 'func [^\s\(]+\([^\{\n]*\) \{\s*\}'
+    name: "Empty Method"
+    message: "Don't keep empty methods in code."
+    severity: warning
+
+  empty_type:
+    included: ".*.swift"
+    regex: '(?:class|protocol|struct|enum) [^\{]+\{\s*\}'
+    name: "Empty Type"
+    message: "Don't keep empty types."
+    severity: warning
+
+  switch_associated_value_style:
+    included: ".*.swift"
+    regex: 'case\s+[^\(][^\n]*(?:\(let |[^\)], let)'
+    name: "Switch Associated Value Style"
+    message: "Always put the `let` in front of case – even if only one associated value captured."
+    severity: warning
+
+  unnecessary_case_break:
+    included: ".*.swift"
+    regex: '(case |default)(?:[^\n\}]+\n){2,}\s*break *\n|\n *\n *break(?:\n *\n|\n *\})'
+    name: "Unnecessary Case Break"
+    message: "Don't use break in switch cases – Swift breaks by default."
+    severity: warning
+
+  unnecessary_nil_assignment:
+    included: ".*.swift"
+    regex: 'var \S+\s*:\s*[^\s]+\?\s*=\s*nil'
+    name: "Unnecessary Nil Assignment"
+    message: "Don't assign nil as a value when defining an optional type – it's nil by default."
+    severity: warning
+
+  vertical_whitespaces_around_mark:
+    included: ".*.swift"
+    regex: '\/\/\s*MARK:[^\n]*(\n\n)|(\n\n\n)[ \t]*\/\/\s*MARK:|[^\s{]\n[^\n\/]*\/\/\s*MARK:'
+    name: "Vertical Whitespaces Around MARK:"
+    message: "Include a single vertical whitespace (empty line) before and none after MARK: comments."
+    severity: warning
+
+  private_weak_order:
+    include: "*.swift"
+    name: "Private weak order"
+    regex: "weak private"
+    message: "Please use 'private weak' instead"
+    severity: error
+
+  is_not_empty_rule:
+    name: "Not empty verification SG"
+    regex: "([.]count|[.]length[(][)] )[ ]*>[ ]*0"
+    message: "Use IsNotEmpty instead of count > 0"
+    severity: warning
+
+    combine_assign_to_self:
+  included: ".*\\.swift"
+  name: "`assign` to self"
+  regex: '\.assign\(to: [^,]*, on: self\)'
+  message: "For assigning on self, use assignNoRetain(to: ..., on: self)."
+  severity: error
+  duplicate_remove_duplicates:
+    included: ".*\\.swift"
+    name: "Duplicate `removeDuplicates()`"
+    message: "ViewStore's publisher already does `removeDuplicates()`"
+    regex: 'publisher\.[^(|{|,]*removeDuplicates\(\)'
+    severity: error
+
+  dont_scale_to_zero:
+    included: ".*\\.swift"
+    name: "Don't scale down to 0."
+    regex: "\\.scaleEffect\\([^\\)]*(\\ 0\\ [^\\)]*\\)|0.0(\\ |\\))|\\ 0(\\)|,))"
+    message: "Please make sure to pass a number not equal zero, so transformations don't throw warnings like `ignoring singular matrix`."
+    severity: error
+
+  use_data_constructor_over_string_member:
+    included: ".*\\.swift"
+    name: "Do not use String.data(using: .utf8)"
+    regex: "\\.?data\\(using: \\.utf8\\)"
+    message: "Please use Data(string.utf8) instead of String.data(using: .utf8) because the Data constructor is non-optional and Strings are guaranteed to be encodable as .utf8"
+    severity: error
+
+  comma_space:
+    regex: ",[ ]{2,}"
+    message: "Expected only one space after ',"
+
+  weak_capture_space:
+    regex: "\\{\\[weak"
+    message: "Expected a space between [{"
+
+reporter: "xcode"

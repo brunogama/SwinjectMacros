@@ -1,0 +1,128 @@
+exclude: |-
+  (?x)^(
+      .*\{\{.*\}\}.*|     # Exclude any files with cookiecutter variables
+      \.build/.*|         # Exclude Swift Package Manager build directory
+      DerivedData/.*|     # Exclude Xcode DerivedData directory
+      Pods/.*|            # Exclude CocoaPods directory
+      Carthage/.*|        # Exclude Carthage directory
+      \.swiftpm/.*|       # Exclude Swift Package Manager metadata
+      \.xcodeproj/.*|     # Exclude Xcode project files
+      \.xcworkspace/.*|   # Exclude Xcode workspace files
+      \.xctestplan|       # Exclude Xcode test plan files
+      \.history/.*|       # Exclude history files
+      .*\.generated\.swift|  # Exclude generated Swift files
+      fastlane/report\.xml|  # Exclude fastlane report files
+      fastlane/Preview\.html| # Exclude fastlane preview files
+      fastlane/screenshots/.*| # Exclude fastlane screenshots
+      \.DS_Store|         # Exclude macOS system files
+      \.vscode/.*|        # Exclude VSCode settings
+      \.cursor/.*|        # Exclude Cursor settings
+      \.cursorignore|     # Exclude Cursor ignore file
+      \.cursorignoreindex # Exclude Cursor ignore index
+  )
+fail_fast: true
+default_stages: [ pre-commit ]
+default_install_hook_types: [ pre-commit, commit-msg ]
+# default_language_version:
+#   python: python3.9
+
+repos:
+## Base Pre-Commit Hooks
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v5.0.0
+  hooks:
+  - id: check-yaml
+    name: "Validation - Ensures YAML files are valid and well-formed"
+  - id: check-json
+    name: "Validation - Validates JSON file syntax and structure"
+    exclude: ^\.vscode/
+  - id: pretty-format-json
+    name: "Format - Automatically formats JSON files for consistent style"
+    args: [ --autofix, --no-sort-keys ]
+    exclude: ^\.vscode/
+  - id: forbid-submodules
+    name: "Git - Prevents Git submodule usage in repository"
+  - id: end-of-file-fixer
+    name: "Format - Ensures files end with a single newline character"
+  - id: trailing-whitespace
+    name: "Format - Removes trailing whitespace from all lines"
+  - id: check-merge-conflict
+    name: "Git - Detects merge conflict markers in committed files"
+  - id: check-executables-have-shebangs
+    name: "Validation - Ensures executable files have proper shebang lines"
+  - id: check-added-large-files
+    name: "Git - Prevents committing files exceeding size limit"
+    args: [ '--maxkb=50000' ]
+  - id: no-commit-to-branch
+    name: "Git - Prevents direct commits to protected branches"
+    args: [ '--branch', main, '--branch', master, '--branch', release ]
+
+## Conventional Commits Hook
+- repo: https://github.com/qoomon/git-conventional-commits
+  rev: v2.7.2
+  hooks:
+  - id: conventional-commits
+    name: "Git - Enforces standardized commit message format"
+    stages: [ commit-msg ]
+    require_serial: true
+
+## Detect Secrets Hook
+- repo: https://github.com/gitleaks/gitleaks
+  rev: v8.28.0
+  hooks:
+  - id: gitleaks
+    name: "Security - Scans codebase for sensitive information and secrets"
+
+## SwiftFormat Hook
+- repo: https://github.com/nicklockwood/SwiftFormat
+  rev: 0.57.2
+  hooks:
+  - id: swiftformat
+    name: "Format - Formats Swift code according to style rules"
+    args: [ --swiftversion, "5.9", --config, .swiftformat, --quiet, --header, strip, --trimwhitespace, always, --stripunusedargs, closure-only, --self, remove ]
+    types: [ swift ]
+    require_serial: true
+
+## SwiftLint Hook
+- repo: https://github.com/realm/SwiftLint
+  rev: 0.59.1
+  hooks:
+  - id: swiftlint
+    name: "Quality - Enforces Swift style and conventions with automated linting"
+    args: [ --config, .swiftlint.yml ]
+    types: [ swift ]
+    require_serial: true
+
+### Markdown
+- repo: https://github.com/hukkin/mdformat
+  rev: 0.7.22
+  hooks:
+  - id: mdformat
+    name: "Docs - Formats Markdown files for consistent style and readability"
+    additional_dependencies:
+    - mdformat-gfm
+    - mdformat-ruff
+    - mdformat-frontmatter
+    - ruff
+
+## Shell
+- repo: https://github.com/shellcheck-py/shellcheck-py
+  rev: v0.10.0.1
+  hooks:
+  - id: shellcheck
+    name: "Quality - Identifies bugs and issues in shell scripts"
+
+## Makefile
+- repo: https://github.com/mrtazz/checkmake.git
+  rev: 0.2.2
+  hooks:
+  - id: checkmake
+    name: "Build - Validates Makefile syntax and best practices"
+
+## Oxipng
+- repo: https://github.com/shssoichiro/oxipng
+  rev: v9.1.5
+  hooks:
+  - id: oxipng
+    name: "Media - Optimizes PNG images for efficiency and smaller file size"
+    args: [ "-o", "4", "--strip", safe, "--alpha" ]

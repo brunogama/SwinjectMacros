@@ -1,0 +1,184 @@
+name: Feature Request
+description: Suggest an idea for SwinJectMacros
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new feature! Please provide as much detail as possible to help us understand your needs.
+
+  - type: textarea
+    id: problem-description
+    attributes:
+      label: Problem Description
+      description: Is your feature request related to a problem? Please describe.
+      placeholder: I'm always frustrated when...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the solution you'd like
+      placeholder: I would like to see a new macro that...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: feature-category
+    attributes:
+      label: Feature Category
+      description: What type of feature is this?
+      options:
+        - "New Macro"
+        - "Existing Macro Enhancement"
+        - "SwiftUI Integration"
+        - "Testing Utilities"
+        - "Performance Improvement"
+        - "Developer Experience"
+        - "Documentation"
+        - "Build Tools"
+        - "Other"
+    validations:
+      required: true
+
+  - type: textarea
+    id: detailed-description
+    attributes:
+      label: Detailed Description
+      description: Provide a detailed description of the feature
+      placeholder: |
+        The new @CustomMacro should:
+        1. Generate custom dependency injection patterns
+        2. Support configuration options like...
+        3. Integrate with existing macros by...
+    validations:
+      required: true
+
+  - type: textarea
+    id: code-example
+    attributes:
+      label: Code Example
+      description: Show how the feature would be used
+      render: swift
+      placeholder: |
+        // Current approach (without the feature)
+        class MyService {
+            private let dependency: DependencyProtocol
+            
+            init(dependency: DependencyProtocol) {
+                self.dependency = dependency
+            }
+        }
+        
+        // Proposed approach (with the feature)
+        class MyService {
+            @CustomMacro(config: .advanced)
+            var dependency: DependencyProtocol
+        }
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Describe any alternative solutions or features you've considered
+      placeholder: |
+        - Alternative 1: Using existing @LazyInject but it doesn't support...
+        - Alternative 2: Manual implementation but it requires too much boilerplate...
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature to you?
+      options:
+        - "High - This significantly impacts my productivity"
+        - "Medium - This would be nice to have"
+        - "Low - This is a minor convenience"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: complexity
+    attributes:
+      label: Implementation Complexity (Your Estimate)
+      description: How complex do you think this feature would be to implement?
+      options:
+        - "Simple - Small addition to existing macro"
+        - "Medium - New macro or significant enhancement"
+        - "Complex - Major architectural changes required"
+        - "Unknown - Not sure about implementation details"
+
+  - type: textarea
+    id: use-cases
+    attributes:
+      label: Use Cases
+      description: Describe specific use cases where this feature would be beneficial
+      placeholder: |
+        1. Large enterprise applications with complex DI requirements
+        2. SwiftUI apps that need advanced state management
+        3. Testing scenarios that require sophisticated mocking
+    validations:
+      required: true
+
+  - type: textarea
+    id: benefits
+    attributes:
+      label: Expected Benefits
+      description: What benefits would this feature provide?
+      placeholder: |
+        - Reduces boilerplate code by X%
+        - Improves performance by avoiding Y
+        - Makes testing easier by providing Z
+    validations:
+      required: true
+
+  - type: dropdown
+    id: breaking-changes
+    attributes:
+      label: Breaking Changes
+      description: Would this feature require breaking changes?
+      options:
+        - "No - Fully backward compatible"
+        - "Minor - Small breaking changes that are easy to migrate"
+        - "Major - Significant breaking changes required"
+        - "Unknown - Need to investigate further"
+
+  - type: textarea
+    id: migration-plan
+    attributes:
+      label: Migration Plan
+      description: If breaking changes are needed, how should users migrate?
+      placeholder: |
+        1. Deprecate old @OldMacro in version X.Y
+        2. Provide migration guide and tooling
+        3. Remove @OldMacro in version X+1.0
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context, screenshots, or examples about the feature request
+      placeholder: |
+        - Similar features in other DI frameworks
+        - Links to relevant documentation
+        - Community discussions about this topic
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched the existing issues to make sure this is not a duplicate
+          required: true
+        - label: I have provided a clear description of the feature and its benefits
+          required: true
+        - label: I am willing to help with testing or implementation if needed
+          required: false
+        - label: I understand this is a community project and features may take time to implement
+          required: true

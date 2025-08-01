@@ -1,0 +1,194 @@
+name: Bug Report
+description: File a bug report to help us improve SwinJectMacros
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+assignees:
+  - octocat
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report! Please provide as much detail as possible to help us understand and reproduce the issue.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Also tell us, what did you expect to happen?
+      placeholder: Tell us what you see!
+      value: "A bug happened!"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: macro-type
+    attributes:
+      label: Which macro is affected?
+      multiple: true
+      options:
+        - "@Injectable"
+        - "@LazyInject"
+        - "@WeakInject"
+        - "@AsyncInject"
+        - "@AutoFactory"
+        - "@PerformanceTracked"
+        - "@Retry"
+        - "@CircuitBreaker"
+        - "@Cache"
+        - "@Interceptor"
+        - "@EnvironmentInject"
+        - "@ViewModelInject"
+        - "@TestContainer"
+        - "@Spy"
+        - "@MockResponse"
+        - "@ValidatedContainer"
+        - "Other/Multiple"
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: Steps to Reproduce
+      description: Please provide detailed steps to reproduce the issue
+      placeholder: |
+        1. Create a new Swift file
+        2. Add @LazyInject macro to a property
+        3. Build the project
+        4. See error...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: What should have happened?
+      placeholder: The macro should generate thread-safe lazy initialization code...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual Behavior
+      description: What actually happened?
+      placeholder: The build fails with compilation error...
+    validations:
+      required: true
+
+  - type: textarea
+    id: code-sample
+    attributes:
+      label: Code Sample
+      description: Please provide a minimal code sample that reproduces the issue
+      render: swift
+      placeholder: |
+        import SwinJectMacros
+        
+        class MyService {
+            @LazyInject var dependency: DependencyProtocol = DependencyImpl()
+        }
+    validations:
+      required: true
+
+  - type: textarea
+    id: error-output
+    attributes:
+      label: Error Output
+      description: If applicable, please provide the full error message
+      render: text
+      placeholder: |
+        error: macro expansion failed
+        ...
+
+  - type: dropdown
+    id: version
+    attributes:
+      label: SwinJectMacros Version
+      description: What version of SwinJectMacros are you running?
+      options:
+        - 1.0.0 (Latest)
+        - 0.9.x
+        - 0.8.x
+        - 0.7.x
+        - Other (please specify in additional context)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: swift-version
+    attributes:
+      label: Swift Version
+      description: What version of Swift are you using?
+      options:
+        - Swift 5.10
+        - Swift 5.9
+        - Other (please specify in additional context)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: xcode-version
+    attributes:
+      label: Xcode Version
+      description: What version of Xcode are you using?
+      options:
+        - Xcode 15.4
+        - Xcode 15.3
+        - Xcode 15.2
+        - Xcode 15.1
+        - Xcode 15.0
+        - Other (please specify in additional context)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      description: Which platform are you targeting?
+      multiple: true
+      options:
+        - macOS
+        - iOS
+        - watchOS
+        - tvOS
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment Details
+      description: Please provide additional environment details
+      placeholder: |
+        - macOS Version: 14.0
+        - Deployment Target: iOS 15.0
+        - Package Manager: Swift Package Manager
+        - Swinject Version: 2.8.4
+        - Additional Dependencies: ...
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context about the problem here
+      placeholder: |
+        - This issue started after upgrading from version X to Y
+        - Works fine in simulator but fails on device
+        - Only happens with specific project configurations
+        - Related to issue #123
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched the existing issues to make sure this is not a duplicate
+          required: true
+        - label: I have provided all the requested information above
+          required: true
+        - label: I am willing to help test potential fixes
+          required: false

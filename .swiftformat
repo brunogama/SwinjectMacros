@@ -1,0 +1,44 @@
+
+# SwiftFormat configuration aligned with Apple's Open Source Swift Style
+# https://github.com/apple/swift/blob/main/CONTRIBUTING.md#code-style
+
+--swiftversion 5.9
+
+# Core Apple Swift Style Rules
+--indent 4
+--tabwidth 4
+--allman false
+--commas inline
+--semicolons inline
+--linebreaks lf
+--self insert
+--header ignore
+--trimwhitespace always
+--wraparguments before-first
+--wrapelements before-first
+--closingparen balanced
+--xcodeindentation true
+--stripunusedargs closure-only
+--importgrouping alphabetized
+
+--rules                              \
+blankLinesAtEndOfScope,              \
+blankLinesBetweenScopes,             \
+braces,                              \
+consecutiveBlankLines,               \
+consecutiveSpaces,                   \
+duplicateImports,                    \
+elseOnSameLine,                      \
+emptyBraces,                         \
+hoistPatternLet,                     \
+indent,                              \
+modifierOrder,                       \
+numberFormatting,                    \
+redundantLet,                        \
+redundantReturn,                     \
+sortedImports,                       \
+spaceAroundOperators,               \
+spaceInsideBraces,                   \
+strongOutlets,                       \
+trailingCommas,                      \
+wrapMultilineStatementBraces

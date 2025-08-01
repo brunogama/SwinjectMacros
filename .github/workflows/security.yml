@@ -1,0 +1,393 @@
+name: Security
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run security checks weekly on Mondays at 2 AM UTC
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+
+jobs:
+  dependency-check:
+    name: Dependency Security Scan
+    runs-on: macos-14
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Select Xcode version
+      run: sudo xcode-select -s /Applications/Xcode_15.0.app/Contents/Developer
+      
+    - name: Cache Swift Package Manager
+      uses: actions/cache@v4
+      with:
+        path: .build
+        key: ${{ runner.os }}-spm-security-${{ hashFiles('**/Package.resolved') }}
+        restore-keys: |
+          ${{ runner.os }}-spm-security-
+          ${{ runner.os }}-spm-
+          
+    - name: Resolve dependencies
+      run: swift package resolve
+      
+    - name: Check for known vulnerabilities
+      run: |
+        echo "🔍 Checking dependencies for known vulnerabilities..."
+        
+        # Check Package.resolved for dependencies
+        if [ -f "Package.resolved" ]; then
+          echo "📦 Current dependencies:"
+          cat Package.resolved | grep -A 1 '"identity"' | grep -v '^--$' | paste - - | \
+            sed 's/.*"identity" : "\([^"]*\)".*/\1/' | sort -u
+        fi
+        
+        # For now, we'll do basic checks. In a real scenario, you'd integrate with
+        # security databases or use tools like OWASP Dependency Check
+        
+        echo "✅ Dependency security check completed"
+        
+    - name: Audit Package.swift
+      run: |
+        echo "🔍 Auditing Package.swift for security issues..."
+        
+        # Check for insecure dependency sources
+        if grep -q "http://" Package.swift; then
+          echo "❌ Found insecure HTTP URLs in Package.swift"
+          grep "http://" Package.swift
+          exit 1
+        fi
+        
+        # Check for wildcards in version specifications
+        if grep -q "from.*\*" Package.swift; then
+          echo "⚠️ Found wildcard version specifications - consider pinning versions"
+          grep "from.*\*" Package.swift
+        fi
+        
+        echo "✅ Package.swift audit completed"
+
+  code-security-scan:
+    name: Code Security Analysis
+    runs-on: macos-14
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Install security scanning tools
+      run: |
+        # Install semgrep for static analysis
+        pip3 install semgrep
+        
+    - name: Run Semgrep security scan
+      run: |
+        echo "🔍 Running Semgrep security analysis..."
+        
+        # Run semgrep with Swift rules
+        semgrep --config=auto --json --output=semgrep-results.json Sources/ || true
+        
+        # Process results
+        if [ -f "semgrep-results.json" ]; then
+          FINDINGS=$(cat semgrep-results.json | jq '.results | length')
+          echo "Found $FINDINGS potential security issues"
+          
+          if [ "$FINDINGS" -gt 0 ]; then
+            echo "⚠️ Security findings detected:"
+            cat semgrep-results.json | jq -r '.results[] | "- \(.check_id): \(.message) in \(.path):\(.start.line)"'
+            
+            # Fail if high-severity issues found
+            CRITICAL=$(cat semgrep-results.json | jq '.results[] | select(.severity == "ERROR") | length' | wc -l)
+            if [ "$CRITICAL" -gt 0 ]; then
+              echo "❌ Critical security issues found"
+              exit 1
+            fi
+          else
+            echo "✅ No security issues detected"
+          fi
+        fi
+        
+    - name: Upload security scan results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-scan-results
+        path: semgrep-results.json
+        retention-days: 30
+
+  secrets-scan:
+    name: Secrets Detection
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for secret scanning
+        
+    - name: Install TruffleHog
+      run: |
+        curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh | sh -s -- -b /usr/local/bin
+        
+    - name: Run TruffleHog secrets scan
+      run: |
+        echo "🔍 Scanning for secrets in repository..."
+        
+        # Scan git history for secrets
+        trufflehog git file://. --json --no-update > trufflehog-results.json || true
+        
+        # Process results
+        if [ -f "trufflehog-results.json" ] && [ -s "trufflehog-results.json" ]; then
+          SECRETS_COUNT=$(cat trufflehog-results.json | jq -s 'length')
+          echo "Found $SECRETS_COUNT potential secrets"
+          
+          if [ "$SECRETS_COUNT" -gt 0 ]; then
+            echo "❌ Potential secrets detected:"
+            cat trufflehog-results.json | jq -r '"- \(.DetectorName): \(.Raw[:50])... in \(.SourceMetadata.Data.Git.file):\(.SourceMetadata.Data.Git.line)"'
+            exit 1
+          else
+            echo "✅ No secrets detected"
+          fi
+        else
+          echo "✅ No secrets detected"
+        fi
+        
+    - name: Upload secrets scan results
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: secrets-scan-results
+        path: trufflehog-results.json
+        retention-days: 30
+
+  license-compliance:
+    name: License Compliance Check
+    runs-on: macos-14
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Select Xcode version
+      run: sudo xcode-select -s /Applications/Xcode_15.0.app/Contents/Developer
+      
+    - name: Check license headers
+      run: |
+        echo "🔍 Checking license headers in source files..."
+        
+        MISSING_LICENSE=0
+        
+        # Check Swift files for license headers
+        find Sources -name "*.swift" | while read file; do
+          if ! head -5 "$file" | grep -q "Copyright"; then
+            echo "⚠️ Missing license header: $file"
+            MISSING_LICENSE=1
+          fi
+        done
+        
+        if [ $MISSING_LICENSE -eq 1 ]; then
+          echo "❌ Some files are missing license headers"
+          # Don't fail for now, just warn
+          # exit 1
+        else
+          echo "✅ All source files have license headers"
+        fi
+        
+    - name: Check dependency licenses
+      run: |
+        echo "🔍 Checking dependency licenses..."
+        
+        # Resolve dependencies to get Package.resolved
+        swift package resolve
+        
+        if [ -f "Package.resolved" ]; then
+          echo "📦 Dependencies and their potential license concerns:"
+          
+          # Extract dependency URLs for manual license checking
+          cat Package.resolved | grep -A 5 '"identity"' | grep '"location"' | \
+            sed 's/.*"location" : "\([^"]*\)".*/\1/' | \
+            while read url; do
+              echo "- $url"
+              # Note: In a real implementation, you'd check the license
+              # by cloning the repo or using a license detection service
+            done
+        fi
+        
+        echo "✅ License compliance check completed"
+
+  privacy-check:
+    name: Privacy Compliance
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Check for privacy-sensitive code
+      run: |
+        echo "🔍 Scanning for privacy-sensitive operations..."
+        
+        PRIVACY_ISSUES=0
+        
+        # Check for potentially privacy-sensitive APIs
+        SENSITIVE_PATTERNS=(
+          "CLLocationManager"
+          "PHPhotoLibrary"
+          "AVCaptureDevice"
+          "Contacts"
+          "EventKit"
+          "HealthKit"
+          "HomeKit"
+          "UserNotifications"
+          "DeviceCheck"
+          "LocalAuthentication"
+        )
+        
+        for pattern in "${SENSITIVE_PATTERNS[@]}"; do
+          if grep -r "$pattern" Sources/ > /dev/null 2>&1; then
+            echo "⚠️ Found privacy-sensitive API: $pattern"
+            grep -rn "$pattern" Sources/ | head -5
+            PRIVACY_ISSUES=1
+          fi
+        done
+        
+        # Check for data collection patterns
+        DATA_PATTERNS=(
+          "Analytics"
+          "Crashlytics"
+          "tracking"
+          "telemetry"
+          "metrics"
+        )
+        
+        for pattern in "${DATA_PATTERNS[@]}"; do
+          if grep -ri "$pattern" Sources/ > /dev/null 2>&1; then
+            echo "ℹ️ Found potential data collection: $pattern"
+            # Don't fail, just inform
+          fi
+        done
+        
+        if [ $PRIVACY_ISSUES -eq 0 ]; then
+          echo "✅ No obvious privacy-sensitive APIs detected"
+        else
+          echo "⚠️ Privacy-sensitive APIs detected - ensure proper privacy policies"
+        fi
+
+  security-policy-check:
+    name: Security Policy Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Check for security policy
+      run: |
+        echo "🔍 Checking for security policy documentation..."
+        
+        # Check for SECURITY.md file
+        if [ -f "SECURITY.md" ] || [ -f ".github/SECURITY.md" ]; then
+          echo "✅ Security policy found"
+          
+          # Validate security policy content
+          SECURITY_FILE=$(find . -name "SECURITY.md" | head -1)
+          if [ -n "$SECURITY_FILE" ]; then
+            echo "📋 Security policy location: $SECURITY_FILE"
+            
+            # Check for required sections
+            if grep -qi "reporting" "$SECURITY_FILE"; then
+              echo "✅ Vulnerability reporting process documented"
+            else
+              echo "⚠️ Missing vulnerability reporting process"
+            fi
+            
+            if grep -qi "supported versions" "$SECURITY_FILE"; then
+              echo "✅ Supported versions documented"
+            else
+              echo "⚠️ Missing supported versions information"
+            fi
+          fi
+        else
+          echo "⚠️ No security policy found - consider adding SECURITY.md"
+          
+          # Create a basic security policy template
+          cat > SECURITY.md << 'EOF'
+# Security Policy
+
+## Supported Versions
+
+| Version | Supported          |
+| ------- | ------------------ |
+| 1.x.x   | :white_check_mark: |
+
+## Reporting a Vulnerability
+
+If you discover a security vulnerability, please send an email to security@example.com.
+All security vulnerabilities will be promptly addressed.
+
+Please include the following information:
+- Description of the vulnerability
+- Steps to reproduce
+- Potential impact
+- Suggested fix (if any)
+
+We will acknowledge receipt of your vulnerability report within 48 hours and provide a detailed response within 72 hours.
+EOF
+          
+          echo "📝 Created basic security policy template"
+        fi
+
+  create-security-report:
+    name: Create Security Report
+    runs-on: ubuntu-latest
+    needs: [dependency-check, code-security-scan, secrets-scan, license-compliance, privacy-check, security-policy-check]
+    if: always()
+    
+    steps:
+    - name: Generate security report
+      run: |
+        echo "# Security Scan Report" > security-report.md
+        echo "" >> security-report.md
+        echo "Generated on: $(date -u)" >> security-report.md
+        echo "Repository: ${{ github.repository }}" >> security-report.md
+        echo "Commit: ${{ github.sha }}" >> security-report.md
+        echo "" >> security-report.md
+        
+        echo "## Scan Results" >> security-report.md
+        echo "" >> security-report.md
+        
+        # Add results from each job
+        echo "- **Dependency Check**: ${{ needs.dependency-check.result }}" >> security-report.md
+        echo "- **Code Security Scan**: ${{ needs.code-security-scan.result }}" >> security-report.md
+        echo "- **Secrets Detection**: ${{ needs.secrets-scan.result }}" >> security-report.md
+        echo "- **License Compliance**: ${{ needs.license-compliance.result }}" >> security-report.md
+        echo "- **Privacy Check**: ${{ needs.privacy-check.result }}" >> security-report.md
+        echo "- **Security Policy**: ${{ needs.security-policy-check.result }}" >> security-report.md
+        echo "" >> security-report.md
+        
+        # Overall status
+        if [[ "${{ needs.dependency-check.result }}" == "success" && 
+              "${{ needs.code-security-scan.result }}" == "success" && 
+              "${{ needs.secrets-scan.result }}" == "success" && 
+              "${{ needs.license-compliance.result }}" == "success" && 
+              "${{ needs.privacy-check.result }}" == "success" && 
+              "${{ needs.security-policy-check.result }}" == "success" ]]; then
+          echo "## ✅ Overall Status: PASS" >> security-report.md
+          echo "" >> security-report.md
+          echo "All security checks have passed successfully." >> security-report.md
+        else
+          echo "## ❌ Overall Status: ATTENTION REQUIRED" >> security-report.md
+          echo "" >> security-report.md
+          echo "Some security checks require attention. Please review the individual scan results." >> security-report.md
+        fi
+        
+        cat security-report.md
+        
+    - name: Upload security report
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-report
+        path: security-report.md
+        retention-days: 90

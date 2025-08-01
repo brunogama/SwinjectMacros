@@ -1,0 +1,236 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_15.0.app/Contents/Developer
+
+jobs:
+  test:
+    name: Test
+    runs-on: macos-14
+    strategy:
+      matrix:
+        swift-version: ['5.9', '5.10']
+        include:
+          - swift-version: '5.9'
+            xcode-version: '15.0'
+          - swift-version: '5.10'
+            xcode-version: '15.4'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Select Xcode version
+      run: sudo xcode-select -s /Applications/Xcode_${{ matrix.xcode-version }}.app/Contents/Developer
+      
+    - name: Cache Swift Package Manager
+      uses: actions/cache@v4
+      with:
+        path: .build
+        key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+        restore-keys: |
+          ${{ runner.os }}-spm-
+          
+    - name: Swift version
+      run: swift --version
+      
+    - name: Build
+      run: swift build -v
+      
+    - name: Run tests
+      run: swift test --enable-code-coverage
+      
+    - name: Generate code coverage report
+      run: |
+        xcrun llvm-cov export -format="lcov" \
+          .build/debug/SwinJectMacrosPackageTests.xctest/Contents/MacOS/SwinJectMacrosPackageTests \
+          -instr-profile .build/debug/codecov/default.profdata > coverage.lcov
+      
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.lcov
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: false
+
+  lint:
+    name: Lint
+    runs-on: macos-14
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Select Xcode version
+      run: sudo xcode-select -s /Applications/Xcode_15.0.app/Contents/Developer
+      
+    - name: Cache SwiftLint
+      uses: actions/cache@v4
+      with:
+        path: ~/Library/Caches/swiftlint
+        key: ${{ runner.os }}-swiftlint-${{ hashFiles('.swiftlint.yml') }}
+        
+    - name: Install SwiftLint
+      run: |
+        brew install swiftlint
+        
+    - name: Run SwiftLint
+      run: swiftlint lint --reporter github-actions-logging
+
+  documentation:
+    name: Documentation
+    runs-on: macos-14
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Select Xcode version
+      run: sudo xcode-select -s /Applications/Xcode_15.0.app/Contents/Developer
+      
+    - name: Build documentation
+      run: |
+        swift package generate-documentation \
+          --target SwinJectMacros \
+          --output-path docs \
+          --transform-for-static-hosting \
+          --hosting-base-path SwinJectMacros
+        
+    - name: Upload documentation artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: documentation
+        path: docs/
+
+  integration-test:
+    name: Integration Tests
+    runs-on: macos-14
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Select Xcode version
+      run: sudo xcode-select -s /Applications/Xcode_15.0.app/Contents/Developer
+      
+    - name: Run integration tests
+      run: swift test --filter IntegrationTests
+      
+    - name: Run performance benchmarks
+      run: swift test --filter PerformanceBenchmarkTests
+      
+    - name: Run stress tests
+      run: swift test --filter StressTests
+
+  compatibility:
+    name: Platform Compatibility
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-12, macos-13, macos-14]
+        
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Select Xcode version (macOS 12)
+      if: matrix.os == 'macos-12'
+      run: sudo xcode-select -s /Applications/Xcode_14.2.app/Contents/Developer
+      
+    - name: Select Xcode version (macOS 13)
+      if: matrix.os == 'macos-13'
+      run: sudo xcode-select -s /Applications/Xcode_15.0.app/Contents/Developer
+      
+    - name: Select Xcode version (macOS 14)
+      if: matrix.os == 'macos-14'
+      run: sudo xcode-select -s /Applications/Xcode_15.0.app/Contents/Developer
+      
+    - name: Build and test
+      run: |
+        swift build
+        swift test --filter SwinJectMacrosTests
+
+  validate-examples:
+    name: Validate Examples
+    runs-on: macos-14
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Select Xcode version
+      run: sudo xcode-select -s /Applications/Xcode_15.0.app/Contents/Developer
+      
+    - name: Create example project
+      run: |
+        mkdir -p Examples/BasicExample
+        cd Examples/BasicExample
+        swift package init --type executable
+        
+        # Add SwinJectMacros as dependency
+        cat > Package.swift << 'EOF'
+        // swift-tools-version: 5.9
+        import PackageDescription
+        
+        let package = Package(
+            name: "BasicExample",
+            platforms: [
+                .macOS(.v12),
+                .iOS(.v15)
+            ],
+            dependencies: [
+                .package(path: "../..")
+            ],
+            targets: [
+                .executableTarget(
+                    name: "BasicExample",
+                    dependencies: ["SwinJectMacros"]
+                )
+            ]
+        )
+        EOF
+        
+        # Create example usage
+        cat > Sources/BasicExample/main.swift << 'EOF'
+        import SwinJectMacros
+        import Swinject
+        
+        protocol UserServiceProtocol {
+            func getUser(id: String) -> String
+        }
+        
+        @Injectable
+        class UserService: UserServiceProtocol {
+            func getUser(id: String) -> String {
+                return "User \(id)"
+            }
+        }
+        
+        class UserController {
+            @LazyInject var userService: UserServiceProtocol = UserService()
+            
+            func handleRequest() -> String {
+                return userService.getUser(id: "123")
+            }
+        }
+        
+        // Test the example
+        let controller = UserController()
+        print(controller.handleRequest())
+        EOF
+        
+    - name: Build example
+      run: |
+        cd Examples/BasicExample
+        swift build
+        
+    - name: Run example
+      run: |
+        cd Examples/BasicExample
+        swift run

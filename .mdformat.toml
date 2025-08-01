@@ -1,0 +1,6 @@
+# .mdformat.toml
+wrap = "keep"         # Options: {"keep", "no", INTEGER}
+number = false        # Options: {false, true}
+end_of_line = "lf"    # Options: {"lf", "crlf", "keep"}
+validate = true       # Options: {false, true}
+# extensions, codeformatters, and exclude can also be defined

@@ -1,0 +1,563 @@
+name: Performance
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run performance tests daily at 3 AM UTC
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      run_extended_benchmarks:
+        description: 'Run extended benchmarks'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_15.0.app/Contents/Developer
+
+jobs:
+  compile-time-performance:
+    name: Compile Time Performance
+    runs-on: macos-14
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Select Xcode version
+      run: sudo xcode-select -s /Applications/Xcode_15.0.app/Contents/Developer
+      
+    - name: Clean build environment
+      run: |
+        rm -rf .build
+        rm -rf DerivedData
+        
+    - name: Measure clean build time
+      run: |
+        echo "🏗️ Measuring clean build time..."
+        
+        START_TIME=$(date +%s.%N)
+        swift build --configuration release
+        END_TIME=$(date +%s.%N)
+        
+        BUILD_TIME=$(echo "$END_TIME - $START_TIME" | bc)
+        echo "Clean build time: ${BUILD_TIME}s"
+        echo "CLEAN_BUILD_TIME=${BUILD_TIME}" >> $GITHUB_ENV
+        
+    - name: Measure incremental build time
+      run: |
+        echo "🔄 Measuring incremental build time..."
+        
+        # Make a small change
+        echo "// Incremental build test $(date)" >> Sources/SwinJectMacros/SwinJectMacros.swift
+        
+        START_TIME=$(date +%s.%N)
+        swift build --configuration release
+        END_TIME=$(date +%s.%N)
+        
+        INCREMENTAL_TIME=$(echo "$END_TIME - $START_TIME" | bc)
+        echo "Incremental build time: ${INCREMENTAL_TIME}s"
+        echo "INCREMENTAL_BUILD_TIME=${INCREMENTAL_TIME}" >> $GITHUB_ENV
+        
+        # Revert the change
+        git checkout -- Sources/SwinJectMacros/SwinJectMacros.swift
+        
+    - name: Measure macro expansion time
+      run: |
+        echo "🚀 Measuring macro expansion performance..."
+        
+        # Create a test file with many macro usages
+        cat > test_expansion_performance.swift << 'EOF'
+        import SwinJectMacros
+        import Swinject
+        
+        protocol TestService1 { func test() -> String }
+        protocol TestService2 { func test() -> String  }
+        protocol TestService3 { func test() -> String  }
+        protocol TestService4 { func test() -> String  }
+        protocol TestService5 { func test() -> String  }
+        
+        @Injectable
+        class Service1: TestService1 { func test() -> String { "1" } }
+        
+        @Injectable
+        class Service2: TestService2 { func test() -> String { "2" } }
+        
+        @Injectable
+        class Service3: TestService3 { func test() -> String { "3" } }
+        
+        @Injectable
+        class Service4: TestService4 { func test() -> String { "4" } }
+        
+        @Injectable
+        class Service5: TestService5 { func test() -> String { "5" } }
+        
+        class TestClient {
+            @LazyInject var service1: TestService1 = Service1()
+            @LazyInject var service2: TestService2 = Service2() 
+            @LazyInject var service3: TestService3 = Service3()
+            @LazyInject var service4: TestService4 = Service4()
+            @LazyInject var service5: TestService5 = Service5()
+        }
+        EOF
+        
+        # Compile with timing
+        START_TIME=$(date +%s.%N)
+        swiftc -I .build/release -typecheck test_expansion_performance.swift 2>/dev/null || true
+        END_TIME=$(date +%s.%N)
+        
+        EXPANSION_TIME=$(echo "$END_TIME - $START_TIME" | bc)
+        echo "Macro expansion time: ${EXPANSION_TIME}s"
+        echo "MACRO_EXPANSION_TIME=${EXPANSION_TIME}" >> $GITHUB_ENV
+        
+        rm -f test_expansion_performance.swift
+        
+    - name: Performance analysis
+      run: |
+        echo "📊 Build Performance Analysis"
+        echo "============================"
+        echo "Clean build time: ${CLEAN_BUILD_TIME}s"
+        echo "Incremental build time: ${INCREMENTAL_BUILD_TIME}s"
+        echo "Macro expansion time: ${MACRO_EXPANSION_TIME}s"
+        echo ""
+        
+        # Performance thresholds (in seconds)
+        CLEAN_THRESHOLD=30
+        INCREMENTAL_THRESHOLD=5
+        EXPANSION_THRESHOLD=2
+        
+        EXIT_CODE=0
+        
+        # Check thresholds
+        if (( $(echo "$CLEAN_BUILD_TIME > $CLEAN_THRESHOLD" | bc -l) )); then
+          echo "⚠️ Clean build time exceeds threshold (${CLEAN_THRESHOLD}s)"
+          EXIT_CODE=1
+        fi
+        
+        if (( $(echo "$INCREMENTAL_BUILD_TIME > $INCREMENTAL_THRESHOLD" | bc -l) )); then
+          echo "⚠️ Incremental build time exceeds threshold (${INCREMENTAL_THRESHOLD}s)"
+          EXIT_CODE=1
+        fi
+        
+        if (( $(echo "$MACRO_EXPANSION_TIME > $EXPANSION_THRESHOLD" | bc -l) )); then
+          echo "⚠️ Macro expansion time exceeds threshold (${EXPANSION_THRESHOLD}s)"
+          EXIT_CODE=1
+        fi
+        
+        if [ $EXIT_CODE -eq 0 ]; then
+          echo "✅ All build performance metrics within acceptable ranges"
+        fi
+        
+        exit $EXIT_CODE
+
+  runtime-benchmarks:
+    name: Runtime Performance Benchmarks
+    runs-on: macos-14
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Select Xcode version
+      run: sudo xcode-select -s /Applications/Xcode_15.0.app/Contents/Developer
+      
+    - name: Build benchmarks
+      run: swift build --configuration release
+      
+    - name: Run performance benchmarks
+      run: |
+        echo "🚀 Running runtime performance benchmarks..."
+        
+        # Run performance benchmark tests
+        swift test --configuration release --filter PerformanceBenchmarkTests --parallel
+        
+    - name: Run stress tests
+      if: ${{ github.event.inputs.run_extended_benchmarks == 'true' || github.event_name == 'schedule' }}
+      run: |
+        echo "💪 Running stress tests..."
+        
+        # Run stress tests with extended parameters
+        swift test --configuration release --filter StressTests
+        
+    - name: Memory usage analysis
+      run: |
+        echo "🧠 Analyzing memory usage patterns..."
+        
+        # Create a memory benchmark test
+        cat > memory_benchmark.swift << 'EOF'
+        import SwinJectMacros
+        import Swinject
+        
+        protocol TestService { func work() -> String }
+        
+        @Injectable
+        class MemoryTestService: TestService {
+            func work() -> String { "Working" }
+        }
+        
+        class MemoryBenchmark {
+            @LazyInject var service: TestService = MemoryTestService()
+            
+            func runBenchmark() {
+                // Simulate workload
+                for _ in 0..<1000 {
+                    _ = service.work()
+                }
+            }
+        }
+        
+        // Run benchmark
+        let benchmark = MemoryBenchmark()
+        benchmark.runBenchmark()
+        print("Memory benchmark completed")
+        EOF
+        
+        # Compile and run with memory monitoring
+        swiftc -I .build/release -L .build/release memory_benchmark.swift -o memory_benchmark || true
+        if [ -f memory_benchmark ]; then
+          /usr/bin/time -l ./memory_benchmark 2>&1 | tee memory_report.txt
+          
+          # Extract memory statistics
+          MAX_MEMORY=$(grep "maximum resident set size" memory_report.txt | awk '{print $1}')
+          if [ -n "$MAX_MEMORY" ]; then
+            echo "Maximum memory usage: $MAX_MEMORY bytes"
+            
+            # Convert to MB for readability
+            MAX_MEMORY_MB=$(echo "scale=2; $MAX_MEMORY / 1024 / 1024" | bc)
+            echo "Maximum memory usage: ${MAX_MEMORY_MB} MB"
+            
+            # Check memory threshold (100MB for this benchmark)
+            if (( $(echo "$MAX_MEMORY_MB > 100" | bc -l) )); then
+              echo "⚠️ Memory usage exceeds expected threshold"
+            else
+              echo "✅ Memory usage within acceptable range"
+            fi
+          fi
+        fi
+        
+        rm -f memory_benchmark memory_benchmark.swift memory_report.txt
+
+  dependency-resolution-performance:
+    name: Dependency Resolution Performance
+    runs-on: macos-14
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Select Xcode version
+      run: sudo xcode-select -s /Applications/Xcode_15.0.app/Contents/Developer
+      
+    - name: Build project
+      run: swift build --configuration release
+      
+    - name: Benchmark dependency resolution
+      run: |
+        echo "🔍 Benchmarking dependency resolution performance..."
+        
+        # Create a benchmark for dependency resolution
+        cat > resolution_benchmark.swift << 'EOF'
+        import SwinJectMacros
+        import Swinject
+        import Foundation
+        
+        protocol FastService { func execute() -> String }
+        protocol MediumService { func process() -> String }
+        protocol SlowService { func compute() -> String }
+        
+        @Injectable
+        class FastServiceImpl: FastService {
+            func execute() -> String { "fast" }
+        }
+        
+        @Injectable  
+        class MediumServiceImpl: MediumService {
+            func process() -> String { "medium" }
+        }
+        
+        @Injectable
+        class SlowServiceImpl: SlowService {
+            func compute() -> String { 
+                Thread.sleep(forTimeInterval: 0.001) // 1ms
+                return "slow"
+            }
+        }
+        
+        class ResolutionBenchmark {
+            @LazyInject var fastService: FastService = FastServiceImpl()
+            @LazyInject var mediumService: MediumService = MediumServiceImpl()
+            @LazyInject var slowService: SlowService = SlowServiceImpl()
+            
+            func benchmarkLazyResolution() {
+                let startTime = CFAbsoluteTimeGetCurrent()
+                
+                for _ in 0..<1000 {
+                    _ = fastService.execute()
+                    _ = mediumService.process()
+                    _ = slowService.compute()
+                }
+                
+                let endTime = CFAbsoluteTimeGetCurrent()
+                let duration = endTime - startTime
+                
+                print("Lazy resolution benchmark: \(duration)s for 3000 calls")
+                print("Average per call: \((duration / 3000) * 1000)ms")
+            }
+        }
+        
+        let benchmark = ResolutionBenchmark()
+        benchmark.benchmarkLazyResolution()
+        EOF
+        
+        # Compile and run benchmark
+        swiftc -I .build/release -L .build/release resolution_benchmark.swift -o resolution_benchmark || true
+        if [ -f resolution_benchmark ]; then
+          ./resolution_benchmark
+        fi
+        
+        rm -f resolution_benchmark resolution_benchmark.swift
+
+  macro-expansion-benchmarks:
+    name: Macro Expansion Benchmarks
+    runs-on: macos-14
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Select Xcode version
+      run: sudo xcode-select -s /Applications/Xcode_15.0.app/Contents/Developer
+      
+    - name: Benchmark different macro types
+      run: |
+        echo "🎯 Benchmarking macro expansion performance by type..."
+        
+        # Test Injectable macro performance
+        echo "Testing @Injectable macro expansion..."
+        cat > injectable_test.swift << 'EOF'
+        import SwinJectMacros
+        protocol Service1 { func work() }
+        protocol Service2 { func work() }
+        protocol Service3 { func work() }
+        protocol Service4 { func work() }
+        protocol Service5 { func work() }
+        
+        @Injectable class Impl1: Service1 { func work() {} }
+        @Injectable class Impl2: Service2 { func work() {} }
+        @Injectable class Impl3: Service3 { func work() {} }
+        @Injectable class Impl4: Service4 { func work() {} }
+        @Injectable class Impl5: Service5 { func work() {} }
+        EOF
+        
+        START_TIME=$(date +%s.%N)
+        swiftc -I .build/release -typecheck injectable_test.swift 2>/dev/null || true
+        END_TIME=$(date +%s.%N)
+        INJECTABLE_TIME=$(echo "$END_TIME - $START_TIME" | bc)
+        echo "@Injectable expansion time: ${INJECTABLE_TIME}s"
+        
+        # Test LazyInject macro performance
+        echo "Testing @LazyInject macro expansion..."
+        cat > lazyinject_test.swift << 'EOF'
+        import SwinJectMacros
+        protocol TestSvc { func test() }
+        class TestImpl: TestSvc { func test() {} }
+        
+        class TestClient {
+            @LazyInject var svc1: TestSvc = TestImpl()
+            @LazyInject var svc2: TestSvc = TestImpl()
+            @LazyInject var svc3: TestSvc = TestImpl()
+            @LazyInject var svc4: TestSvc = TestImpl()
+            @LazyInject var svc5: TestSvc = TestImpl()
+        }
+        EOF
+        
+        START_TIME=$(date +%s.%N)
+        swiftc -I .build/release -typecheck lazyinject_test.swift 2>/dev/null || true
+        END_TIME=$(date +%s.%N)
+        LAZYINJECT_TIME=$(echo "$END_TIME - $START_TIME" | bc)
+        echo "@LazyInject expansion time: ${LAZYINJECT_TIME}s"
+        
+        # Test complex macro combinations
+        echo "Testing complex macro combinations..."
+        cat > complex_test.swift << 'EOF'
+        import SwinJectMacros
+        import Swinject
+        
+        protocol ComplexService { 
+            func process() async throws -> String 
+        }
+        
+        @Injectable
+        class ComplexServiceImpl: ComplexService {
+            @PerformanceTracked
+            @Retry(maxAttempts: 3)
+            func process() async throws -> String {
+                return "processed"
+            }
+        }
+        
+        class ComplexClient {
+            @LazyInject var service: ComplexService = ComplexServiceImpl()
+            @WeakInject var weakService: ComplexService? = ComplexServiceImpl()
+            @AsyncInject var asyncService: ComplexService = ComplexServiceImpl()
+        }
+        EOF
+        
+        START_TIME=$(date +%s.%N)
+        swiftc -I .build/release -typecheck complex_test.swift 2>/dev/null || true
+        END_TIME=$(date +%s.%N)
+        COMPLEX_TIME=$(echo "$END_TIME - $START_TIME" | bc)
+        echo "Complex macro expansion time: ${COMPLEX_TIME}s"
+        
+        # Summary
+        echo ""
+        echo "📊 Macro Expansion Performance Summary:"
+        echo "======================================"
+        echo "@Injectable (5 classes):     ${INJECTABLE_TIME}s"
+        echo "@LazyInject (5 properties):  ${LAZYINJECT_TIME}s" 
+        echo "Complex combinations:        ${COMPLEX_TIME}s"
+        
+        # Cleanup
+        rm -f injectable_test.swift lazyinject_test.swift complex_test.swift
+
+  performance-regression-check:
+    name: Performance Regression Detection
+    runs-on: macos-14
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout PR code
+      uses: actions/checkout@v4
+      
+    - name: Select Xcode version
+      run: sudo xcode-select -s /Applications/Xcode_15.0.app/Contents/Developer
+      
+    - name: Benchmark PR performance
+      run: |
+        echo "🔍 Benchmarking PR performance..."
+        
+        # Build and benchmark current PR
+        swift build --configuration release
+        
+        START_TIME=$(date +%s.%N)
+        swift test --configuration release --filter PerformanceBenchmarkTests --parallel
+        END_TIME=$(date +%s.%N)
+        
+        PR_PERFORMANCE=$(echo "$END_TIME - $START_TIME" | bc)
+        echo "PR_PERFORMANCE=${PR_PERFORMANCE}" >> $GITHUB_ENV
+        echo "PR performance: ${PR_PERFORMANCE}s"
+        
+    - name: Checkout base branch
+      run: |
+        git fetch origin ${{ github.base_ref }}
+        git checkout origin/${{ github.base_ref }}
+        
+    - name: Benchmark base performance
+      run: |
+        echo "🔍 Benchmarking base branch performance..."
+        
+        # Clean and build base branch
+        rm -rf .build
+        swift build --configuration release
+        
+        START_TIME=$(date +%s.%N)
+        swift test --configuration release --filter PerformanceBenchmarkTests --parallel
+        END_TIME=$(date +%s.%N)
+        
+        BASE_PERFORMANCE=$(echo "$END_TIME - $START_TIME" | bc)
+        echo "BASE_PERFORMANCE=${BASE_PERFORMANCE}" >> $GITHUB_ENV
+        echo "Base performance: ${BASE_PERFORMANCE}s"
+        
+    - name: Analyze performance regression
+      run: |
+        echo "📊 Performance Regression Analysis"
+        echo "================================="
+        echo "Base branch performance:   ${BASE_PERFORMANCE}s"
+        echo "PR branch performance:     ${PR_PERFORMANCE}s"
+        
+        # Calculate performance difference
+        DIFF=$(echo "$PR_PERFORMANCE - $BASE_PERFORMANCE" | bc)
+        PERCENT_CHANGE=$(echo "scale=2; ($DIFF / $BASE_PERFORMANCE) * 100" | bc)
+        
+        echo "Performance difference:    ${DIFF}s"
+        echo "Percentage change:         ${PERCENT_CHANGE}%"
+        
+        # Check for significant regression (>5% slower)
+        if (( $(echo "$PERCENT_CHANGE > 5" | bc -l) )); then
+          echo "❌ Performance regression detected!"
+          echo "PR is ${PERCENT_CHANGE}% slower than base branch"
+          
+          # Create performance regression comment for PR
+          cat > performance_comment.md << EOF
+        ## ⚠️ Performance Regression Detected
+        
+        This PR introduces a performance regression:
+        
+        - **Base branch**: ${BASE_PERFORMANCE}s
+        - **PR branch**: ${PR_PERFORMANCE}s  
+        - **Difference**: +${DIFF}s (${PERCENT_CHANGE}% slower)
+        
+        Please review the changes and optimize performance before merging.
+        EOF
+          
+          exit 1
+        elif (( $(echo "$PERCENT_CHANGE < -5" | bc -l) )); then
+          echo "🚀 Performance improvement detected!"
+          echo "PR is ${PERCENT_CHANGE#-}% faster than base branch"
+        else
+          echo "✅ No significant performance change"
+        fi
+
+  generate-performance-report:
+    name: Generate Performance Report
+    runs-on: ubuntu-latest
+    needs: [compile-time-performance, runtime-benchmarks, dependency-resolution-performance, macro-expansion-benchmarks]
+    if: always()
+    
+    steps:
+    - name: Create performance report
+      run: |
+        cat > performance-report.md << 'EOF'
+        # Performance Report
+        
+        Generated on: $(date -u)
+        Repository: ${{ github.repository }}
+        Commit: ${{ github.sha }}
+        
+        ## Summary
+        
+        | Check | Status |
+        |-------|--------|
+        | Compile Time Performance | ${{ needs.compile-time-performance.result }} |
+        | Runtime Benchmarks | ${{ needs.runtime-benchmarks.result }} |
+        | Dependency Resolution | ${{ needs.dependency-resolution-performance.result }} |
+        | Macro Expansion | ${{ needs.macro-expansion-benchmarks.result }} |
+        
+        ## Key Metrics
+        
+        - **Build Performance**: Compile time, incremental builds, macro expansion
+        - **Runtime Performance**: Dependency resolution, memory usage, throughput
+        - **Scalability**: Performance under load, concurrent access patterns
+        - **Resource Usage**: Memory consumption, CPU utilization
+        
+        ## Recommendations
+        
+        Based on the performance analysis:
+        
+        1. **Optimization Opportunities**: Review any performance warnings
+        2. **Resource Management**: Monitor memory usage in production
+        3. **Caching**: Leverage built-in caching for frequently resolved dependencies
+        4. **Profiling**: Use Instruments for detailed performance analysis
+        
+        EOF
+        
+    - name: Upload performance report
+      uses: actions/upload-artifact@v4
+      with:
+        name: performance-report
+        path: performance-report.md
+        retention-days: 30

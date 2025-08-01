@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<playground version='6.0' target-platform='macos' buildActiveScheme='true' importAppTypes='true'>
+    <pages>
+        <page name='1. Introduction'/>
+        <page name='2. Injectable Macro'/>
+        <page name='3. AutoFactory Macro'/>
+        <page name='4. TestContainer Macro'/>
+        <page name='5. AOP Macros'/>
+        <page name='6. Advanced Patterns'/>
+        <page name='7. Real World Example'/>
+    </pages>
+</playground>
