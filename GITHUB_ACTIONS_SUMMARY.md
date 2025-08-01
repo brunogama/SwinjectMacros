@@ -194,4 +194,4 @@
 - **Automated Docs**: Always current API documentation
 - **One-Click Releases**: Streamlined release process
 
-This comprehensive GitHub Actions implementation provides enterprise-grade CI/CD capabilities, ensuring code quality, security, performance, and reliability for the SwinJectMacros project.
+This comprehensive GitHub Actions implementation provides enterprise-grade CI/CD capabilities, ensuring code quality, security, performance, and reliability for the SwinjectUtilityMacros project.

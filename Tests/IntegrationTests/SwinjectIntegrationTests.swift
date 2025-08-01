@@ -3,7 +3,7 @@
 
 import XCTest
 import Swinject
-@testable import SwinJectMacros
+@testable import SwinjectUtilityMacros
 
 final class SwinjectIntegrationTests: XCTestCase {
     

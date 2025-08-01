@@ -5,7 +5,7 @@ import PackageDescription
 import CompilerPluginSupport
 
 let package = Package(
-    name: "SwinJectMacros",
+    name: "SwinjectUtilityMacros",
     platforms: [
         .iOS(.v15),
         .macOS(.v12),
@@ -15,13 +15,13 @@ let package = Package(
     products: [
         // Main library product
         .library(
-            name: "SwinJectMacros",
-            targets: ["SwinJectMacros"]
+            name: "SwinjectUtilityMacros",
+            targets: ["SwinjectUtilityMacros"]
         ),
         // Build plugin for service discovery
         .plugin(
-            name: "SwinJectBuildPlugin", 
-            targets: ["SwinJectBuildPlugin"]
+            name: "SwinjectUtilityBuildPlugin", 
+            targets: ["SwinjectUtilityBuildPlugin"]
         )
     ],
     dependencies: [
@@ -39,34 +39,34 @@ let package = Package(
     targets: [
         // MARK: - Public API Target
         .target(
-            name: "SwinJectMacros",
+            name: "SwinjectUtilityMacros",
             dependencies: [
-                "SwinJectMacrosImplementation",
+                "SwinjectUtilityMacrosImplementation",
                 .product(name: "Swinject", package: "Swinject")
             ],
-            path: "Sources/SwinJectMacros"
+            path: "Sources/SwinjectUtilityMacros"
         ),
         
         // MARK: - Macro Implementation Target
         .macro(
-            name: "SwinJectMacrosImplementation",
+            name: "SwinjectUtilityMacrosImplementation",
             dependencies: [
                 .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
                 .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
                 .product(name: "SwiftParser", package: "swift-syntax")
             ],
-            path: "Sources/SwinJectMacrosImplementation"
+            path: "Sources/SwinjectUtilityMacrosImplementation"
         ),
         
         // MARK: - Build Plugin Target
         .plugin(
-            name: "SwinJectBuildPlugin",
+            name: "SwinjectUtilityBuildPlugin",
             capability: .buildTool(),
             dependencies: [
                 "ServiceDiscoveryTool"
             ],
-            path: "Plugins/SwinJectBuildPlugin"
+            path: "Plugins/SwinjectUtilityBuildPlugin"
         ),
         
         // MARK: - Build Tool Target
@@ -81,20 +81,20 @@ let package = Package(
         
         // MARK: - Test Targets
         .testTarget(
-            name: "SwinJectMacrosTests",
+            name: "SwinjectUtilityMacrosTests",
             dependencies: [
-                "SwinJectMacros",
-                "SwinJectMacrosImplementation",
+                "SwinjectUtilityMacros",
+                "SwinjectUtilityMacrosImplementation",
                 .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
                 .product(name: "Swinject", package: "Swinject")
             ],
-            path: "Tests/SwinJectMacrosTests"
+            path: "Tests/SwinjectUtilityMacrosTests"
         ),
         
         .testTarget(
             name: "IntegrationTests",
             dependencies: [
-                "SwinJectMacros",
+                "SwinjectUtilityMacros",
                 .product(name: "Swinject", package: "Swinject")
             ],
             path: "Tests/IntegrationTests"

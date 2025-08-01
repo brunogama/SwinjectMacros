@@ -2,7 +2,7 @@
 // Copyright © 2025 SwinJectMacros Demo. All rights reserved.
 
 import Foundation
-import SwinJectMacros
+import SwinjectUtilityMacros
 import Swinject
 
 // MARK: - Database Protocol

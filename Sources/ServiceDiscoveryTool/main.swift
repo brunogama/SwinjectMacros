@@ -1,5 +1,5 @@
 // main.swift - Service discovery build tool
-// Copyright © 2025 SwinJectMacros. All rights reserved.
+// Copyright © 2025 SwinjectUtilityMacros. All rights reserved.
 
 import Foundation
 import SwiftSyntax

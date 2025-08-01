@@ -5,7 +5,7 @@ import Foundation
 import Swinject
 
 #if canImport(SwinJectMacros)
-import SwinJectMacros
+import SwinjectUtilityMacros
 #endif
 
 // MARK: - Simple Example without Macros (The Old Way)

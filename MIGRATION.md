@@ -1,6 +1,6 @@
-# Migration Guide: From Traditional DI to SwinJectMacros
+# Migration Guide: From Traditional DI to SwinjectUtilityMacros
 
-This guide helps you migrate from traditional dependency injection patterns to SwinJectMacros, showing you exactly what changes and how to adopt the new macros incrementally.
+This guide helps you migrate from traditional dependency injection patterns to SwinjectUtilityMacros, showing you exactly what changes and how to adopt the new macros incrementally.
 
 ## 📋 Table of Contents
 
@@ -26,7 +26,7 @@ This guide helps you migrate from traditional dependency injection patterns to S
 
 ### 🔄 **Backward Compatibility**
 
-SwinJectMacros is fully compatible with existing Swinject code. You can:
+SwinjectUtilityMacros is fully compatible with existing Swinject code. You can:
 - Keep existing registrations and add new macro-based ones
 - Mix manual registration with macro registration
 - Migrate gradually without breaking existing functionality
@@ -74,7 +74,7 @@ class UserAssembly: Assembly {
 }
 ```
 
-#### ✅ **After: With SwinJectMacros**
+#### ✅ **After: With SwinjectUtilityMacros**
 
 ```swift
 // Service definition with macro
@@ -395,7 +395,7 @@ class UserServiceTests: XCTestCase {
 
 ### Migrating from Scattered Cross-Cutting Code to @Interceptor
 
-One of the most powerful features of SwinJectMacros is the ability to clean up cross-cutting concerns using the `@Interceptor` macro.
+One of the most powerful features of SwinjectUtilityMacros is the ability to clean up cross-cutting concerns using the `@Interceptor` macro.
 
 #### ❌ **Before: Scattered Cross-Cutting Code**
 
@@ -893,7 +893,7 @@ func assemble(container: Container) {
 
 ### Phase 1: Preparation (No Code Changes)
 
-1. **Add SwinJectMacros to your project**
+1. **Add SwinjectUtilityMacros to your project**
 2. **Import the library** in your service files
 3. **Run your existing tests** to ensure nothing breaks
 
@@ -1073,7 +1073,7 @@ container.register(MyProtocol.self) { resolver in
 Use this checklist to track your migration progress:
 
 ### Pre-Migration
-- [ ] Add SwinJectMacros dependency
+- [ ] Add SwinjectUtilityMacros dependency
 - [ ] Run existing tests to establish baseline
 - [ ] Document current assembly structure
 
@@ -1126,4 +1126,4 @@ After completing your migration:
 - Browse [Examples/GettingStarted.md](Examples/GettingStarted.md) for practical tutorials
 - Open an issue on GitHub if you encounter migration challenges
 
-**Migration taking too long?** Consider migrating incrementally - SwinJectMacros works alongside existing Swinject code, so you can take your time! 🚀
+**Migration taking too long?** Consider migrating incrementally - SwinjectUtilityMacros works alongside existing Swinject code, so you can take your time! 🚀

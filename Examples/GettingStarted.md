@@ -1,6 +1,6 @@
-# Getting Started with SwinJectMacros
+# Getting Started with SwinjectUtilityMacros
 
-This guide provides step-by-step examples to help you understand and use SwinJectMacros effectively.
+This guide provides step-by-step examples to help you understand and use SwinjectUtilityMacros effectively.
 
 ## 📚 Table of Contents
 
@@ -18,7 +18,7 @@ Let's start with the simplest possible example and build from there.
 ### Step 1: Basic Service Without Dependencies
 
 ```swift
-import SwinJectMacros
+import SwinjectUtilityMacros
 import Swinject
 
 // This is a simple service with no dependencies
@@ -116,7 +116,7 @@ Let's build a more realistic example with multiple layers of services.
 
 ```swift
 import Swinject
-import SwinJectMacros
+import SwinjectUtilityMacros
 
 // Domain protocols (contracts)
 protocol UserRepository {
@@ -770,7 +770,7 @@ class UserService {
 Let's create a simple logging interceptor:
 
 ```swift
-import SwinJectMacros
+import SwinjectUtilityMacros
 
 class LoggingInterceptor: MethodInterceptor {
     func before(context: InterceptorContext) throws {
@@ -883,7 +883,7 @@ class PerformanceInterceptor: MethodInterceptor {
 
 ```swift
 // In your app startup (AppDelegate, SceneDelegate, or App.swift)
-import SwinJectMacros
+import SwinjectUtilityMacros
 
 func setupInterceptors() {
     // Register all your custom interceptors
@@ -1595,7 +1595,7 @@ class BlogAppIntegrationTests: XCTestCase {
 5. **Testing**: `@TestContainer` makes testing all layers straightforward
 6. **Real-world Patterns**: Caching, networking, async operations all work naturally
 
-This example shows how SwinJectMacros scales from simple services to complex, real-world applications while maintaining clean, testable code with minimal boilerplate.
+This example shows how SwinjectUtilityMacros scales from simple services to complex, real-world applications while maintaining clean, testable code with minimal boilerplate.
 
 ---
 

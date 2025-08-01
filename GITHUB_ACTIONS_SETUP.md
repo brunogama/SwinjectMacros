@@ -1,6 +1,6 @@
 # GitHub Actions Setup Guide
 
-This document describes the comprehensive GitHub Actions CI/CD pipeline implemented for SwinJectMacros.
+This document describes the comprehensive GitHub Actions CI/CD pipeline implemented for SwinjectUtilityMacros.
 
 ## 🔄 Workflows Overview
 

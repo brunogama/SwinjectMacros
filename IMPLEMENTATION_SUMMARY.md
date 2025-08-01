@@ -1,4 +1,4 @@
-# SwinJectMacros Implementation Summary
+# SwinjectUtilityMacros Implementation Summary
 
 ## Overview
 Successfully implemented a comprehensive macro-powered dependency injection library for Swift, building upon the Swinject framework. The implementation provides 25+ advanced macros that dramatically reduce boilerplate code while ensuring type safety and zero runtime overhead.
@@ -38,7 +38,7 @@ Successfully implemented a comprehensive macro-powered dependency injection libr
 ### Macro Implementation Structure
 ```
 Sources/
-├── SwinJectMacros/                    # Public API declarations
+├── SwinjectUtilityMacros/                    # Public API declarations
 │   ├── Core/                          # Core DI macros
 │   │   ├── Injectable.swift
 │   │   ├── AutoFactory.swift
@@ -52,7 +52,7 @@ Sources/
 │   │   └── MockResponse.swift
 │   └── Configuration/                 # Configuration macros
 │       └── ValidatedContainer.swift
-├── SwinJectMacrosImplementation/      # Macro implementations
+├── SwinjectUtilityMacrosImplementation/      # Macro implementations
 │   ├── Core/                          # Core macro implementations
 │   ├── SwiftUI/                       # SwiftUI macro implementations
 │   ├── Testing/                       # Testing macro implementations

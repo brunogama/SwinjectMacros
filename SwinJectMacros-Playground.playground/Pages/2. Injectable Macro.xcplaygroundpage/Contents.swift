@@ -8,7 +8,7 @@
 import Foundation
 import Swinject
 
-// In a real project: import SwinJectMacros
+// In a real project: import SwinjectUtilityMacros
 
 //: ## How @Injectable Works
 //: 

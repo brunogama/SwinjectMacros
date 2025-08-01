@@ -1,4 +1,4 @@
-# SwinJectMacros Project Status
+# SwinjectUtilityMacros Project Status
 
 ## 🎉 **PROJECT COMPLETE - PHASE 1 & 2 DELIVERED**
 
@@ -74,13 +74,13 @@ We have successfully built a **comprehensive dependency injection macro system**
 ### **Core Components**
 
 ```
-SwinJectMacros/
+SwinjectUtilityMacros/
 ├── Sources/
-│   ├── SwinJectMacros/              # Public API
+│   ├── SwinjectUtilityMacros/              # Public API
 │   │   ├── Injectable.swift         # @Injectable macro declarations
 │   │   ├── AutoFactory.swift        # @AutoFactory macro declarations  
-│   │   └── SwinJectMacros.swift     # Main module & exports
-│   ├── SwinJectMacrosImplementation/ # Macro implementations
+│   │   └── SwinjectUtilityMacros.swift     # Main module & exports
+│   ├── SwinjectUtilityMacrosImplementation/ # Macro implementations
 │   │   ├── Core/
 │   │   │   ├── InjectableMacro.swift    # @Injectable implementation
 │   │   │   ├── AutoFactoryMacro.swift   # @AutoFactory implementation
@@ -125,7 +125,7 @@ SwinJectMacros/
 
 ## 📈 **Demonstrated Value**
 
-### **Before SwinJectMacros** (Traditional Approach)
+### **Before SwinjectUtilityMacros** (Traditional Approach)
 ```swift
 // Manual registration - 20+ lines of boilerplate
 class UserAssembly: Assembly {
@@ -147,7 +147,7 @@ class UserAssembly: Assembly {
 }
 ```
 
-### **After SwinJectMacros** (Macro Approach)
+### **After SwinjectUtilityMacros** (Macro Approach)
 ```swift
 // Automatic registration - 4 lines total
 @Injectable(scope: .container) class HTTPAPIClient: APIClient { }
@@ -233,7 +233,7 @@ The foundation is **rock solid** and ready for expansion to the full 25+ macro s
 
 ## 🎊 **Conclusion**
 
-**SwinJectMacros** represents a **major advancement** in Swift dependency injection, successfully combining:
+**SwinjectUtilityMacros** represents a **major advancement** in Swift dependency injection, successfully combining:
 
 - **🔥 Zero Runtime Overhead** through compile-time code generation
 - **🎯 Dramatic Code Reduction** (80%+ less boilerplate)

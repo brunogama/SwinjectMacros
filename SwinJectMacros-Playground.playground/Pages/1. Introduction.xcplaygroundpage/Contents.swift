@@ -13,7 +13,7 @@
 import Foundation
 import Swinject
 
-// Note: In a real project, you would import SwinJectMacros
+// Note: In a real project, you would import SwinjectUtilityMacros
 // For demonstration purposes, we'll show the equivalent manual code
 
 //: ## Traditional Dependency Injection (Manual Swinject)

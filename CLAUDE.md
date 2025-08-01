@@ -16,7 +16,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Resolve package dependencies**: `swift package resolve`
 
 ### Testing Commands
-- **Run macro tests**: `swift test --filter SwinJectMacrosTests`
+- **Run macro tests**: `swift test --filter SwinjectUtilityMacrosTests`
 - **Run integration tests**: `swift test --filter IntegrationTests`
 - **Run performance benchmarks**: `swift test --filter PerformanceBenchmarkTests`
 - **Run stress tests**: `swift test --filter StressTests`
@@ -29,8 +29,8 @@ This is a Swift Package Manager project that implements a comprehensive dependen
 ### Core Components
 
 #### Target Structure
-- **SwinJectMacros**: Public API target containing macro declarations and protocols
-- **SwinJectMacrosImplementation**: Macro implementation target with SwiftSyntax-based code generation
+- **SwinjectUtilityMacros**: Public API target containing macro declarations and protocols
+- **SwinjectUtilityMacrosImplementation**: Macro implementation target with SwiftSyntax-based code generation
 - **ServiceDiscoveryTool**: Build tool for automatic service discovery
 - **SwinJectBuildPlugin**: Build plugin for integrating service discovery into build process
 
