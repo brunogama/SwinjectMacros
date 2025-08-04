@@ -11,7 +11,12 @@ public final class ModuleSystem {
     // MARK: - Properties
 
     /// Shared instance of the module system
-    public static let shared = ModuleSystem()
+    public static var shared = ModuleSystem()
+
+    /// Reset the shared instance (useful for testing)
+    public static func resetShared() {
+        shared = ModuleSystem()
+    }
 
     /// Logger for module system operations
     private let logger = Logger(subsystem: "com.swinjectutilitymacros", category: "module-system")

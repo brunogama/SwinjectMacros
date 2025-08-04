@@ -355,7 +355,8 @@ class UserService: UserServiceProtocol {
 
     private func setupCacheCleanup() {
         // Clean up cache every 5 minutes
-        Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { _ in
+        Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
+            guard let self else { return }
             Task {
                 await self.cleanupExpiredCache()
             }
