@@ -29,7 +29,7 @@ This project follows Apple's Swift-NIO code style conventions. Please refer to `
 
 ### Testing Commands
 
-- **Run macro tests**: `swift test --filter SwinjectUtilityMacrosTests`
+- **Run macro tests**: `swift test --filter SwinjectMacrosTests`
 - **Run integration tests**: `swift test --filter IntegrationTests`
 - **Run performance benchmarks**: `swift test --filter PerformanceBenchmarkTests`
 - **Run stress tests**: `swift test --filter StressTests`
@@ -44,8 +44,8 @@ This is a Swift Package Manager project that implements a comprehensive dependen
 
 #### Target Structure
 
-- **SwinjectUtilityMacros**: Public API target containing macro declarations and protocols
-- **SwinjectUtilityMacrosImplementation**: Macro implementation target with SwiftSyntax-based code generation
+- **SwinjectMacros**: Public API target containing macro declarations and protocols
+- **SwinjectMacrosImplementation**: Macro implementation target with SwiftSyntax-based code generation
 - **ServiceDiscoveryTool**: Build tool for automatic service discovery
 - **SwinJectBuildPlugin**: Build plugin for integrating service discovery into build process
 

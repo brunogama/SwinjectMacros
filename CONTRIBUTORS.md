@@ -48,8 +48,8 @@ We welcome contributions from the community! Here are ways you can help:
 
 ```bash
 # Clone the repository
-git clone https://github.com/brunogama/SwinjectUtilityMacros.git
-cd SwinjectUtilityMacros
+git clone https://github.com/brunogama/SwinjectMacros.git
+cd SwinjectMacros
 
 # Build the project
 swift build

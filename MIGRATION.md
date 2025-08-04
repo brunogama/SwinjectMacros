@@ -1,6 +1,6 @@
-# Migration Guide: From Traditional DI to SwinjectUtilityMacros
+# Migration Guide: From Traditional DI to SwinjectMacros
 
-This guide helps you migrate from traditional dependency injection patterns to SwinjectUtilityMacros, showing you exactly what changes and how to adopt the new macros incrementally.
+This guide helps you migrate from traditional dependency injection patterns to SwinjectMacros, showing you exactly what changes and how to adopt the new macros incrementally.
 
 ## 📋 Table of Contents
 
@@ -26,7 +26,7 @@ This guide helps you migrate from traditional dependency injection patterns to S
 
 ### 🔄 **Backward Compatibility**
 
-SwinjectUtilityMacros is fully compatible with existing Swinject code. You can:
+SwinjectMacros is fully compatible with existing Swinject code. You can:
 
 - Keep existing registrations and add new macro-based ones
 - Mix manual registration with macro registration
@@ -75,7 +75,7 @@ class UserAssembly: Assembly {
 }
 ```
 
-#### ✅ **After: With SwinjectUtilityMacros**
+#### ✅ **After: With SwinjectMacros**
 
 ```swift
 // Service definition with macro
@@ -396,7 +396,7 @@ class UserServiceTests: XCTestCase {
 
 ### Migrating from Scattered Cross-Cutting Code to @Interceptor
 
-One of the most powerful features of SwinjectUtilityMacros is the ability to clean up cross-cutting concerns using the `@Interceptor` macro.
+One of the most powerful features of SwinjectMacros is the ability to clean up cross-cutting concerns using the `@Interceptor` macro.
 
 #### ❌ **Before: Scattered Cross-Cutting Code**
 
@@ -900,7 +900,7 @@ func assemble(container: Container) {
 
 ### Phase 1: Preparation (No Code Changes)
 
-1. **Add SwinjectUtilityMacros to your project**
+1. **Add SwinjectMacros to your project**
 1. **Import the library** in your service files
 1. **Run your existing tests** to ensure nothing breaks
 
@@ -1081,7 +1081,7 @@ Use this checklist to track your migration progress:
 
 ### Pre-Migration
 
-- [ ] Add SwinjectUtilityMacros dependency
+- [ ] Add SwinjectMacros dependency
 - [ ] Run existing tests to establish baseline
 - [ ] Document current assembly structure
 
@@ -1140,4 +1140,4 @@ ______________________________________________________________________
 - Browse [Examples/GettingStarted.md](Examples/GettingStarted.md) for practical tutorials
 - Open an issue on GitHub if you encounter migration challenges
 
-**Migration taking too long?** Consider migrating incrementally - SwinjectUtilityMacros works alongside existing Swinject code, so you can take your time! 🚀
+**Migration taking too long?** Consider migrating incrementally - SwinjectMacros works alongside existing Swinject code, so you can take your time! 🚀

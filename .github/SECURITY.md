@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-We actively support the following versions of SwinjectUtilityMacros with security updates:
+We actively support the following versions of SwinjectMacros with security updates:
 
 | Version | Supported          |
 | ------- | ------------------ |
@@ -12,7 +12,7 @@ We actively support the following versions of SwinjectUtilityMacros with securit
 
 ## Reporting a Vulnerability
 
-The SwinjectUtilityMacros team takes security vulnerabilities seriously. We appreciate your efforts to responsibly disclose your findings.
+The SwinjectMacros team takes security vulnerabilities seriously. We appreciate your efforts to responsibly disclose your findings.
 
 ### How to Report
 
@@ -44,11 +44,11 @@ This information will help us triage your report more quickly.
 - We will credit you for your discovery in our security advisory (unless you prefer to remain anonymous).
 - We will coordinate with you on the timing of the public disclosure.
 
-## Security Considerations for SwinjectUtilityMacros
+## Security Considerations for SwinjectMacros
 
 ### Macro Security
 
-SwinjectUtilityMacros generates code at compile time. While this provides performance benefits, it's important to understand the security implications:
+SwinjectMacros generates code at compile time. While this provides performance benefits, it's important to understand the security implications:
 
 1. **Code Generation**: Macros generate Swift code that becomes part of your application. Always review generated code in critical applications.
 
@@ -63,7 +63,7 @@ SwinjectUtilityMacros generates code at compile time. While this provides perfor
 1. **Pin Versions**: Use specific versions rather than ranges to ensure consistent behavior:
 
    ```swift
-   .package(url: "https://github.com/user/SwinjectUtilityMacros.git", exact: "1.0.0")
+   .package(url: "https://github.com/brunogama/SwinjectMacros.git", exact: "1.0.0")
    ```
 
 1. **Review Dependencies**: Regularly audit your dependencies using tools like `swift package audit`.
@@ -93,7 +93,7 @@ SwinjectUtilityMacros generates code at compile time. While this provides perfor
 
 #### Thread Safety
 
-SwinjectUtilityMacros implements thread-safe dependency injection. However, be aware that:
+SwinjectMacros implements thread-safe dependency injection. However, be aware that:
 
 - The injected dependencies themselves must be thread-safe
 - Lazy initialization is protected, but subsequent access depends on the dependency's implementation
@@ -130,4 +130,4 @@ ______________________________________________________________________
 
 For questions about this security policy, please contact us at **security@swinjectmacros.dev**.
 
-For general questions about SwinjectUtilityMacros, please use the public GitHub issues or discussions.
+For general questions about SwinjectMacros, please use the public GitHub issues or discussions.

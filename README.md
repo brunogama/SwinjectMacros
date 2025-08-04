@@ -1,15 +1,15 @@
-# SwinjectUtilityMacros
+# SwinjectMacros
 
 **Advanced Dependency Injection Utilities for Swift using Compile-Time Macros**
 
-SwinjectUtilityMacros brings the power of Swift Macros to dependency injection, dramatically reducing boilerplate code while maintaining type safety and performance. Built on top of the proven [Swinject](https://github.com/Swinject/Swinject) framework, it provides 25+ compile-time macros for modern Swift applications.
+SwinjectMacros brings the power of Swift Macros to dependency injection, dramatically reducing boilerplate code while maintaining type safety and performance. Built on top of the proven [Swinject](https://github.com/Swinject/Swinject) framework, it provides 25+ compile-time macros for modern Swift applications.
 
 [![Swift](https://img.shields.io/badge/swift-5.9+-orange.svg)](https://swift.org)
 [![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20macOS%20%7C%20watchOS%20%7C%20tvOS-lightgrey.svg)](https://swift.org)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](<>)
 
-## 🎯 Why SwinjectUtilityMacros?
+## 🎯 Why SwinjectMacros?
 
 Traditional dependency injection in Swift requires significant boilerplate code:
 
@@ -55,7 +55,7 @@ class AppAssembly: Assembly {
 }
 ```
 
-### ✅ **After: SwinjectUtilityMacros (Clean & Concise)**
+### ✅ **After: SwinjectMacros (Clean & Concise)**
 
 ```swift
 // Service Definition with Auto-Registration
@@ -176,16 +176,16 @@ ______________________________________________________________________
 
 ### Swift Package Manager
 
-Add SwinjectUtilityMacros to your project via Xcode or by adding it to your `Package.swift`:
+Add SwinjectMacros to your project via Xcode or by adding it to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/brunogama/SwinjectUtilityMacros.git", from: "1.0.0")
+    .package(url: "https://github.com/brunogama/SwinjectMacros.git", from: "1.0.0")
 ],
 targets: [
     .target(
         name: "YourTarget",
-        dependencies: ["SwinjectUtilityMacros"]
+        dependencies: ["SwinjectMacros"]
     )
 ]
 ```
@@ -225,7 +225,7 @@ The macro examines your class/struct initializer and:
 #### 🔧 **Basic Usage**
 
 ```swift
-import SwinjectUtilityMacros
+import SwinjectMacros
 import Swinject
 
 // Simple service with dependencies
@@ -380,7 +380,7 @@ class UserSearchServiceFactoryImpl: UserSearchServiceFactory {
 }
 ```
 
-**SwinjectUtilityMacros Solution** (automatic):
+**SwinjectMacros Solution** (automatic):
 
 ```swift
 @AutoFactory
@@ -569,7 +569,7 @@ class UserServiceTests: XCTestCase {
 }
 ```
 
-**SwinjectUtilityMacros Approach** (automatic):
+**SwinjectMacros Approach** (automatic):
 
 ```swift
 @TestContainer
@@ -595,7 +595,7 @@ The macro scans your test class properties and:
 
 ```swift
 import XCTest
-import SwinjectUtilityMacros
+import SwinjectMacros
 
 @TestContainer
 class UserServiceTests: XCTestCase {
@@ -859,7 +859,7 @@ class CustomLoggingInterceptor: MethodInterceptor {
 
 #### 🏭 **Built-in Interceptors**
 
-SwinjectUtilityMacros provides several production-ready interceptors:
+SwinjectMacros provides several production-ready interceptors:
 
 ##### LoggingInterceptor
 
@@ -954,7 +954,7 @@ Here's a complete example showing how all three macros work together in a real i
 ### Domain Layer
 
 ```swift
-import SwinjectUtilityMacros
+import SwinjectMacros
 
 // MARK: - Core Services
 
@@ -1041,7 +1041,7 @@ class UserSearchService {
 
 ```swift
 import Swinject
-import SwinjectUtilityMacros
+import SwinjectMacros
 
 class AppAssembly: Assembly {
     func assemble(container: Container) {
@@ -1326,7 +1326,7 @@ class AppAssembly: Assembly {
 
 ## 🔮 Roadmap
 
-SwinjectUtilityMacros is actively developed with 25+ macros planned. Here's what's coming:
+SwinjectMacros is actively developed with 25+ macros planned. Here's what's coming:
 
 ### ✅ **Phase 1: Complete** (Current)
 
@@ -1377,15 +1377,15 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 ### Development Setup
 
 ```bash
-git clone https://github.com/brunogama/SwinjectUtilityMacros.git
-cd SwinjectUtilityMacros
+git clone https://github.com/brunogama/SwinjectMacros.git
+cd SwinjectMacros
 swift build
 swift test
 ```
 
 ## 📄 License
 
-SwinjectUtilityMacros is released under the MIT License. See [LICENSE](LICENSE) for details.
+SwinjectMacros is released under the MIT License. See [LICENSE](LICENSE) for details.
 
 ## 🙏 Acknowledgments
 
@@ -1395,4 +1395,4 @@ SwinjectUtilityMacros is released under the MIT License. See [LICENSE](LICENSE) 
 
 ______________________________________________________________________
 
-**Ready to eliminate dependency injection boilerplate?** Get started with SwinjectUtilityMacros today! 🚀
+**Ready to eliminate dependency injection boilerplate?** Get started with SwinjectMacros today! 🚀

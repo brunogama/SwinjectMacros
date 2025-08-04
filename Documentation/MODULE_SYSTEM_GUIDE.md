@@ -15,7 +15,7 @@
 
 ## Introduction
 
-The SwinjectUtilityMacros Module System provides a powerful, compile-time safe approach to organizing dependency injection in large-scale Swift applications. It enables true modular architecture with clear boundaries, explicit dependencies, and isolated testing.
+The SwinjectMacros Module System provides a powerful, compile-time safe approach to organizing dependency injection in large-scale Swift applications. It enables true modular architecture with clear boundaries, explicit dependencies, and isolated testing.
 
 ### Key Benefits
 
@@ -70,14 +70,14 @@ Add the module system to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/yourusername/SwinjectUtilityMacros.git", from: "2.0.0")
+    .package(url: "https://github.com/brunogama/SwinjectMacros.git", from: "2.0.0")
 ]
 ```
 
 ### Basic Module Definition
 
 ```swift
-import SwinjectUtilityMacros
+import SwinjectMacros
 import Swinject
 
 @Module(name: "Network")
@@ -708,6 +708,6 @@ struct NetworkModule {
 
 ## Conclusion
 
-The SwinjectUtilityMacros Module System provides a robust foundation for building scalable, maintainable Swift applications. By following this guide and best practices, you can successfully migrate existing projects and build new ones with proper modular architecture.
+The SwinjectMacros Module System provides a robust foundation for building scalable, maintainable Swift applications. By following this guide and best practices, you can successfully migrate existing projects and build new ones with proper modular architecture.
 
-For more examples and updates, visit the [GitHub repository](https://github.com/yourusername/SwinjectUtilityMacros).
+For more examples and updates, visit the [GitHub repository](https://github.com/brunogama/SwinjectMacros).

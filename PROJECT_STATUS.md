@@ -1,4 +1,4 @@
-# SwinjectUtilityMacros Project Status
+# SwinjectMacros Project Status
 
 ## 🎉 **PROJECT COMPLETE - PHASE 1 & 2 DELIVERED**
 
@@ -77,13 +77,13 @@ ______________________________________________________________________
 ### **Core Components**
 
 ```
-SwinjectUtilityMacros/
+SwinjectMacros/
 ├── Sources/
-│   ├── SwinjectUtilityMacros/              # Public API
+│   ├── SwinjectMacros/              # Public API
 │   │   ├── Injectable.swift         # @Injectable macro declarations
 │   │   ├── AutoFactory.swift        # @AutoFactory macro declarations
-│   │   └── SwinjectUtilityMacros.swift     # Main module & exports
-│   ├── SwinjectUtilityMacrosImplementation/ # Macro implementations
+│   │   └── SwinjectMacros.swift     # Main module & exports
+│   ├── SwinjectMacrosImplementation/ # Macro implementations
 │   │   ├── Core/
 │   │   │   ├── InjectableMacro.swift    # @Injectable implementation
 │   │   │   ├── AutoFactoryMacro.swift   # @AutoFactory implementation
@@ -132,7 +132,7 @@ ______________________________________________________________________
 
 ## 📈 **Demonstrated Value**
 
-### **Before SwinjectUtilityMacros** (Traditional Approach)
+### **Before SwinjectMacros** (Traditional Approach)
 
 ```swift
 // Manual registration - 20+ lines of boilerplate
@@ -155,7 +155,7 @@ class UserAssembly: Assembly {
 }
 ```
 
-### **After SwinjectUtilityMacros** (Macro Approach)
+### **After SwinjectMacros** (Macro Approach)
 
 ```swift
 // Automatic registration - 4 lines total
@@ -251,7 +251,7 @@ ______________________________________________________________________
 
 ## 🎊 **Conclusion**
 
-**SwinjectUtilityMacros** represents a **major advancement** in Swift dependency injection, successfully combining:
+**SwinjectMacros** represents a **major advancement** in Swift dependency injection, successfully combining:
 
 - **🔥 Zero Runtime Overhead** through compile-time code generation
 - **🎯 Dramatic Code Reduction** (80%+ less boilerplate)
