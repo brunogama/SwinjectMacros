@@ -655,47 +655,9 @@ final class ErrorRecoveryTests: XCTestCase {
 }
 
 // MARK: - Test Support Types
-
-enum TestError: Error {
-    case networkFailure
-    case parseError
-    case unknownError
-}
-
-class MissingDependency {
-    let id = UUID()
-}
-
-class ExpensiveResource {
-    let id = UUID()
-    init() {
-        // Simulate expensive initialization
-        Thread.sleep(forTimeInterval: 0.001)
-    }
-}
+// Note: Common test types are now imported from TestUtilities.swift
 
 // MARK: - Mock Implementations for Generated Code
-
-struct RetryAttempt {
-    let attemptNumber: Int
-    let error: Error
-    let delay: TimeInterval
-}
-
-enum RetryError: Error {
-    case maxAttemptsExceeded(attempts: Int)
-    case timeoutExceeded(timeout: TimeInterval)
-}
-
-class RetryMetricsManager {
-    static func recordResult(for methodKey: String, succeeded: Bool, attemptCount: Int, totalDelay: TimeInterval, finalError: Error? = nil) {
-        // Mock implementation for testing
-    }
-
-    static func recordAttempt(_ attempt: RetryAttempt, for methodKey: String) {
-        // Mock implementation for testing
-    }
-}
 
 public struct CircuitBreakerCall {
     public let wasSuccessful: Bool
@@ -736,15 +698,7 @@ public class MockCircuitBreaker {
     }
 }
 
-public class CircuitBreakerRegistry {
-    public static func getCircuitBreaker(for key: String, failureThreshold: Int, timeout: TimeInterval, successThreshold: Int, monitoringWindow: TimeInterval) -> MockCircuitBreaker {
-        MockCircuitBreaker()
-    }
-
-    public static func recordCall(_ call: CircuitBreakerCall, for key: String) {
-        // Mock implementation for testing
-    }
-}
+// CircuitBreakerRegistry is now imported from TestUtilities.swift
 
 struct LazyPropertyInfo {
     let propertyName: String
@@ -838,17 +792,7 @@ class WeakInjectionMetrics {
     }
 }
 
-class CacheManager {
-    static let shared = CacheManager()
-
-    func get<T>(key: String, type: T.Type) -> T? {
-        nil
-    }
-
-    func set<T>(key: String, value: T, ttl: TimeInterval) throws {
-        // Mock implementation
-    }
-}
+// CacheManager is now imported from TestUtilities.swift
 
 class CacheMetrics {
     static func recordHit(for methodKey: String, key: String) {

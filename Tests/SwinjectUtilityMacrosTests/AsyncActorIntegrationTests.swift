@@ -1306,11 +1306,7 @@ struct APIResponse {
 }
 
 // Error types
-struct RetryError: Error {
-    static func maxAttemptsExceeded(attempts: Int) -> RetryError {
-        RetryError()
-    }
-}
+// RetryError is now imported from TestUtilities.swift
 
 // Extended CircuitBreakerCall for async tests (extends shared type)
 struct AsyncCircuitBreakerCall {

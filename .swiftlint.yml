@@ -1,4 +1,4 @@
-swiftlint_version: 0.54.0
+swiftlint_version: 0.59.1
 
 disabled_rules:
 - identifier_name
@@ -7,7 +7,6 @@ disabled_rules:
 - file_length
 - function_body_length
 - type_body_length
-- identifier_name # Apple often uses short loop vars like i, j, etc.
 
 opt_in_rules:
 - attributes
@@ -127,7 +126,7 @@ return_arrow_whitespace:
   severity: error
 
 opening_brace:
-  severity: error
+  severity: warning
 
 no_space_in_method_call:
   severity: error
@@ -167,7 +166,7 @@ custom_rules:
   no_hardCodedDateFormats:
     included: ".*\\.swift"
     name: "Hardcoded DateFormats"
-    regex: '= "yyyy|DateFormatter(withFormat'
+    regex: '= "yyyy|DateFormatter\(withFormat'
     message: "Use a DateFormats on AppContants.Date or DateFormatterTypes"
     severity: error
 
@@ -284,17 +283,20 @@ custom_rules:
     message: "Type Definition Not Needed."
     severity: warning
 
-    swiftui_state_private:
-      regex: '@(State|StateObject|ObservedObject|EnvironmentObject)\s+var'
-      message: "SwiftUI @State/@StateObject/@ObservedObject/@EnvironmentObject properties should be private"
+  swiftui_state_private:
+    regex: '@(State|StateObject|ObservedObject|EnvironmentObject)\s+var'
+    message: "SwiftUI @State/@StateObject/@ObservedObject/@EnvironmentObject properties should be private"
+    severity: warning
 
-    swiftui_environment_private:
-      regex: '@Environment\(\\\.\w+\)\s+var'
-      message: "SwiftUI @Environment properties should be private"
+  swiftui_environment_private:
+    regex: '@Environment\(\\\.\w+\)\s+var'
+    message: "SwiftUI @Environment properties should be private"
+    severity: warning
 
-    final_class:
-      regex: '^class [a-zA-Z\d]+[^{]+\{'
-      message: "Classes should be marked as final whenever possible. If you actually need it to be subclassable, just add `// swiftlint:disable:next final_class`."
+  final_class:
+    regex: '^class [a-zA-Z\d]+[^{]+\{'
+    message: "Classes should be marked as final whenever possible. If you actually need it to be subclassable, just add `// swiftlint:disable:next final_class`."
+    severity: warning
 
   empty_init_body:
     included: ".*.swift"
@@ -358,12 +360,13 @@ custom_rules:
     message: "Use IsNotEmpty instead of count > 0"
     severity: warning
 
-    combine_assign_to_self:
-  included: ".*\\.swift"
-  name: "`assign` to self"
-  regex: '\.assign\(to: [^,]*, on: self\)'
-  message: "For assigning on self, use assignNoRetain(to: ..., on: self)."
-  severity: error
+  combine_assign_to_self:
+    included: ".*\\.swift"
+    name: "`assign` to self"
+    regex: '\.assign\(to: [^,]*, on: self\)'
+    message: "For assigning on self, use assignNoRetain(to: ..., on: self)."
+    severity: error
+
   duplicate_remove_duplicates:
     included: ".*\\.swift"
     name: "Duplicate `removeDuplicates()`"

@@ -2,9 +2,13 @@
 // Copyright © 2025 SwinjectUtilityMacros. All rights reserved.
 
 import Foundation
+import os.log
 
 /// Debug logging utility that only outputs in DEBUG builds
 public struct DebugLogger {
+
+    /// Shared logger instance for os_log
+    private static let logger = Logger(subsystem: "com.swinject.utilities", category: "DependencyInjection")
 
     /// Environment variable to control debug logging
     private static let isDebugLoggingEnabled: Bool = {
@@ -56,10 +60,21 @@ public struct DebugLogger {
         guard isDebugLoggingEnabled && level >= minimumLevel else { return }
 
         let fileName = URL(fileURLWithPath: file).lastPathComponent
-        let logMessage = "\(level.prefix) [\(fileName):\(line)] \(function) - \(message())"
+        let logMessage = "[\(fileName):\(line)] \(function) - \(message())"
 
         #if DEBUG
-            print(logMessage)
+            switch level {
+            case .verbose:
+                logger.trace("\(logMessage)")
+            case .debug:
+                logger.debug("\(logMessage)")
+            case .info:
+                logger.info("\(logMessage)")
+            case .warning:
+                logger.warning("\(logMessage)")
+            case .error:
+                logger.error("\(logMessage)")
+            }
         #endif
     }
 

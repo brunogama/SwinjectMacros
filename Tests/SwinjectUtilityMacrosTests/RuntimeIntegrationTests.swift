@@ -8,6 +8,168 @@ import Swinject
 @testable import SwinjectUtilityMacrosImplementation
 import XCTest
 
+// MARK: - Test Classes with Macros (must be at file/class level)
+
+@Injectable
+class TestInjectableService {
+    let dependency: TestDependency
+
+    init(dependency: TestDependency) {
+        self.dependency = dependency
+    }
+}
+
+@Injectable
+class MultiDependencyService {
+    let apiClient: TestAPIClient
+    let database: TestDatabase
+    let logger: TestLogger
+
+    init(apiClient: TestAPIClient, database: TestDatabase, logger: TestLogger) {
+        self.apiClient = apiClient
+        self.database = database
+        self.logger = logger
+    }
+}
+
+@Injectable
+class OptionalDependencyService {
+    let required: TestDependency
+    let optional: TestOptionalDependency?
+
+    init(required: TestDependency, optional: TestOptionalDependency?) {
+        self.required = required
+        self.optional = optional
+    }
+}
+
+@Injectable(scope: .container)
+class SingletonService {
+    let id = UUID()
+    let dependency: TestDependency
+
+    init(dependency: TestDependency) {
+        self.dependency = dependency
+    }
+}
+
+@Injectable(name: "primary")
+class NamedService {
+    let dependency: TestDependency
+
+    init(dependency: TestDependency) {
+        self.dependency = dependency
+    }
+}
+
+@AutoFactory
+class FactoryService {
+    let dependency: TestDependency
+    let runtimeParam: String
+    let count: Int
+
+    init(dependency: TestDependency, runtimeParam: String, count: Int) {
+        self.dependency = dependency
+        self.runtimeParam = runtimeParam
+        self.count = count
+    }
+}
+
+@AutoFactory(async: true)
+class AsyncFactoryService {
+    let dependency: TestDependency
+    let data: String
+
+    init(dependency: TestDependency, data: String) async {
+        self.dependency = dependency
+        self.data = data
+        // Simulate async work
+        try? await Task.sleep(nanoseconds: 1_000_000) // 1ms
+    }
+}
+
+@Injectable
+class RepositoryService {
+    let database: TestDatabase
+    init(database: TestDatabase) {
+        self.database = database
+    }
+}
+
+@Injectable
+class APIService {
+    let client: TestAPIClient
+    init(client: TestAPIClient) {
+        self.client = client
+    }
+}
+
+@Injectable
+class BusinessService {
+    let repository: RepositoryService
+    let api: APIService
+    let logger: TestLogger
+
+    init(repository: RepositoryService, api: APIService, logger: TestLogger) {
+        self.repository = repository
+        self.api = api
+        self.logger = logger
+    }
+}
+
+@Injectable
+class ServiceA {
+    let serviceB: ServiceB
+    init(serviceB: ServiceB) {
+        self.serviceB = serviceB
+    }
+}
+
+@Injectable
+class ServiceB {
+    let serviceA: ServiceA
+    init(serviceA: ServiceA) {
+        self.serviceA = serviceA
+    }
+}
+
+@Injectable
+class ServiceWithMissingDep {
+    let dependency: TestDependency
+    init(dependency: TestDependency) {
+        self.dependency = dependency
+    }
+}
+
+protocol TestServiceProtocol {
+    func performAction() -> String
+}
+
+@Injectable
+class ConcreteTestService: TestServiceProtocol {
+    let dependency: TestDependency
+
+    init(dependency: TestDependency) {
+        self.dependency = dependency
+    }
+
+    func performAction() -> String {
+        "concrete action"
+    }
+}
+
+@Injectable
+class ServiceWithManyDependencies {
+    let dependencies: [TestDependency]
+
+    init() {
+        // In real scenario, this would be injected
+        self.dependencies = []
+    }
+}
+
+// MARK: - Test Class
+
 final class RuntimeIntegrationTests: XCTestCase {
 
     var container: Container!
@@ -25,16 +187,6 @@ final class RuntimeIntegrationTests: XCTestCase {
     // MARK: - @Injectable Runtime Tests
 
     func testInjectableServiceRegistersAndResolves() {
-        // Given: A service marked with @Injectable
-        @Injectable
-        class TestInjectableService {
-            let dependency: TestDependency
-
-            init(dependency: TestDependency) {
-                self.dependency = dependency
-            }
-        }
-
         // Register dependency first
         container.register(TestDependency.self) { _ in
             TestDependency()
@@ -50,19 +202,6 @@ final class RuntimeIntegrationTests: XCTestCase {
     }
 
     func testInjectableWithMultipleDependencies() {
-        @Injectable
-        class MultiDependencyService {
-            let apiClient: TestAPIClient
-            let database: TestDatabase
-            let logger: TestLogger
-
-            init(apiClient: TestAPIClient, database: TestDatabase, logger: TestLogger) {
-                self.apiClient = apiClient
-                self.database = database
-                self.logger = logger
-            }
-        }
-
         // Register all dependencies
         container.register(TestAPIClient.self) { _ in TestAPIClient() }
         container.register(TestDatabase.self) { _ in TestDatabase() }
@@ -80,17 +219,6 @@ final class RuntimeIntegrationTests: XCTestCase {
     }
 
     func testInjectableWithOptionalDependencies() {
-        @Injectable
-        class OptionalDependencyService {
-            let required: TestDependency
-            let optional: TestOptionalDependency?
-
-            init(required: TestDependency, optional: TestOptionalDependency?) {
-                self.required = required
-                self.optional = optional
-            }
-        }
-
         // Register only required dependency
         container.register(TestDependency.self) { _ in TestDependency() }
         // Intentionally don't register TestOptionalDependency
@@ -104,16 +232,6 @@ final class RuntimeIntegrationTests: XCTestCase {
     }
 
     func testInjectableWithCustomScope() {
-        @Injectable(scope: .container)
-        class SingletonService {
-            let id = UUID()
-            let dependency: TestDependency
-
-            init(dependency: TestDependency) {
-                self.dependency = dependency
-            }
-        }
-
         container.register(TestDependency.self) { _ in TestDependency() }
         SingletonService.register(in: container)
 
@@ -126,15 +244,6 @@ final class RuntimeIntegrationTests: XCTestCase {
     }
 
     func testInjectableWithNamedService() {
-        @Injectable(name: "primary")
-        class NamedService {
-            let dependency: TestDependency
-
-            init(dependency: TestDependency) {
-                self.dependency = dependency
-            }
-        }
-
         container.register(TestDependency.self) { _ in TestDependency() }
         NamedService.register(in: container)
 
@@ -148,19 +257,6 @@ final class RuntimeIntegrationTests: XCTestCase {
     // MARK: - @AutoFactory Runtime Tests
 
     func testAutoFactoryGeneratesWorkingFactory() {
-        @AutoFactory
-        class FactoryService {
-            let dependency: TestDependency
-            let runtimeParam: String
-            let count: Int
-
-            init(dependency: TestDependency, runtimeParam: String, count: Int) {
-                self.dependency = dependency
-                self.runtimeParam = runtimeParam
-                self.count = count
-            }
-        }
-
         // Register dependency
         container.register(TestDependency.self) { _ in TestDependency() }
 
@@ -181,19 +277,6 @@ final class RuntimeIntegrationTests: XCTestCase {
     }
 
     func testAutoFactoryWithAsyncInitialization() async {
-        @AutoFactory(async: true)
-        class AsyncFactoryService {
-            let dependency: TestDependency
-            let data: String
-
-            init(dependency: TestDependency, data: String) async {
-                self.dependency = dependency
-                self.data = data
-                // Simulate async work
-                try? await Task.sleep(nanoseconds: 1_000_000) // 1ms
-            }
-        }
-
         container.register(TestDependency.self) { _ in TestDependency() }
         container.register(AsyncFactoryServiceFactory.self) { resolver in
             AsyncFactoryServiceFactoryImpl(resolver: resolver)
@@ -210,36 +293,6 @@ final class RuntimeIntegrationTests: XCTestCase {
     // MARK: - Complex Dependency Graph Tests
 
     func testComplexDependencyGraph() {
-        // Create a realistic dependency graph
-        @Injectable
-        class RepositoryService {
-            let database: TestDatabase
-            init(database: TestDatabase) {
-                self.database = database
-            }
-        }
-
-        @Injectable
-        class APIService {
-            let client: TestAPIClient
-            init(client: TestAPIClient) {
-                self.client = client
-            }
-        }
-
-        @Injectable
-        class BusinessService {
-            let repository: RepositoryService
-            let api: APIService
-            let logger: TestLogger
-
-            init(repository: RepositoryService, api: APIService, logger: TestLogger) {
-                self.repository = repository
-                self.api = api
-                self.logger = logger
-            }
-        }
-
         // Register leaf dependencies
         container.register(TestDatabase.self) { _ in TestDatabase() }
         container.register(TestAPIClient.self) { _ in TestAPIClient() }
@@ -261,23 +314,6 @@ final class RuntimeIntegrationTests: XCTestCase {
     }
 
     func testCircularDependencyDetection() {
-        // This should fail at runtime as expected
-        @Injectable
-        class ServiceA {
-            let serviceB: ServiceB
-            init(serviceB: ServiceB) {
-                self.serviceB = serviceB
-            }
-        }
-
-        @Injectable
-        class ServiceB {
-            let serviceA: ServiceA
-            init(serviceA: ServiceA) {
-                self.serviceA = serviceA
-            }
-        }
-
         ServiceA.register(in: container)
         ServiceB.register(in: container)
 
@@ -289,14 +325,6 @@ final class RuntimeIntegrationTests: XCTestCase {
     // MARK: - Error Scenarios
 
     func testMissingDependencyFailure() {
-        @Injectable
-        class ServiceWithMissingDep {
-            let dependency: TestDependency
-            init(dependency: TestDependency) {
-                self.dependency = dependency
-            }
-        }
-
         // Don't register the dependency
         ServiceWithMissingDep.register(in: container)
 
@@ -305,23 +333,6 @@ final class RuntimeIntegrationTests: XCTestCase {
     }
 
     func testProtocolAndConcreteTypeResolution() {
-        protocol TestServiceProtocol {
-            func performAction() -> String
-        }
-
-        @Injectable
-        class ConcreteTestService: TestServiceProtocol {
-            let dependency: TestDependency
-
-            init(dependency: TestDependency) {
-                self.dependency = dependency
-            }
-
-            func performAction() -> String {
-                "concrete action"
-            }
-        }
-
         container.register(TestDependency.self) { _ in TestDependency() }
         ConcreteTestService.register(in: container)
 
@@ -347,16 +358,6 @@ final class RuntimeIntegrationTests: XCTestCase {
         for i in 0 ..< serviceCount {
             container.register(TestDependency.self, name: "dep\(i)") { _ in
                 TestDependency()
-            }
-        }
-
-        @Injectable
-        class ServiceWithManyDependencies {
-            let dependencies: [TestDependency]
-
-            init() {
-                // In real scenario, this would be injected
-                self.dependencies = []
             }
         }
 

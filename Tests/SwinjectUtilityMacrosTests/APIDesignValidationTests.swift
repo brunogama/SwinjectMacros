@@ -1,19 +1,19 @@
 // APIDesignValidationTests.swift - Validates API design consistency for production readiness
 // Copyright © 2025 SwinJectMacros. All rights reserved.
 
-import XCTest
 import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
+import XCTest
 
 @testable import SwinjectUtilityMacrosImplementation
 
 final class APIDesignValidationTests: XCTestCase {
-    
+
     // MARK: - Parameter Consistency Tests
-    
+
     func testMacroParameterNamingConsistency() {
         // All macros should use consistent parameter naming conventions
-        
+
         // Container parameter should be consistent across all injection macros
         assertMacroExpansion("""
         class TestService {
@@ -27,16 +27,16 @@ final class APIDesignValidationTests: XCTestCase {
             private var _service1Backing: Service1?
             private var _service1OnceToken: Bool = false
             private let _service1OnceTokenLock = NSLock()
-        
+
             private func _service1LazyAccessor() -> Service1 {
                 // Thread-safe lazy initialization
                 _service1OnceTokenLock.lock()
                 defer { _service1OnceTokenLock.unlock() }
-        
+
                 if !_service1OnceToken {
                     _service1OnceToken = true
                     let startTime = CFAbsoluteTimeGetCurrent()
-        
+
                     // Register property for metrics tracking
                     let pendingInfo = LazyPropertyInfo(
                         propertyName: "service1",
@@ -49,12 +49,12 @@ final class APIDesignValidationTests: XCTestCase {
                         threadInfo: ThreadInfo()
                     )
                     LazyInjectionMetrics.recordResolution(pendingInfo)
-        
+
                     do {
                         // Resolve dependency
                         guard let resolved = Container.named("custom").synchronizedResolve(Service1.self) else {
                             let error = LazyInjectionError.serviceNotRegistered(serviceName: nil, type: "Service1")
-        
+
                             // Record failed resolution
                             let failedInfo = LazyPropertyInfo(
                                 propertyName: "service1",
@@ -68,16 +68,16 @@ final class APIDesignValidationTests: XCTestCase {
                                 threadInfo: ThreadInfo()
                             )
                             LazyInjectionMetrics.recordResolution(failedInfo)
-        
+
                             fatalError("Required lazy property 'service1' of type 'Service1' could not be resolved: \\(error.localizedDescription)")
                         }
-        
+
                         _service1Backing = resolved
-        
+
                         // Record successful resolution
                         let endTime = CFAbsoluteTimeGetCurrent()
                         let resolutionDuration = endTime - startTime
-        
+
                         let resolvedInfo = LazyPropertyInfo(
                             propertyName: "service1",
                             propertyType: "Service1",
@@ -90,12 +90,12 @@ final class APIDesignValidationTests: XCTestCase {
                             threadInfo: ThreadInfo()
                         )
                         LazyInjectionMetrics.recordResolution(resolvedInfo)
-        
+
                     } catch {
                         // Record failed resolution
                         let endTime = CFAbsoluteTimeGetCurrent()
                         let resolutionDuration = endTime - startTime
-        
+
                         let failedInfo = LazyPropertyInfo(
                             propertyName: "service1",
                             propertyType: "Service1",
@@ -109,13 +109,13 @@ final class APIDesignValidationTests: XCTestCase {
                             threadInfo: ThreadInfo()
                         )
                         LazyInjectionMetrics.recordResolution(failedInfo)
-        
+
                         if true {
                             fatalError("Failed to resolve required lazy property 'service1': \\(error.localizedDescription)")
                         }
                     }
                 }
-        
+
                 guard let resolvedValue = _service1Backing else {
                     let error = LazyInjectionError.requiredServiceUnavailable(propertyName: "service1", type: "Service1")
                     fatalError("Lazy property 'service1' could not be resolved: \\(error.localizedDescription)")
@@ -125,11 +125,11 @@ final class APIDesignValidationTests: XCTestCase {
             private weak var _service2WeakBacking: Service2?
             private var _service2OnceToken: Bool = false
             private let _service2OnceTokenLock = NSLock()
-        
+
             private func _service2WeakAccessor() -> Service2? {
                 func resolveWeakReference() {
                     let startTime = CFAbsoluteTimeGetCurrent()
-        
+
                     // Register property for metrics tracking
                     let pendingInfo = WeakPropertyInfo(
                         propertyName: "service2",
@@ -142,12 +142,12 @@ final class APIDesignValidationTests: XCTestCase {
                         threadInfo: ThreadInfo()
                     )
                     WeakInjectionMetrics.recordAccess(pendingInfo)
-        
+
                     do {
                         // Resolve dependency as weak reference
                         if let resolved = Container.named("custom").synchronizedResolve(Service2.self) {
                             _service2WeakBacking = resolved
-        
+
                             // Record successful resolution
                             let resolvedInfo = WeakPropertyInfo(
                                 propertyName: "service2",
@@ -165,7 +165,7 @@ final class APIDesignValidationTests: XCTestCase {
                         } else {
                             // Service not found - record failure
                             let error = WeakInjectionError.serviceNotRegistered(serviceName: nil, type: "Service2")
-        
+
                             let failedInfo = WeakPropertyInfo(
                                 propertyName: "service2",
                                 propertyType: "Service2",
@@ -195,7 +195,7 @@ final class APIDesignValidationTests: XCTestCase {
                         WeakInjectionMetrics.recordAccess(failedInfo)
                     }
                 }
-        
+
                 // Auto-resolve if reference is nil and auto-resolve is enabled
                 if _service2WeakBacking == nil {
                     _service2OnceTokenLock.lock()
@@ -207,7 +207,7 @@ final class APIDesignValidationTests: XCTestCase {
                         _service2OnceTokenLock.unlock()
                     }
                 }
-        
+
                 // Check if reference was deallocated and record deallocation
                 if _service2WeakBacking == nil {
                     let deallocatedInfo = WeakPropertyInfo(
@@ -223,13 +223,13 @@ final class APIDesignValidationTests: XCTestCase {
                     )
                     WeakInjectionMetrics.recordAccess(deallocatedInfo)
                 }
-        
+
                 return _service2WeakBacking
             }
         }
         """, macros: testMacros)
     }
-    
+
     func testTimeoutParameterConsistency() {
         // Timeout parameters should be consistent across applicable macros
         assertMacroExpansion("""
@@ -238,7 +238,7 @@ final class APIDesignValidationTests: XCTestCase {
             func operationWithTimeout() throws -> String {
                 return "result"
             }
-            
+
             @CircuitBreaker(timeout: 30.0)
             func circuitBreakerWithTimeout() throws -> String {
                 return "result"
@@ -250,28 +250,28 @@ final class APIDesignValidationTests: XCTestCase {
             func operationWithTimeout() throws -> String {
                 return "result"
             }
-            
+
             @CircuitBreaker(timeout: 30.0)
             func circuitBreakerWithTimeout() throws -> String {
                 return "result"
             }
-            
+
             public func operationWithTimeoutRetry() throws -> String {
                 let methodKey = "\\(String(describing: type(of: self))).operationWithTimeout"
                 var lastError: Error?
                 var totalDelay: TimeInterval = 0.0
                 let startTime = Date()
                 let timeoutInterval: TimeInterval = 30.0
-                
+
                 for attempt in 1...3 {
                     // Check overall timeout
                     if Date().timeIntervalSince(startTime) >= timeoutInterval {
                         throw RetryError.timeoutExceeded(timeout: timeoutInterval)
                     }
-                    
+
                     do {
                         let result = try operationWithTimeout()
-                        
+
                         // Record successful call
                         RetryMetricsManager.recordResult(
                             for: methodKey,
@@ -279,11 +279,11 @@ final class APIDesignValidationTests: XCTestCase {
                             attemptCount: attempt,
                             totalDelay: totalDelay
                         )
-                        
+
                         return result
                     } catch {
                         lastError = error
-                        
+
                         // Check if this is the last attempt
                         if attempt == 3 {
                             // Record final failure
@@ -296,15 +296,15 @@ final class APIDesignValidationTests: XCTestCase {
                             )
                             throw error
                         }
-                        
+
                         // Calculate backoff delay
                         let baseDelay = 1.0 * pow(2.0, Double(attempt - 1))
                         let cappedDelay = min(baseDelay, 60.0)
                         let delay = cappedDelay
-                        
+
                         // Add to total delay tracking
                         totalDelay += delay
-                        
+
                         // Record retry attempt
                         let retryAttempt = RetryAttempt(
                             attemptNumber: attempt,
@@ -312,21 +312,21 @@ final class APIDesignValidationTests: XCTestCase {
                             delay: delay
                         )
                         RetryMetricsManager.recordAttempt(retryAttempt, for: methodKey)
-                        
+
                         // Wait before retry
                         if delay > 0 {
                             Thread.sleep(forTimeInterval: delay)
                         }
                     }
                 }
-                
+
                 // This should never be reached, but just in case
                 throw lastError ?? RetryError.maxAttemptsExceeded(attempts: 3)
             }
-            
+
             public func circuitBreakerWithTimeoutCircuitBreaker() throws -> String {
                 let circuitKey = "\\(String(describing: type(of: self))).circuitBreakerWithTimeout"
-                
+
                 // Get or create circuit breaker instance
                 let circuitBreaker = CircuitBreakerRegistry.getCircuitBreaker(
                     for: circuitKey,
@@ -335,7 +335,7 @@ final class APIDesignValidationTests: XCTestCase {
                     successThreshold: 3,
                     monitoringWindow: 60.0
                 )
-                
+
                 // Check if call should be allowed
                 guard circuitBreaker.shouldAllowCall() else {
                     // Circuit is open, record blocked call and handle fallback
@@ -346,23 +346,23 @@ final class APIDesignValidationTests: XCTestCase {
                         circuitState: circuitBreaker.currentState
                     )
                     CircuitBreakerRegistry.recordCall(blockedCall, for: circuitKey)
-                    
+
                     throw CircuitBreakerError.circuitOpen(circuitName: circuitKey, lastFailureTime: circuitBreaker.lastOpenedTime)
                 }
-                
+
                 // Execute the method with circuit breaker protection
                 let startTime = CFAbsoluteTimeGetCurrent()
                 var wasSuccessful = false
                 var callError: Error?
-                
+
                 do {
                     let result = try circuitBreakerWithTimeout()
                     wasSuccessful = true
-                    
+
                     // Record successful call
                     let endTime = CFAbsoluteTimeGetCurrent()
                     let responseTime = (endTime - startTime) * 1000 // Convert to milliseconds
-                    
+
                     let successfulCall = CircuitBreakerCall(
                         wasSuccessful: true,
                         wasBlocked: false,
@@ -370,19 +370,19 @@ final class APIDesignValidationTests: XCTestCase {
                         circuitState: circuitBreaker.currentState
                     )
                     CircuitBreakerRegistry.recordCall(successfulCall, for: circuitKey)
-                    
+
                     // Update circuit breaker state
                     circuitBreaker.recordCall(wasSuccessful: true)
-                    
+
                     return result
                 } catch {
                     wasSuccessful = false
                     callError = error
-                    
+
                     // Record failed call
                     let endTime = CFAbsoluteTimeGetCurrent()
                     let responseTime = (endTime - startTime) * 1000
-                    
+
                     let failedCall = CircuitBreakerCall(
                         wasSuccessful: false,
                         wasBlocked: false,
@@ -391,10 +391,10 @@ final class APIDesignValidationTests: XCTestCase {
                         error: error
                     )
                     CircuitBreakerRegistry.recordCall(failedCall, for: circuitKey)
-                    
+
                     // Update circuit breaker state
                     circuitBreaker.recordCall(wasSuccessful: false)
-                    
+
                     // Re-throw the error
                     throw error
                 }
@@ -402,37 +402,37 @@ final class APIDesignValidationTests: XCTestCase {
         }
         """, macros: testMacros)
     }
-    
+
     // MARK: - Error Handling Consistency Tests
-    
+
     func testErrorTypeConsistency() {
         // Test that all macros use consistent error types and naming
         let expectedErrorPatterns = [
             "LazyInjectionError",
-            "WeakInjectionError", 
+            "WeakInjectionError",
             "RetryError",
             "CircuitBreakerError",
             "CacheError"
         ]
-        
+
         for errorPattern in expectedErrorPatterns {
             // This would check that error types follow consistent naming patterns
             XCTAssertTrue(errorPattern.hasSuffix("Error"), "All error types should end with 'Error'")
         }
     }
-    
+
     // MARK: - Generated Code Structure Tests
-    
+
     func testGeneratedMethodNamingConsistency() {
         // Test that generated methods follow consistent naming patterns
         assertMacroExpansion("""
         class TestService {
             @Retry
             func networkCall() throws -> String { return "data" }
-            
+
             @CircuitBreaker
             func apiCall() throws -> String { return "response" }
-            
+
             @Cache
             func computation() -> String { return "result" }
         }
@@ -440,23 +440,23 @@ final class APIDesignValidationTests: XCTestCase {
         class TestService {
             @Retry
             func networkCall() throws -> String { return "data" }
-            
+
             @CircuitBreaker
             func apiCall() throws -> String { return "response" }
-            
+
             @Cache
             func computation() -> String { return "result" }
-            
+
             public func networkCallRetry() throws -> String {
                 let methodKey = "\\(String(describing: type(of: self))).networkCall"
                 var lastError: Error?
                 var totalDelay: TimeInterval = 0.0
-                
+
                 for attempt in 1...3 {
-                    
+
                     do {
                         let result = try networkCall()
-                        
+
                         // Record successful call
                         RetryMetricsManager.recordResult(
                             for: methodKey,
@@ -464,11 +464,11 @@ final class APIDesignValidationTests: XCTestCase {
                             attemptCount: attempt,
                             totalDelay: totalDelay
                         )
-                        
+
                         return result
                     } catch {
                         lastError = error
-                        
+
                         // Check if this is the last attempt
                         if attempt == 3 {
                             // Record final failure
@@ -481,15 +481,15 @@ final class APIDesignValidationTests: XCTestCase {
                             )
                             throw error
                         }
-                        
+
                         // Calculate backoff delay
                         let baseDelay = 1.0 * pow(2.0, Double(attempt - 1))
                         let cappedDelay = min(baseDelay, 60.0)
                         let delay = cappedDelay
-                        
+
                         // Add to total delay tracking
                         totalDelay += delay
-                        
+
                         // Record retry attempt
                         let retryAttempt = RetryAttempt(
                             attemptNumber: attempt,
@@ -497,21 +497,21 @@ final class APIDesignValidationTests: XCTestCase {
                             delay: delay
                         )
                         RetryMetricsManager.recordAttempt(retryAttempt, for: methodKey)
-                        
+
                         // Wait before retry
                         if delay > 0 {
                             Thread.sleep(forTimeInterval: delay)
                         }
                     }
                 }
-                
+
                 // This should never be reached, but just in case
                 throw lastError ?? RetryError.maxAttemptsExceeded(attempts: 3)
             }
-            
+
             public func apiCallCircuitBreaker() throws -> String {
                 let circuitKey = "\\(String(describing: type(of: self))).apiCall"
-                
+
                 // Get or create circuit breaker instance
                 let circuitBreaker = CircuitBreakerRegistry.getCircuitBreaker(
                     for: circuitKey,
@@ -520,7 +520,7 @@ final class APIDesignValidationTests: XCTestCase {
                     successThreshold: 3,
                     monitoringWindow: 60.0
                 )
-                
+
                 // Check if call should be allowed
                 guard circuitBreaker.shouldAllowCall() else {
                     // Circuit is open, record blocked call and handle fallback
@@ -531,23 +531,23 @@ final class APIDesignValidationTests: XCTestCase {
                         circuitState: circuitBreaker.currentState
                     )
                     CircuitBreakerRegistry.recordCall(blockedCall, for: circuitKey)
-                    
+
                     throw CircuitBreakerError.circuitOpen(circuitName: circuitKey, lastFailureTime: circuitBreaker.lastOpenedTime)
                 }
-                
+
                 // Execute the method with circuit breaker protection
                 let startTime = CFAbsoluteTimeGetCurrent()
                 var wasSuccessful = false
                 var callError: Error?
-                
+
                 do {
                     let result = try apiCall()
                     wasSuccessful = true
-                    
+
                     // Record successful call
                     let endTime = CFAbsoluteTimeGetCurrent()
                     let responseTime = (endTime - startTime) * 1000 // Convert to milliseconds
-                    
+
                     let successfulCall = CircuitBreakerCall(
                         wasSuccessful: true,
                         wasBlocked: false,
@@ -555,19 +555,19 @@ final class APIDesignValidationTests: XCTestCase {
                         circuitState: circuitBreaker.currentState
                     )
                     CircuitBreakerRegistry.recordCall(successfulCall, for: circuitKey)
-                    
+
                     // Update circuit breaker state
                     circuitBreaker.recordCall(wasSuccessful: true)
-                    
+
                     return result
                 } catch {
                     wasSuccessful = false
                     callError = error
-                    
+
                     // Record failed call
                     let endTime = CFAbsoluteTimeGetCurrent()
                     let responseTime = (endTime - startTime) * 1000
-                    
+
                     let failedCall = CircuitBreakerCall(
                         wasSuccessful: false,
                         wasBlocked: false,
@@ -576,18 +576,18 @@ final class APIDesignValidationTests: XCTestCase {
                         error: error
                     )
                     CircuitBreakerRegistry.recordCall(failedCall, for: circuitKey)
-                    
+
                     // Update circuit breaker state
                     circuitBreaker.recordCall(wasSuccessful: false)
-                    
+
                     // Re-throw the error
                     throw error
                 }
             }
-            
+
             public func computationCache() -> String {
                 let cacheKey = "\\(String(describing: type(of: self))).computation_"
-                
+
                 // Get or create cache instance
                 let cache = CacheRegistry.getCache(
                     for: cacheKey,
@@ -595,7 +595,7 @@ final class APIDesignValidationTests: XCTestCase {
                     ttl: 300,
                     evictionPolicy: .lru
                 )
-                
+
                 // Check cache first
                 if let cachedResult = cache.get(cacheKey) as? String {
                     // Record cache hit
@@ -606,22 +606,22 @@ final class APIDesignValidationTests: XCTestCase {
                         computationTime: 0.0
                     )
                     CacheRegistry.recordAccess(cacheHit, for: cacheKey)
-                    
+
                     return cachedResult
                 }
-                
+
                 // Cache miss - compute result
                 let startTime = CFAbsoluteTimeGetCurrent()
-                
+
                 do {
                     let result = computation()
-                    
+
                     let endTime = CFAbsoluteTimeGetCurrent()
                     let computationTime = (endTime - startTime) * 1000 // Convert to milliseconds
-                    
+
                     // Store in cache
                     cache.set(cacheKey, value: result)
-                    
+
                     // Record cache miss and computation
                     let cacheMiss = CacheAccess(
                         key: cacheKey,
@@ -630,21 +630,21 @@ final class APIDesignValidationTests: XCTestCase {
                         computationTime: computationTime
                     )
                     CacheRegistry.recordAccess(cacheMiss, for: cacheKey)
-                    
+
                     return result
                 }
             }
         }
         """, macros: testMacros)
-        
+
         // Verify consistent naming patterns:
         // - Retry methods end with "Retry"
-        // - CircuitBreaker methods end with "CircuitBreaker"  
+        // - CircuitBreaker methods end with "CircuitBreaker"
         // - Cache methods end with "Cache"
     }
-    
+
     // MARK: - Documentation and Comments Consistency
-    
+
     func testGeneratedCodeDocumentationConsistency() {
         // Generated code should have consistent commenting patterns
         let expectedCommentPatterns = [
@@ -654,21 +654,21 @@ final class APIDesignValidationTests: XCTestCase {
             "Get or create cache instance",
             "Check cache first"
         ]
-        
+
         // This test would verify that generated code includes consistent comments
         for pattern in expectedCommentPatterns {
             XCTAssertFalse(pattern.isEmpty, "Comment patterns should not be empty")
         }
     }
-    
+
     // MARK: - Access Control Consistency
-    
+
     func testAccessControlConsistency() {
         // All generated methods should follow consistent access control patterns
         assertMacroExpansion("""
         public class PublicService {
             @LazyInject public var repository: Repository
-            
+
             @Retry
             public func publicMethod() throws -> String {
                 return "public"
@@ -677,7 +677,7 @@ final class APIDesignValidationTests: XCTestCase {
         """, expandedSource: """
         public class PublicService {
             @LazyInject public var repository: Repository
-            
+
             @Retry
             public func publicMethod() throws -> String {
                 return "public"
@@ -685,16 +685,16 @@ final class APIDesignValidationTests: XCTestCase {
             private var _repositoryBacking: Repository?
             private var _repositoryOnceToken: Bool = false
             private let _repositoryOnceTokenLock = NSLock()
-            
+
             private func _repositoryLazyAccessor() -> Repository {
                 // Thread-safe lazy initialization
                 _repositoryOnceTokenLock.lock()
                 defer { _repositoryOnceTokenLock.unlock() }
-                
+
                 if !_repositoryOnceToken {
                     _repositoryOnceToken = true
                     let startTime = CFAbsoluteTimeGetCurrent()
-                    
+
                     // Register property for metrics tracking
                     let pendingInfo = LazyPropertyInfo(
                         propertyName: "repository",
@@ -707,12 +707,12 @@ final class APIDesignValidationTests: XCTestCase {
                         threadInfo: ThreadInfo()
                     )
                     LazyInjectionMetrics.recordResolution(pendingInfo)
-                    
+
                     do {
                         // Resolve dependency
                         guard let resolved = Container.shared.synchronizedResolve(Repository.self) else {
                             let error = LazyInjectionError.serviceNotRegistered(serviceName: nil, type: "Repository")
-                            
+
                             // Record failed resolution
                             let failedInfo = LazyPropertyInfo(
                                 propertyName: "repository",
@@ -726,16 +726,16 @@ final class APIDesignValidationTests: XCTestCase {
                                 threadInfo: ThreadInfo()
                             )
                             LazyInjectionMetrics.recordResolution(failedInfo)
-                            
+
                             fatalError("Required lazy property 'repository' of type 'Repository' could not be resolved: \\(error.localizedDescription)")
                         }
-                        
+
                         _repositoryBacking = resolved
-                        
+
                         // Record successful resolution
                         let endTime = CFAbsoluteTimeGetCurrent()
                         let resolutionDuration = endTime - startTime
-                        
+
                         let resolvedInfo = LazyPropertyInfo(
                             propertyName: "repository",
                             propertyType: "Repository",
@@ -748,12 +748,12 @@ final class APIDesignValidationTests: XCTestCase {
                             threadInfo: ThreadInfo()
                         )
                         LazyInjectionMetrics.recordResolution(resolvedInfo)
-                        
+
                     } catch {
                         // Record failed resolution
                         let endTime = CFAbsoluteTimeGetCurrent()
                         let resolutionDuration = endTime - startTime
-                        
+
                         let failedInfo = LazyPropertyInfo(
                             propertyName: "repository",
                             propertyType: "Repository",
@@ -767,30 +767,30 @@ final class APIDesignValidationTests: XCTestCase {
                             threadInfo: ThreadInfo()
                         )
                         LazyInjectionMetrics.recordResolution(failedInfo)
-                        
+
                         if true {
                             fatalError("Failed to resolve required lazy property 'repository': \\(error.localizedDescription)")
                         }
                     }
                 }
-                
+
                 guard let resolvedValue = _repositoryBacking else {
                     let error = LazyInjectionError.requiredServiceUnavailable(propertyName: "repository", type: "Repository")
                     fatalError("Lazy property 'repository' could not be resolved: \\(error.localizedDescription)")
                 }
                 return resolvedValue
             }
-            
+
             public func publicMethodRetry() throws -> String {
                 let methodKey = "\\(String(describing: type(of: self))).publicMethod"
                 var lastError: Error?
                 var totalDelay: TimeInterval = 0.0
-                
+
                 for attempt in 1...3 {
-                    
+
                     do {
                         let result = try publicMethod()
-                        
+
                         // Record successful call
                         RetryMetricsManager.recordResult(
                             for: methodKey,
@@ -798,11 +798,11 @@ final class APIDesignValidationTests: XCTestCase {
                             attemptCount: attempt,
                             totalDelay: totalDelay
                         )
-                        
+
                         return result
                     } catch {
                         lastError = error
-                        
+
                         // Check if this is the last attempt
                         if attempt == 3 {
                             // Record final failure
@@ -815,15 +815,15 @@ final class APIDesignValidationTests: XCTestCase {
                             )
                             throw error
                         }
-                        
+
                         // Calculate backoff delay
                         let baseDelay = 1.0 * pow(2.0, Double(attempt - 1))
                         let cappedDelay = min(baseDelay, 60.0)
                         let delay = cappedDelay
-                        
+
                         // Add to total delay tracking
                         totalDelay += delay
-                        
+
                         // Record retry attempt
                         let retryAttempt = RetryAttempt(
                             attemptNumber: attempt,
@@ -831,42 +831,42 @@ final class APIDesignValidationTests: XCTestCase {
                             delay: delay
                         )
                         RetryMetricsManager.recordAttempt(retryAttempt, for: methodKey)
-                        
+
                         // Wait before retry
                         if delay > 0 {
                             Thread.sleep(forTimeInterval: delay)
                         }
                     }
                 }
-                
+
                 // This should never be reached, but just in case
                 throw lastError ?? RetryError.maxAttemptsExceeded(attempts: 3)
             }
         }
         """, macros: testMacros)
-        
+
         // Generated methods should match the access level of the class/method they're associated with
     }
-    
+
     // MARK: - Metrics Integration Consistency
-    
+
     func testMetricsIntegrationConsistency() {
         // All macros should integrate with metrics in a consistent way
         let expectedMetricsPatterns = [
             "LazyInjectionMetrics.recordResolution",
-            "WeakInjectionMetrics.recordAccess", 
+            "WeakInjectionMetrics.recordAccess",
             "RetryMetricsManager.recordResult",
             "CircuitBreakerRegistry.recordCall",
             "CacheRegistry.recordAccess"
         ]
-        
+
         for pattern in expectedMetricsPatterns {
             XCTAssertTrue(pattern.contains("record"), "All metrics methods should use 'record' prefix")
         }
     }
-    
+
     // MARK: - Test Utilities
-    
+
     private let testMacros: [String: Macro.Type] = [
         "Injectable": InjectableMacro.self,
         "Retry": RetryMacro.self,
@@ -881,4 +881,4 @@ final class APIDesignValidationTests: XCTestCase {
 
 protocol Service1 {}
 protocol Service2 {}
-protocol Repository {}
+protocol RepositoryProtocol {}

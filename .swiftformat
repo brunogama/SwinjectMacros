@@ -21,10 +21,12 @@
 --stripunusedargs closure-only
 --importgrouping alphabetized
 
+# Disable braces rule to avoid conflicts with SwiftLint
+--disable braces
+
 --rules                              \
 blankLinesAtEndOfScope,              \
 blankLinesBetweenScopes,             \
-braces,                              \
 consecutiveBlankLines,               \
 consecutiveSpaces,                   \
 duplicateImports,                    \

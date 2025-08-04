@@ -407,6 +407,4 @@ class OptionalTestDependency {
     let id = UUID()
 }
 
-class MissingDependency {
-    let id = UUID()
-}
+// MissingDependency is now imported from TestUtilities.swift
