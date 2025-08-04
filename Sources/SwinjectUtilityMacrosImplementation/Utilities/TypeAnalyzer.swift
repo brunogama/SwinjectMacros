@@ -3,7 +3,6 @@
 
 import SwiftSyntax
 import SwiftSyntaxMacros
-@testable import SwinjectUtilityMacros
 
 /// Analyzes Swift types from SwiftSyntax AST nodes for dependency injection purposes
 public enum TypeAnalyzer {

@@ -138,6 +138,14 @@ public enum TestError: Error {
     case unknownError
 }
 
+public struct MockNotImplementedError: Error {
+    let message: String
+
+    init(_ message: String = "Mock implementation not provided") {
+        self.message = message
+    }
+}
+
 public enum RetryError: Error {
     case maxAttemptsExceeded(attempts: Int)
     case timeoutExceeded(timeout: TimeInterval)
@@ -164,8 +172,8 @@ public struct Processor<T> {
 
 public struct DataProvider<Input, Output> {
     public init() {}
-    public func provide(_ input: Input) -> Output {
-        fatalError("Mock implementation")
+    public func provide(_ input: Input) throws -> Output {
+        throw MockNotImplementedError("DataProvider.provide not implemented for test")
     }
 }
 
@@ -190,8 +198,8 @@ public enum NetworkError: Error {
 
 public struct DataTransformer<Input, Output> {
     public init() {}
-    public func transform(_ input: Input) -> Output {
-        fatalError("Mock implementation")
+    public func transform(_ input: Input) throws -> Output {
+        throw MockNotImplementedError("DataTransformer.transform not implemented for test")
     }
 }
 

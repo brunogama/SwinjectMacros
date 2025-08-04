@@ -261,7 +261,7 @@ final class RuntimeIntegrationTests: XCTestCase {
         container.register(TestDependency.self) { _ in TestDependency() }
 
         // Register factory
-        container.register(FactoryServiceFactory.self) { resolver in
+        container.register(FactoryServiceFactory.self) { _ in
             FactoryServiceFactoryImpl(container: self.container)
         }
 
@@ -278,7 +278,7 @@ final class RuntimeIntegrationTests: XCTestCase {
 
     func testAutoFactoryWithAsyncInitialization() async {
         container.register(TestDependency.self) { _ in TestDependency() }
-        container.register(AsyncFactoryServiceFactory.self) { resolver in
+        container.register(AsyncFactoryServiceFactory.self) { _ in
             AsyncFactoryServiceFactoryImpl(container: self.container)
         }
 
