@@ -19,16 +19,15 @@ public enum TypeAnalyzer {
             return .unknownDependency
         }
 
-        let paramName = param.firstName.text
         let hasDefaultValue = param.defaultValue != nil
 
         // Service-like dependencies
-        if isServiceType(typeText) {
+        if self.isServiceType(typeText) {
             return .serviceDependency
         }
 
         // Protocol dependencies
-        if isProtocolType(typeText) {
+        if self.isProtocolType(typeText) {
             return .protocolDependency
         }
 
@@ -38,12 +37,12 @@ public enum TypeAnalyzer {
         }
 
         // Value types are likely runtime parameters
-        if isValueType(typeText) {
+        if self.isValueType(typeText) {
             return .runtimeParameter
         }
 
         // Closure types might be dependencies
-        if isClosureType(typeText) {
+        if self.isClosureType(typeText) {
             return .closureDependency
         }
 
@@ -104,7 +103,7 @@ public enum TypeAnalyzer {
         return genericArguments.arguments.compactMap { arg in
             GenericParameterInfo(
                 name: arg.argument.trimmedDescription,
-                constraints: extractConstraints(from: arg.argument)
+                constraints: self.extractConstraints(from: arg.argument)
             )
         }
     }
@@ -128,7 +127,7 @@ public enum TypeAnalyzer {
 
         // Prefer public initializers
         let publicInitializers = initializers.filter { initializer in
-            hasPublicModifier(initializer.modifiers)
+            self.hasPublicModifier(initializer.modifiers)
         }
 
         if !publicInitializers.isEmpty {
@@ -162,10 +161,10 @@ public enum TypeAnalyzer {
     /// Analyzes all dependencies from an initializer
     public static func analyzeDependencies(from initializer: InitializerDeclSyntax) -> [DependencyInfo] {
         initializer.signature.parameterClause.parameters.compactMap { param in
-            let classification = classifyParameter(param)
+            let classification = self.classifyParameter(param)
             let paramName = param.firstName.text
             let typeText = param.type.trimmedDescription
-            let isOptional = isOptionalType(param.type)
+            let isOptional = self.isOptionalType(param.type)
             let defaultValue = param.defaultValue?.value.trimmedDescription
 
             return DependencyInfo(
@@ -174,7 +173,7 @@ public enum TypeAnalyzer {
                 classification: classification,
                 isOptional: isOptional,
                 defaultValue: defaultValue,
-                isGeneric: containsGenericParameters(param.type)
+                isGeneric: self.containsGenericParameters(param.type)
             )
         }
     }
@@ -200,9 +199,9 @@ public enum TypeAnalyzer {
     /// Checks if a type conforms to Swinject's Assembly protocol
     public static func conformsToAssembly(_ decl: some DeclSyntaxProtocol) -> Bool {
         if let classDecl = decl.as(ClassDeclSyntax.self) {
-            return conformsToAssembly(inheritanceClause: classDecl.inheritanceClause)
+            return self.conformsToAssembly(inheritanceClause: classDecl.inheritanceClause)
         } else if let structDecl = decl.as(StructDeclSyntax.self) {
-            return conformsToAssembly(inheritanceClause: structDecl.inheritanceClause)
+            return self.conformsToAssembly(inheritanceClause: structDecl.inheritanceClause)
         }
         return false
     }

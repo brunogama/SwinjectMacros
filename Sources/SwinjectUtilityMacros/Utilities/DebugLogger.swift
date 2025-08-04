@@ -52,9 +52,9 @@ public enum DebugLogger {
 
     /// Set the minimum log level
     public static func setMinimumLevel(_ level: Level) {
-        levelLock.lock()
+        self.levelLock.lock()
         defer { levelLock.unlock() }
-        _minimumLevel = level
+        self._minimumLevel = level
     }
 
     /// Get the current minimum log level (thread-safe)
@@ -66,7 +66,7 @@ public enum DebugLogger {
 
     /// Get cached file name or compute and cache it
     private static func getCachedFileName(for filePath: String) -> String {
-        cachelock.lock()
+        self.cachelock.lock()
         defer { cachelock.unlock() }
 
         if let cached = fileNameCache[filePath] {
@@ -74,7 +74,7 @@ public enum DebugLogger {
         }
 
         let fileName = URL(fileURLWithPath: filePath).lastPathComponent
-        fileNameCache[filePath] = fileName
+        self.fileNameCache[filePath] = fileName
         return fileName
     }
 
@@ -86,9 +86,9 @@ public enum DebugLogger {
         function: String = #function,
         line: Int = #line
     ) {
-        guard isDebugLoggingEnabled && level >= minimumLevel else { return }
+        guard self.isDebugLoggingEnabled && level >= self.minimumLevel else { return }
 
-        let fileName = getCachedFileName(for: file)
+        let fileName = self.getCachedFileName(for: file)
         let logMessage = "[\(fileName):\(line)] \(function) - \(message())"
 
         #if DEBUG
@@ -114,7 +114,7 @@ public enum DebugLogger {
         function: String = #function,
         line: Int = #line
     ) {
-        log(message(), level: .verbose, file: file, function: function, line: line)
+        self.log(message(), level: .verbose, file: file, function: function, line: line)
     }
 
     /// Log debug message
@@ -124,7 +124,7 @@ public enum DebugLogger {
         function: String = #function,
         line: Int = #line
     ) {
-        log(message(), level: .debug, file: file, function: function, line: line)
+        self.log(message(), level: .debug, file: file, function: function, line: line)
     }
 
     /// Log info message
@@ -134,7 +134,7 @@ public enum DebugLogger {
         function: String = #function,
         line: Int = #line
     ) {
-        log(message(), level: .info, file: file, function: function, line: line)
+        self.log(message(), level: .info, file: file, function: function, line: line)
     }
 
     /// Log warning message
@@ -144,7 +144,7 @@ public enum DebugLogger {
         function: String = #function,
         line: Int = #line
     ) {
-        log(message(), level: .warning, file: file, function: function, line: line)
+        self.log(message(), level: .warning, file: file, function: function, line: line)
     }
 
     /// Log error message
@@ -154,7 +154,7 @@ public enum DebugLogger {
         function: String = #function,
         line: Int = #line
     ) {
-        log(message(), level: .error, file: file, function: function, line: line)
+        self.log(message(), level: .error, file: file, function: function, line: line)
     }
 
     /// Log performance metrics
@@ -167,7 +167,7 @@ public enum DebugLogger {
     ) {
         let formattedDuration = String(format: "%.4f", duration)
         let message = "Performance: \(operation) took \(formattedDuration) seconds"
-        log(message, level: .debug, file: file, function: function, line: line)
+        self.log(message, level: .debug, file: file, function: function, line: line)
     }
 
     /// Log dependency graph information
@@ -177,6 +177,6 @@ public enum DebugLogger {
         function: String = #function,
         line: Int = #line
     ) {
-        log("[GRAPH] \(message())", level: .debug, file: file, function: function, line: line)
+        self.log("[GRAPH] \(message())", level: .debug, file: file, function: function, line: line)
     }
 }

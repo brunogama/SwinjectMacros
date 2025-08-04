@@ -43,12 +43,12 @@ public struct NamedServiceConfiguration {
 
     /// All names including aliases
     public var allNames: [String] {
-        names + aliases
+        self.names + self.aliases
     }
 
     /// Primary name (first in names array)
     public var primaryName: String {
-        names.first ?? ""
+        self.names.first ?? ""
     }
 }
 
@@ -78,13 +78,13 @@ public final class NamedServiceRegistry {
             return
         }
 
-        lock.lock()
+        self.lock.lock()
         defer { lock.unlock() }
 
-        if registrations[typeName] == nil {
-            registrations[typeName] = []
+        if self.registrations[typeName] == nil {
+            self.registrations[typeName] = []
         }
-        registrations[typeName]?.append(configuration)
+        self.registrations[typeName]?.append(configuration)
 
         DebugLogger.debug("Registered named service: \(typeName) with names: \(configuration.names)")
     }
@@ -94,10 +94,10 @@ public final class NamedServiceRegistry {
     /// - Parameter typeName: The type name to look up
     /// - Returns: Array of configurations for this type
     public static func getConfigurations(for typeName: String) -> [NamedServiceConfiguration] {
-        lock.lock()
+        self.lock.lock()
         defer { lock.unlock() }
 
-        return registrations[typeName] ?? []
+        return self.registrations[typeName] ?? []
     }
 
     /// Get configuration for a service type (returns first if multiple)
@@ -105,17 +105,17 @@ public final class NamedServiceRegistry {
     /// - Parameter typeName: The type name to look up
     /// - Returns: The first configuration if registered, nil otherwise
     public static func getConfiguration(for typeName: String) -> NamedServiceConfiguration? {
-        getConfigurations(for: typeName).first
+        self.getConfigurations(for: typeName).first
     }
 
     /// Get all registered configurations
     ///
     /// - Returns: Dictionary of type names to configuration arrays
     public static func getAllConfigurations() -> [String: [NamedServiceConfiguration]] {
-        lock.lock()
+        self.lock.lock()
         defer { lock.unlock() }
 
-        return registrations
+        return self.registrations
     }
 
     /// Find configuration by name
@@ -125,7 +125,7 @@ public final class NamedServiceRegistry {
     ///   - typeName: The type to search in
     /// - Returns: The configuration if found
     public static func findConfiguration(name: String, for typeName: String) -> NamedServiceConfiguration? {
-        let configurations = getConfigurations(for: typeName)
+        let configurations = self.getConfigurations(for: typeName)
         return configurations.first { config in
             config.allNames.contains(name)
         }
@@ -136,7 +136,7 @@ public final class NamedServiceRegistry {
     /// - Parameter typeName: The type name
     /// - Returns: Array of all names (including aliases)
     public static func getAllNames(for typeName: String) -> [String] {
-        let configurations = getConfigurations(for: typeName)
+        let configurations = self.getConfigurations(for: typeName)
         return configurations.flatMap { $0.allNames }
     }
 
@@ -145,10 +145,10 @@ public final class NamedServiceRegistry {
     /// - Parameter name: The name to search for
     /// - Returns: Array of type names that have this name
     public static func findServices(byName name: String) -> [String] {
-        lock.lock()
+        self.lock.lock()
         defer { lock.unlock() }
 
-        return registrations.compactMap { typeName, configs in
+        return self.registrations.compactMap { typeName, configs in
             if configs.contains(where: { $0.names.contains(name) || $0.aliases.contains(name) }) {
                 return typeName
             }
@@ -158,23 +158,23 @@ public final class NamedServiceRegistry {
 
     /// Clear all registered configurations
     public static func clear() {
-        lock.lock()
+        self.lock.lock()
         defer { lock.unlock() }
 
-        registrations.removeAll()
+        self.registrations.removeAll()
     }
 
     /// Get debug information about registered services
     ///
     /// - Returns: String with debug information
     public static func debugDescription() -> String {
-        lock.lock()
+        self.lock.lock()
         defer { lock.unlock() }
 
         var description = "Named Service Registry:\n"
         description += "========================\n"
 
-        for (typeName, configs) in registrations.sorted(by: { $0.key < $1.key }) {
+        for (typeName, configs) in self.registrations.sorted(by: { $0.key < $1.key }) {
             description += "\nType: \(typeName)\n"
             for config in configs {
                 description += "  Names: \(config.names.joined(separator: ", "))\n"
@@ -231,7 +231,7 @@ extension NamedServiceProtocol {
     }
 
     public static func isValidName(_ name: String) -> Bool {
-        serviceNames.contains(name)
+        self.serviceNames.contains(name)
     }
 
     public static func resolve(from container: Container, name: String?) -> Self? {
