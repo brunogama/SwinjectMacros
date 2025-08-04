@@ -67,6 +67,17 @@ public final class NamedServiceRegistry {
     ///   - configuration: The service configuration
     ///   - typeName: The type name to register under
     public static func register(_ configuration: NamedServiceConfiguration, for typeName: String) {
+        // Validation
+        guard !typeName.isEmpty else {
+            DebugLogger.error("Cannot register service with empty type name")
+            return
+        }
+
+        guard !configuration.names.isEmpty else {
+            DebugLogger.error("Cannot register service configuration without any names for type: \(typeName)")
+            return
+        }
+
         lock.lock()
         defer { lock.unlock() }
 
@@ -209,21 +220,21 @@ public protocol NamedServiceProtocol {
 }
 
 /// Extension to provide default implementations
-public extension NamedServiceProtocol {
+extension NamedServiceProtocol {
 
-    static var serviceNames: [String] {
+    public static var serviceNames: [String] {
         [serviceName]
     }
 
-    static var serviceScope: ObjectScope {
+    public static var serviceScope: ObjectScope {
         .graph
     }
 
-    static func isValidName(_ name: String) -> Bool {
+    public static func isValidName(_ name: String) -> Bool {
         serviceNames.contains(name)
     }
 
-    static func resolve(from container: Container, name: String?) -> Self? {
+    public static func resolve(from container: Container, name: String?) -> Self? {
         let nameToUse = name ?? serviceName
         return container.resolve(Self.self, name: nameToUse)
     }
