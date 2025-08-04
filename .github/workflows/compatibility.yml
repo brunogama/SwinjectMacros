@@ -33,26 +33,26 @@ jobs:
           - swift-version: '5.10'
             xcode-version: '15.4'
             os: 'macos-14'
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Setup Xcode version
       run: |
         if [ "${{ matrix.xcode-version }}" == "15.0" ]; then
           sudo xcode-select -s /Applications/Xcode_15.0.app/Contents/Developer
         elif [ "${{ matrix.xcode-version }}" == "15.1" ]; then
-          sudo xcode-select -s /Applications/Xcode_15.1.app/Contents/Developer  
+          sudo xcode-select -s /Applications/Xcode_15.1.app/Contents/Developer
         elif [ "${{ matrix.xcode-version }}" == "15.4" ]; then
           sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
         fi
-        
+
     - name: Verify Swift version
       run: |
         swift --version
         xcodebuild -version
-        
+
     - name: Cache Swift Package Manager
       uses: actions/cache@v4
       with:
@@ -60,55 +60,55 @@ jobs:
         key: ${{ runner.os }}-${{ matrix.swift-version }}-spm-${{ hashFiles('**/Package.resolved') }}
         restore-keys: |
           ${{ runner.os }}-${{ matrix.swift-version }}-spm-
-          
+
     - name: Build with Swift ${{ matrix.swift-version }}
       run: |
         echo "🏗️ Building with Swift ${{ matrix.swift-version }} (Xcode ${{ matrix.xcode-version }})"
         swift build --configuration release
-        
+
     - name: Test with Swift ${{ matrix.swift-version }}
       run: |
         echo "🧪 Testing with Swift ${{ matrix.swift-version }}"
         swift test --parallel
-        
+
     - name: Test macro functionality
       run: |
         echo "🎯 Testing macro functionality with Swift ${{ matrix.swift-version }}"
-        
+
         # Create test file to verify macros work
         cat > compatibility_test.swift << 'EOF'
         import SwinJectMacros
         import Swinject
-        
+
         protocol TestService {
             func test() -> String
         }
-        
+
         @Injectable
         class TestServiceImpl: TestService {
             func test() -> String {
                 return "Swift ${{ matrix.swift-version }} compatible"
             }
         }
-        
+
         class TestClient {
             @LazyInject var service: TestService = TestServiceImpl()
-            
+
             func runTest() -> String {
                 return service.test()
             }
         }
-        
+
         let client = TestClient()
         print("✅ \(client.runTest())")
         EOF
-        
+
         # Compile and run
         swiftc -I .build/release -L .build/release compatibility_test.swift -o compatibility_test || echo "⚠️ Compilation failed"
         if [ -f compatibility_test ]; then
           ./compatibility_test
         fi
-        
+
         rm -f compatibility_test compatibility_test.swift
 
   platform-compatibility:
@@ -126,18 +126,18 @@ jobs:
             name: 'watchOS'
           - destination: 'platform=tvOS Simulator,name=Apple TV'
             name: 'tvOS'
-            
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Select Xcode version
       run: sudo xcode-select -s /Applications/Xcode_15.0.app/Contents/Developer
-      
+
     - name: Build for ${{ matrix.platform.name }}
       run: |
         echo "🏗️ Building for ${{ matrix.platform.name }}"
-        
+
         if [ "${{ matrix.platform.name }}" == "macOS" ]; then
           # For macOS, we can run full tests
           swift build --configuration release
@@ -150,35 +150,35 @@ jobs:
             -configuration Release \
             CODE_SIGNING_ALLOWED=NO
         fi
-        
+
     - name: Validate platform-specific features
       if: matrix.platform.name == 'iOS'
       run: |
         echo "📱 Validating iOS-specific features..."
-        
+
         # Test SwiftUI integration on iOS
         cat > ios_test.swift << 'EOF'
         import SwiftUI
         import SwinJectMacros
-        
+
         struct ContentView: View {
             @EnvironmentInject var userService: UserServiceProtocol
-            
+
             var body: some View {
                 Text("iOS Compatible")
             }
         }
-        
+
         protocol UserServiceProtocol {
             func getUser() -> String
         }
-        
+
         @Injectable
         class UserService: UserServiceProtocol {
             func getUser() -> String { "iOS User" }
         }
         EOF
-        
+
         # Verify compilation for iOS
         xcrun swiftc -target arm64-apple-ios15.0 -I .build/release -typecheck ios_test.swift || echo "⚠️ iOS compilation check failed"
         rm -f ios_test.swift
@@ -197,61 +197,61 @@ jobs:
           - name: 'Xcode Project'
             test-script: |
               xcodebuild -scheme SwinJectMacros -destination "platform=macOS" build test
-              
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Select Xcode version
       run: sudo xcode-select -s /Applications/Xcode_15.0.app/Contents/Developer
-      
+
     - name: Test with ${{ matrix.package-manager.name }}
       run: |
         echo "📦 Testing with ${{ matrix.package-manager.name }}"
         ${{ matrix.package-manager.test-script }}
 
   dependency-compatibility:
-    name: Dependency Version Compatibility  
+    name: Dependency Version Compatibility
     runs-on: macos-14
     strategy:
       fail-fast: false
       matrix:
         swinject-version:
           - '2.8.0'
-          - '2.8.1' 
+          - '2.8.1'
           - '2.8.3'
           - '2.8.4'
-          
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Select Xcode version
       run: sudo xcode-select -s /Applications/Xcode_15.0.app/Contents/Developer
-      
+
     - name: Update Swinject version
       run: |
         echo "🔄 Testing with Swinject ${{ matrix.swinject-version }}"
-        
+
         # Backup original Package.swift
         cp Package.swift Package.swift.backup
-        
+
         # Update Swinject version in Package.swift
         sed -i '' 's/from: "[^"]*"/from: "${{ matrix.swinject-version }}"/' Package.swift
-        
+
         cat Package.swift
-        
+
     - name: Build with Swinject ${{ matrix.swinject-version }}
       run: |
         # Clean to force re-resolution
         rm -rf .build Package.resolved
-        
+
         swift build --configuration release
-        
+
     - name: Test with Swinject ${{ matrix.swinject-version }}
       run: |
         swift test --filter SwinJectMacrosTests
-        
+
     - name: Restore original Package.swift
       if: always()
       run: |
@@ -261,46 +261,46 @@ jobs:
     name: Backward Compatibility Check
     runs-on: macos-14
     if: github.event_name == 'pull_request'
-    
+
     steps:
     - name: Checkout current PR
       uses: actions/checkout@v4
       with:
         path: current
-        
+
     - name: Checkout previous version
       uses: actions/checkout@v4
       with:
         ref: ${{ github.base_ref }}
         path: previous
-        
+
     - name: Select Xcode version
       run: sudo xcode-select -s /Applications/Xcode_15.0.app/Contents/Developer
-      
+
     - name: Analyze API changes
       run: |
         echo "🔍 Analyzing API changes for backward compatibility..."
-        
+
         cd current
-        
+
         # Extract public API signatures from current version
         find Sources -name "*.swift" -exec grep -h "public\|open" {} \; | \
           grep -E "(func|var|let|class|struct|enum|protocol)" | \
           sort > ../current_api.txt
-          
+
         cd ../previous
-        
-        # Extract public API signatures from previous version  
+
+        # Extract public API signatures from previous version
         find Sources -name "*.swift" -exec grep -h "public\|open" {} \; | \
           grep -E "(func|var|let|class|struct|enum|protocol)" | \
           sort > ../previous_api.txt
-          
+
         cd ..
-        
+
         # Compare APIs
         echo "📊 API Changes:"
         echo "=============="
-        
+
         # Find removed APIs (breaking changes)
         REMOVED=$(comm -23 previous_api.txt current_api.txt)
         if [ -n "$REMOVED" ]; then
@@ -309,7 +309,7 @@ jobs:
           echo ""
           echo "::warning::Breaking changes detected in public API"
         fi
-        
+
         # Find added APIs (new features)
         ADDED=$(comm -13 previous_api.txt current_api.txt)
         if [ -n "$ADDED" ]; then
@@ -317,15 +317,15 @@ jobs:
           echo "$ADDED"
           echo ""
         fi
-        
+
         # Summary
         REMOVED_COUNT=$(echo "$REMOVED" | grep -c . || echo "0")
         ADDED_COUNT=$(echo "$ADDED" | grep -c . || echo "0")
-        
+
         echo "📈 API Summary:"
         echo "- Added: $ADDED_COUNT APIs"
         echo "- Removed: $REMOVED_COUNT APIs"
-        
+
         if [ "$REMOVED_COUNT" -gt 0 ]; then
           echo "⚠️ This PR contains breaking changes"
           # Don't fail for now, just warn
@@ -338,66 +338,66 @@ jobs:
     name: Migration Path Validation
     runs-on: macos-14
     if: github.event_name == 'pull_request'
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Select Xcode version
       run: sudo xcode-select -s /Applications/Xcode_15.0.app/Contents/Developer
-      
+
     - name: Test migration scenarios
       run: |
         echo "🔄 Testing common migration scenarios..."
-        
+
         # Test migration from basic DI to macro-enhanced DI
         cat > migration_test.swift << 'EOF'
         import SwinJectMacros
         import Swinject
-        
+
         // Original manual DI approach
         protocol LegacyService {
             func work() -> String
         }
-        
+
         class LegacyServiceImpl: LegacyService {
             func work() -> String { "legacy" }
         }
-        
+
         class LegacyClient {
             private let service: LegacyService
-            
+
             init(service: LegacyService) {
                 self.service = service
             }
-            
+
             func doWork() -> String {
                 return service.work()
             }
         }
-        
+
         // New macro-enhanced approach
         @Injectable
         class ModernServiceImpl: LegacyService {
             func work() -> String { "modern" }
         }
-        
+
         class ModernClient {
             @LazyInject var service: LegacyService = ModernServiceImpl()
-            
+
             func doWork() -> String {
                 return service.work()
             }
         }
-        
+
         // Test both approaches work
         let legacyClient = LegacyClient(service: LegacyServiceImpl())
         let modernClient = ModernClient()
-        
+
         print("Legacy: \(legacyClient.doWork())")
         print("Modern: \(modernClient.doWork())")
         EOF
-        
+
         # Verify compilation and execution
         swiftc -I .build/release -L .build/release migration_test.swift -o migration_test || echo "⚠️ Migration test compilation failed"
         if [ -f migration_test ]; then
@@ -406,7 +406,7 @@ jobs:
         else
           echo "❌ Migration test failed"
         fi
-        
+
         rm -f migration_test migration_test.swift
 
   create-compatibility-report:
@@ -414,67 +414,67 @@ jobs:
     runs-on: ubuntu-latest
     needs: [swift-version-matrix, platform-compatibility, package-manager-compatibility, dependency-compatibility]
     if: always()
-    
+
     steps:
     - name: Generate compatibility report
       run: |
         cat > compatibility-report.md << 'EOF'
         # Compatibility Report
-        
+
         Generated on: $(date -u)
         Repository: ${{ github.repository }}
         Commit: ${{ github.sha }}
-        
+
         ## Summary
-        
+
         | Test Category | Status |
         |---------------|--------|
         | Swift Version Matrix | ${{ needs.swift-version-matrix.result }} |
         | Platform Compatibility | ${{ needs.platform-compatibility.result }} |
         | Package Manager Compatibility | ${{ needs.package-manager-compatibility.result }} |
         | Dependency Compatibility | ${{ needs.dependency-compatibility.result }} |
-        
+
         ## Supported Configurations
-        
+
         ### Swift Versions
         - ✅ Swift 5.9 (Xcode 15.0+)
         - ✅ Swift 5.10 (Xcode 15.4+)
-        
+
         ### Platforms
         - ✅ macOS 12.0+
         - ✅ iOS 15.0+
         - ✅ watchOS 8.0+
         - ✅ tvOS 15.0+
-        
+
         ### Package Managers
         - ✅ Swift Package Manager
         - ✅ Xcode Projects
-        
+
         ### Dependencies
         - ✅ Swinject 2.8.0+
         - ✅ SwiftSyntax (automatic via Swift 5.9+)
-        
+
         ## Compatibility Notes
-        
+
         1. **Macro Requirements**: Swift 5.9+ required for macro support
         2. **Platform Features**: SwiftUI integration requires iOS 15.0+/macOS 12.0+
         3. **Thread Safety**: All platforms support thread-safe dependency injection
         4. **Performance**: Optimized for all supported platforms
-        
+
         ## Breaking Changes
-        
+
         No breaking changes detected in this release.
-        
+
         ## Migration Guide
-        
+
         For upgrading from previous versions:
         1. Update to Swift 5.9+
         2. Update Swinject to 2.8.0+
         3. Replace manual DI code with macro annotations
         4. Update imports to include SwinJectMacros
-        
+
         EOF
-        
+
     - name: Upload compatibility report
       uses: actions/upload-artifact@v4
       with:

@@ -120,7 +120,10 @@ public struct NamedMacro: MemberMacro {
                 protocolType: \(raw: arguments.protocolType != nil ? "\"\(arguments.protocolType!)\"" : "nil"),
                 scope: serviceScope,
                 isDefault: \(raw: arguments.isDefault),
-                aliases: \(raw: arguments.aliases.isEmpty ? "[]" : "[\(arguments.aliases.map { "\"\($0)\"" }.joined(separator: ", "))]"),
+                aliases: \(
+                    raw: arguments.aliases
+                        .isEmpty ? "[]" : "[\(arguments.aliases.map { "\"\($0)\"" }.joined(separator: ", "))]"
+        ),
                 priority: \(raw: arguments.priority)
             )
 
@@ -271,13 +274,13 @@ public struct NamedMacro: MemberMacro {
     private static func scopeToSwiftCode(_ scope: String) -> String {
         switch scope {
         case "container":
-            return ".container"
+            ".container"
         case "transient":
-            return ".transient"
+            ".transient"
         case "weak":
-            return ".weak"
+            ".weak"
         default:
-            return ".graph"
+            ".graph"
         }
     }
 

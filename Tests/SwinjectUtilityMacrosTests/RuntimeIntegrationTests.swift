@@ -75,16 +75,16 @@ class FactoryService {
     }
 }
 
-@AutoFactory(async: true)
+@AutoFactory
 class AsyncFactoryService {
     let dependency: TestDependency
     let data: String
 
-    init(dependency: TestDependency, data: String) async {
+    init(dependency: TestDependency, data: String) {
         self.dependency = dependency
         self.data = data
-        // Simulate async work
-        try? await Task.sleep(nanoseconds: 1_000_000) // 1ms
+        // Simulate work
+        Thread.sleep(forTimeInterval: 0.001) // 1ms
     }
 }
 
@@ -164,7 +164,7 @@ class ServiceWithManyDependencies {
 
     init() {
         // In real scenario, this would be injected
-        self.dependencies = []
+        dependencies = []
     }
 }
 
@@ -262,7 +262,7 @@ final class RuntimeIntegrationTests: XCTestCase {
 
         // Register factory
         container.register(FactoryServiceFactory.self) { resolver in
-            FactoryServiceFactoryImpl(resolver: resolver)
+            FactoryServiceFactoryImpl(container: self.container)
         }
 
         // Test factory usage
@@ -279,13 +279,13 @@ final class RuntimeIntegrationTests: XCTestCase {
     func testAutoFactoryWithAsyncInitialization() async {
         container.register(TestDependency.self) { _ in TestDependency() }
         container.register(AsyncFactoryServiceFactory.self) { resolver in
-            AsyncFactoryServiceFactoryImpl(resolver: resolver)
+            AsyncFactoryServiceFactoryImpl(container: self.container)
         }
 
         let factory = container.resolve(AsyncFactoryServiceFactory.self)
         XCTAssertNotNil(factory)
 
-        let service = try? await factory?.makeAsyncFactoryService(data: "async test")
+        let service = factory?.makeAsyncFactoryService(data: "async test")
         XCTAssertNotNil(service)
         XCTAssertEqual(service?.data, "async test")
     }
@@ -355,7 +355,7 @@ final class RuntimeIntegrationTests: XCTestCase {
         // Test performance with many services
         let serviceCount = 100
 
-        for i in 0 ..< serviceCount {
+        for i in 0..<serviceCount {
             container.register(TestDependency.self, name: "dep\(i)") { _ in
                 TestDependency()
             }
@@ -365,7 +365,7 @@ final class RuntimeIntegrationTests: XCTestCase {
 
         let startTime = CFAbsoluteTimeGetCurrent()
 
-        for _ in 0 ..< 100 {
+        for _ in 0..<100 {
             let service = container.resolve(ServiceWithManyDependencies.self)
             XCTAssertNotNil(service)
         }

@@ -11,10 +11,16 @@ final class StressTests: XCTestCase {
     // MARK: - Concurrent Access Stress Tests
 
     func testMassiveConcurrentLazyInjection() {
+        // Register dependencies for this test
+        Container.shared.removeAll()
+        Container.shared.register(PerfMockRepositoryProtocol.self) { _ in FastMockRepository() }
+        Container.shared.register(APIClientProtocol.self) { _ in MockAPIClient() }
+        Container.shared.register(PerfMockCacheProtocol.self) { _ in FastMockCache() }
+
         class ConcurrentTestService {
-            @LazyInject var repository: MockRepository = FastMockRepository()
-            @LazyInject var apiClient: MockAPIClient = FastMockAPIClient()
-            @LazyInject var cache: MockCache = FastMockCache()
+            @LazyInject var repository: PerfMockRepositoryProtocol
+            @LazyInject var apiClient: APIClientProtocol
+            @LazyInject var cache: PerfMockCacheProtocol
 
             init() {}
 
@@ -27,16 +33,16 @@ final class StressTests: XCTestCase {
         let iterationCount = 10000
         let concurrentQueues = 20
 
-        let expectation = self.expectation(description: "Concurrent lazy injection")
+        let expectation = expectation(description: "Concurrent lazy injection")
         expectation.expectedFulfillmentCount = concurrentQueues
 
         var results: [String] = []
         let resultsQueue = DispatchQueue(label: "results", attributes: .concurrent)
 
         // Launch multiple concurrent queues
-        for queueIndex in 0 ..< concurrentQueues {
+        for queueIndex in 0..<concurrentQueues {
             DispatchQueue.global(qos: .userInitiated).async {
-                for _ in 0 ..< iterationCount {
+                for _ in 0..<iterationCount {
                     let result = service.performWork()
                     resultsQueue.async(flags: .barrier) {
                         results.append(result)
@@ -76,7 +82,7 @@ final class StressTests: XCTestCase {
         var delegates: [MockDelegate] = []
 
         // Create many services with weak references
-        for _ in 0 ..< 1000 {
+        for _ in 0..<1000 {
             let service = WeakReferenceService()
             let delegate = FastMockDelegate()
 
@@ -96,10 +102,10 @@ final class StressTests: XCTestCase {
         delegates.removeAll()
 
         // Force garbage collection
-        for _ in 0 ..< 3 {
+        for _ in 0..<3 {
             autoreleasepool {
                 // Create temporary objects to trigger cleanup
-                _ = Array(0 ..< 1000).map { _ in NSObject() }
+                _ = Array(0..<1000).map { _ in NSObject() }
             }
         }
 
@@ -123,7 +129,7 @@ final class StressTests: XCTestCase {
             func unreliableNetworkCall() throws -> String {
                 callCount += 1
 
-                if Double.random(in: 0 ... 1) < failureRate {
+                if Double.random(in: 0...1) < failureRate {
                     throw NetworkError.timeout
                 }
 
@@ -137,7 +143,7 @@ final class StressTests: XCTestCase {
         var circuitOpenCount = 0
         var failureCount = 0
 
-        for _ in 0 ..< totalCalls {
+        for _ in 0..<totalCalls {
             do {
                 _ = try service.unreliableNetworkCallCircuitBreaker()
                 successCount += 1
@@ -148,11 +154,17 @@ final class StressTests: XCTestCase {
             }
         }
 
-        print("Circuit Breaker Results: Success: \(successCount), Circuit Open: \(circuitOpenCount), Failures: \(failureCount)")
+        print(
+            "Circuit Breaker Results: Success: \(successCount), Circuit Open: \(circuitOpenCount), Failures: \(failureCount)"
+        )
 
         // Circuit breaker should prevent many failures by opening the circuit
         XCTAssertGreaterThan(circuitOpenCount, 0, "Circuit should open under failure storm")
-        XCTAssertLessThan(failureCount, Int(Double(totalCalls) * 0.2), "Circuit breaker should prevent excessive failures")
+        XCTAssertLessThan(
+            failureCount,
+            Int(Double(totalCalls) * 0.2),
+            "Circuit breaker should prevent excessive failures"
+        )
     }
 
     // MARK: - Cache Stress Tests
@@ -174,7 +186,7 @@ final class StressTests: XCTestCase {
         let concurrentAccesses = 1000
         let uniqueInputs = 50 // Many accesses to few unique inputs
 
-        let expectation = self.expectation(description: "Cache stress test")
+        let expectation = expectation(description: "Cache stress test")
         var results: [String] = []
         let resultsQueue = DispatchQueue(label: "results")
 
@@ -224,7 +236,7 @@ final class StressTests: XCTestCase {
         var successCount = 0
         var finalFailureCount = 0
 
-        for _ in 0 ..< operationCount {
+        for _ in 0..<operationCount {
             do {
                 _ = try service.intermittentFailureOperationRetry()
                 successCount += 1
@@ -236,26 +248,30 @@ final class StressTests: XCTestCase {
         print("Retry Results: Successes: \(successCount), Final Failures: \(finalFailureCount)")
 
         // Most operations should eventually succeed due to retry mechanism
-        XCTAssertGreaterThan(successCount, Int(Double(operationCount) * 0.8), "Retry should enable most operations to succeed")
+        XCTAssertGreaterThan(
+            successCount,
+            Int(Double(operationCount) * 0.8),
+            "Retry should enable most operations to succeed"
+        )
     }
 
     // MARK: - Memory Leak Detection Tests
 
     func testMemoryLeakDetection() {
         autoreleasepool {
-            let initialMemory = getCurrentMemoryUsage()
+            let initialMemory = self.getCurrentMemoryUsage()
 
             // Create and destroy many service instances
-            for _ in 0 ..< 1000 {
+            for _ in 0..<1000 {
                 autoreleasepool {
                     class LeakTestService {
-                        @LazyInject var repository: MockRepository = FastMockRepository()
+                        @LazyInject var repository: PerfMockRepositoryProtocol
                         @WeakInject var delegate: MockDelegate? = nil
 
                         init() {}
 
                         func doWork() -> String {
-                            repository.getData() + (delegate?.performAction().description ?? "nil")
+                            self.repository.getData() + (self.delegate?.performAction().description ?? "nil")
                         }
                     }
 
@@ -266,7 +282,7 @@ final class StressTests: XCTestCase {
                 }
             }
 
-            let finalMemory = getCurrentMemoryUsage()
+            let finalMemory = self.getCurrentMemoryUsage()
             let memoryIncrease = finalMemory - initialMemory
 
             // Memory increase should be minimal (allowing for some overhead)
@@ -277,15 +293,19 @@ final class StressTests: XCTestCase {
     // MARK: - Resource Exhaustion Tests
 
     func testResourceExhaustionHandling() {
+        // Register dependencies for this test
+        Container.shared.register(MockExpensiveResource.self) { _ in MockExpensiveResource() }
+
         class ResourceIntensiveService {
-            @LazyInject var resource1: MockExpensiveResource = FastMockExpensiveResource()
-            @LazyInject var resource2: MockExpensiveResource = FastMockExpensiveResource()
-            @LazyInject var resource3: MockExpensiveResource = FastMockExpensiveResource()
+            @LazyInject var resource1: MockExpensiveResource
+            @LazyInject var resource2: MockExpensiveResource
+            @LazyInject var resource3: MockExpensiveResource
 
             init() {}
 
             func consumeResources() -> String {
-                resource1.heavyComputation() + resource2.heavyComputation() + resource3.heavyComputation()
+                resource1.heavyComputation() + resource2.heavyComputation() + resource3
+                    .heavyComputation()
             }
         }
 
@@ -294,7 +314,7 @@ final class StressTests: XCTestCase {
         let serviceCount = 1000
 
         let creationTime = measureExecutionTime {
-            for _ in 0 ..< serviceCount {
+            for _ in 0..<serviceCount {
                 let service = ResourceIntensiveService()
                 services.append(service)
             }
@@ -327,7 +347,7 @@ final class StressTests: XCTestCase {
                     isHealthy = true
                 }
 
-                if !isHealthy && Double.random(in: 0 ... 1) < 0.8 {
+                if !isHealthy && Double.random(in: 0...1) < 0.8 {
                     throw ServiceError.serviceUnavailable
                 }
 
@@ -339,7 +359,7 @@ final class StressTests: XCTestCase {
         var results: [Result<String, Error>] = []
 
         // Simulate continuous operations during service recovery
-        for _ in 0 ..< 100 {
+        for _ in 0..<100 {
             do {
                 let result = try service.recoveryOperationRetry()
                 results.append(.success(result))

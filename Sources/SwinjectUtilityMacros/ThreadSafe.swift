@@ -16,18 +16,18 @@ import Swinject
 /// @ThreadSafe
 /// class SharedCacheService {
 ///     private var cache: [String: Any] = [:]
-///     
+///
 ///     init(storage: StorageProtocol) {
 ///         // Thread-safe initialization
 ///     }
-///     
+///
 ///     func get(_ key: String) -> Any? {
 ///         // Generated thread-safe access
 ///         return executeWithThreadSafety {
 ///             return cache[key]
 ///         }
 ///     }
-///     
+///
 ///     func set(_ key: String, value: Any) {
 ///         executeWithThreadSafety {
 ///             cache[key] = value
@@ -60,7 +60,7 @@ import Swinject
 ///     init(notificationCenter: NotificationCenter) {
 ///         // Must be created and accessed on main thread
 ///     }
-///     
+///
 ///     func updateUI() {
 ///         // Automatically validated to run on main thread
 ///     }
@@ -129,25 +129,25 @@ public macro ThreadSafe(
 
 /// Thread synchronization type for dependency injection
 public enum ThreadSafetySynchronizationType {
-    case synchronized    // Exclusive access using locks
-    case concurrent     // Concurrent reads, exclusive writes
-    case serial         // Serial access using queues
-    case actor          // Swift actor-based isolation (iOS 15+)
+    case synchronized // Exclusive access using locks
+    case concurrent // Concurrent reads, exclusive writes
+    case serial // Serial access using queues
+    case actor // Swift actor-based isolation (iOS 15+)
 }
 
 /// Lock mechanism for thread synchronization
 public enum ThreadSafetyLockType {
-    case nsLock         // Basic NSLock
-    case recursive      // NSRecursiveLock for reentrant operations
-    case readerWriter   // Reader-writer lock for concurrent reads
-    case semaphore      // DispatchSemaphore for resource limiting
+    case nsLock // Basic NSLock
+    case recursive // NSRecursiveLock for reentrant operations
+    case readerWriter // Reader-writer lock for concurrent reads
+    case semaphore // DispatchSemaphore for resource limiting
 }
 
 /// Thread safety isolation level
 public enum ThreadSafetyIsolationType {
-    case instance       // Per-instance synchronization
-    case type           // Per-type synchronization
-    case global         // Global synchronization
+    case instance // Per-instance synchronization
+    case type // Per-type synchronization
+    case global // Global synchronization
 }
 
 /// Thread safety configuration
@@ -158,7 +158,7 @@ public struct ThreadSafetyConfiguration {
     public let requiresMainThread: Bool
     public let enableDeadlockDetection: Bool
     public let timeoutInterval: TimeInterval
-    
+
     public init(
         synchronizationType: ThreadSafetySynchronizationType = .synchronized,
         lockType: ThreadSafetyLockType = .nsLock,
@@ -182,17 +182,17 @@ public enum ThreadSafetyError: Error, LocalizedError {
     case deadlock(String)
     case mainThreadRequired(String)
     case lockContention(String)
-    
+
     public var errorDescription: String? {
         switch self {
         case .timeout(let message):
-            return "Thread safety timeout: \(message)"
+            "Thread safety timeout: \(message)"
         case .deadlock(let message):
-            return "Deadlock detected: \(message)"
+            "Deadlock detected: \(message)"
         case .mainThreadRequired(let message):
-            return "Main thread required: \(message)"
+            "Main thread required: \(message)"
         case .lockContention(let message):
-            return "Lock contention: \(message)"
+            "Lock contention: \(message)"
         }
     }
 }
@@ -203,7 +203,7 @@ public struct ThreadSafetyMetrics {
     public let lockHoldTime: TimeInterval
     public let contentionCount: Int
     public let deadlockAttempts: Int
-    
+
     public init(
         lockWaitTime: TimeInterval = 0,
         lockHoldTime: TimeInterval = 0,
@@ -219,10 +219,10 @@ public struct ThreadSafetyMetrics {
 
 // MARK: - Container Extensions for Thread Safety
 
-public extension Container {
-    
+extension Container {
+
     /// Register a service with thread safety guarantees
-    func registerThreadSafe<Service>(
+    public func registerThreadSafe<Service>(
         _ serviceType: Service.Type,
         configuration: ThreadSafetyConfiguration = ThreadSafetyConfiguration(),
         factory: @escaping (Resolver) -> Service
@@ -234,20 +234,20 @@ public extension Container {
             }
             return factory(resolver)
         }
-        
+
         let registration = register(serviceType, factory: safeFactory)
         registration.inObjectScope(.container) // Ensure thread-safe scope
     }
-    
+
     /// Resolve a service with thread safety validation
-    func resolveThreadSafe<Service>(_ serviceType: Service.Type) -> Service? {
+    public func resolveThreadSafe<Service>(_ serviceType: Service.Type) -> Service? {
         // Implement thread-safe resolution
-        return resolve(serviceType)
+        resolve(serviceType)
     }
-    
+
     /// Get thread safety metrics for monitoring
-    func getThreadSafetyMetrics() -> ThreadSafetyMetrics {
+    public func getThreadSafetyMetrics() -> ThreadSafetyMetrics {
         // Return thread safety performance metrics
-        return ThreadSafetyMetrics()
+        ThreadSafetyMetrics()
     }
 }

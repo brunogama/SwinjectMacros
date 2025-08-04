@@ -1,48 +1,48 @@
 // RetryMacro.swift - @Retry macro implementation
 // Copyright © 2025 SwinjectUtilityMacros. All rights reserved.
 
+import Foundation
+import SwiftDiagnostics
 import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
-import SwiftDiagnostics
-import Foundation
 
 /// Implementation of the @Retry macro for automatic retry logic with backoff strategies.
 public struct RetryMacro: PeerMacro {
-    
+
     // MARK: - PeerMacro Implementation
-    
+
     public static func expansion(
         of node: AttributeSyntax,
         providingPeersOf declaration: some DeclSyntaxProtocol,
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
-        
+
         // Validate that this is applied to a function
         guard let functionDecl = declaration.as(FunctionDeclSyntax.self) else {
             let diagnostic = Diagnostic(
                 node: declaration.root,
                 message: RetryMacroError(message: """
                 @Retry can only be applied to functions and methods.
-                
+
                 ✅ Correct usage:
                 @Retry(maxAttempts: 3, backoffStrategy: .exponential)
                 func fetchUserData() throws -> UserData {
                     // Network operation that might fail
                 }
-                
+
                 @Retry(maxAttempts: 5, jitter: true)
                 func syncDatabase() async throws {
                     // Async operation with retry logic
                 }
-                
+
                 ❌ Invalid usage:
                 @Retry
                 var retryCount: Int = 0 // Properties not supported
-                
+
                 @Retry
                 struct Configuration { ... } // Types not supported
-                
+
                 💡 Tips:
                 - Use on throwing functions for error handling
                 - Combine with async for non-blocking retries
@@ -52,13 +52,13 @@ public struct RetryMacro: PeerMacro {
             context.diagnose(diagnostic)
             return []
         }
-        
+
         // Parse macro configuration
         let config = try parseRetryConfig(from: node)
-        
+
         // Extract function information
         let functionInfo = extractFunctionInfo(from: functionDecl)
-        
+
         // Generate retry-enabled version of the function
         let retryFunction = try generateRetryFunction(
             original: functionDecl,
@@ -66,12 +66,12 @@ public struct RetryMacro: PeerMacro {
             config: config,
             context: context
         )
-        
+
         return [retryFunction]
     }
-    
+
     // MARK: - Configuration Parsing
-    
+
     private static func parseRetryConfig(from node: AttributeSyntax) throws -> RetryConfig {
         var maxAttempts = 3
         var backoffStrategy = "exponential"
@@ -83,7 +83,7 @@ public struct RetryMacro: PeerMacro {
         var maxDelay = 60.0
         var timeout: Double? = nil
         let retryableErrors: [String] = []
-        
+
         // Parse attribute arguments
         if let arguments = node.arguments?.as(LabeledExprListSyntax.self) {
             for argument in arguments {
@@ -118,7 +118,7 @@ public struct RetryMacro: PeerMacro {
                 }
             }
         }
-        
+
         return RetryConfig(
             maxAttempts: maxAttempts,
             backoffStrategy: backoffStrategy,
@@ -132,20 +132,20 @@ public struct RetryMacro: PeerMacro {
             retryableErrors: retryableErrors
         )
     }
-    
+
     // MARK: - Function Information Extraction
-    
+
     private static func extractFunctionInfo(from functionDecl: FunctionDeclSyntax) -> RetryFunctionInfo {
         let functionName = functionDecl.name.text
         let isAsync = functionDecl.signature.effectSpecifiers?.asyncSpecifier != nil
         let canThrow = functionDecl.signature.effectSpecifiers?.throwsSpecifier != nil
         let returnType = functionDecl.signature.returnClause?.type.trimmedDescription ?? "Void"
-        
+
         // Extract parameters
         let parameters = functionDecl.signature.parameterClause.parameters.map { param in
             let externalName = param.firstName.text
             let internalName = param.secondName?.text ?? param.firstName.text
-            
+
             return RetryParameterInfo(
                 externalName: externalName,
                 internalName: internalName,
@@ -154,7 +154,7 @@ public struct RetryMacro: PeerMacro {
                 defaultValue: param.defaultValue?.value.trimmedDescription
             )
         }
-        
+
         return RetryFunctionInfo(
             name: functionName,
             parameters: parameters,
@@ -165,7 +165,7 @@ public struct RetryMacro: PeerMacro {
             accessLevel: extractAccessLevel(from: functionDecl.modifiers)
         )
     }
-    
+
     private static func extractAccessLevel(from modifiers: DeclModifierListSyntax) -> String {
         for modifier in modifiers {
             switch modifier.name.text {
@@ -178,19 +178,19 @@ public struct RetryMacro: PeerMacro {
         }
         return "internal" // Default access level
     }
-    
+
     // MARK: - Code Generation
-    
+
     private static func generateRetryFunction(
         original: FunctionDeclSyntax,
         functionInfo: RetryFunctionInfo,
         config: RetryConfig,
         context: some MacroExpansionContext
     ) throws -> DeclSyntax {
-        
+
         let originalName = functionInfo.name
         let retryName = "\(originalName)Retry"
-        
+
         // Generate parameter list for function signature
         let parameterList = functionInfo.parameters.map { param in
             let fullParam = param.fullSignatureParameter
@@ -201,30 +201,30 @@ public struct RetryMacro: PeerMacro {
                 return "\(fullParam): \(paramType)"
             }
         }.joined(separator: ", ")
-        
+
         // Generate parameter names for original function call
         let parameterNames = functionInfo.parameters.map { param in
             param.callParameter
         }.joined(separator: ", ")
-        
+
         // Build function signature
         var functionSignature = "public"
         if functionInfo.isStatic {
             functionSignature += " static"
         }
         functionSignature += " func \(retryName)(\(parameterList))"
-        
+
         if functionInfo.isAsync {
             functionSignature += " async"
         }
-        
+
         // Always make retry functions throwing since they handle errors
         functionSignature += " throws"
-        
+
         if functionInfo.returnType != "Void" {
             functionSignature += " -> \(functionInfo.returnType)"
         }
-        
+
         // Generate the retry function body
         let functionBody = try createRetryFunctionBody(
             signature: functionSignature,
@@ -233,12 +233,12 @@ public struct RetryMacro: PeerMacro {
             config: config,
             functionInfo: functionInfo
         )
-        
+
         return DeclSyntax.fromString(functionBody)
     }
-    
+
     // MARK: - Helper Methods
-    
+
     private static func createRetryFunctionBody(
         signature: String,
         originalName: String,
@@ -246,10 +246,10 @@ public struct RetryMacro: PeerMacro {
         config: RetryConfig,
         functionInfo: RetryFunctionInfo
     ) throws -> String {
-        
+
         // Generate backoff calculation based on strategy
         let backoffCalculation = generateBackoffCalculation(for: config)
-        
+
         // Generate timeout setup if specified
         let timeoutSetup = if let timeout = config.timeout {
             """
@@ -259,7 +259,7 @@ public struct RetryMacro: PeerMacro {
         } else {
             ""
         }
-        
+
         // Generate timeout check
         let timeoutCheck = if config.timeout != nil {
             """
@@ -271,21 +271,21 @@ public struct RetryMacro: PeerMacro {
         } else {
             ""
         }
-        
+
         // Generate return statement
         let returnStatement = if functionInfo.returnType != "Void" {
             "return result"
         } else {
             ""
         }
-        
+
         // Generate method call
         let methodCall = if functionInfo.canThrow {
             "try \(functionInfo.isAsync ? "await " : "")\(originalName)(\(parameterNames))"
         } else {
             "\(functionInfo.isAsync ? "await " : "")\(originalName)(\(parameterNames))"
         }
-        
+
         // Generate the complete retry function body
         return """
         \(signature) {
@@ -293,13 +293,13 @@ public struct RetryMacro: PeerMacro {
             var lastError: Error?
             var totalDelay: TimeInterval = 0.0
             \(timeoutSetup)
-            
+
             for attempt in 1...\(config.maxAttempts) {
                 \(timeoutCheck)
-                
+
                 do {
                     let result = \(methodCall)
-                    
+
                     // Record successful call
                     RetryMetricsManager.recordResult(
                         for: methodKey,
@@ -307,11 +307,11 @@ public struct RetryMacro: PeerMacro {
                         attemptCount: attempt,
                         totalDelay: totalDelay
                     )
-                    
+
                     \(returnStatement)
                 } catch {
                     lastError = error
-                    
+
                     // Check if this is the last attempt
                     if attempt == \(config.maxAttempts) {
                         // Record final failure
@@ -324,13 +324,13 @@ public struct RetryMacro: PeerMacro {
                         )
                         throw error
                     }
-                    
+
                     // Calculate backoff delay
                     \(backoffCalculation)
-                    
+
                     // Add to total delay tracking
                     totalDelay += delay
-                    
+
                     // Record retry attempt
                     let retryAttempt = RetryAttempt(
                         attemptNumber: attempt,
@@ -338,20 +338,24 @@ public struct RetryMacro: PeerMacro {
                         delay: delay
                     )
                     RetryMetricsManager.recordAttempt(retryAttempt, for: methodKey)
-                    
+
                     // Wait before retry
                     if delay > 0 {
-                        \(functionInfo.isAsync ? "try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))" : "Thread.sleep(forTimeInterval: delay)")
+                        \(
+                            functionInfo
+                                .isAsync ? "try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))" :
+                                "Thread.sleep(forTimeInterval: delay)"
+        )
                     }
                 }
             }
-            
+
             // This should never be reached, but just in case
             throw lastError ?? RetryError.maxAttemptsExceeded(attempts: \(config.maxAttempts))
         }
         """
     }
-    
+
     private static func generateBackoffCalculation(for config: RetryConfig) -> String {
         let baseCalculation = switch config.backoffStrategy {
         case "exponential":
@@ -363,9 +367,9 @@ public struct RetryMacro: PeerMacro {
         default:
             "let baseDelay = \(config.baseDelay) * pow(\(config.multiplier), Double(attempt - 1))"
         }
-        
+
         let maxDelayCheck = "let cappedDelay = min(baseDelay, \(config.maxDelay))"
-        
+
         let jitterApplication = if config.jitter {
             """
             let jitterRange = cappedDelay * 0.25
@@ -375,7 +379,7 @@ public struct RetryMacro: PeerMacro {
         } else {
             "let delay = cappedDelay"
         }
-        
+
         return """
         \(baseCalculation)
         \(maxDelayCheck)
@@ -410,27 +414,27 @@ private struct RetryFunctionInfo {
 }
 
 private struct RetryParameterInfo {
-    let externalName: String  // The external parameter name (e.g., "from")
-    let internalName: String  // The internal parameter name (e.g., "url")
+    let externalName: String // The external parameter name (e.g., "from")
+    let internalName: String // The internal parameter name (e.g., "url")
     let type: String
     let isOptional: Bool
     let defaultValue: String?
-    
+
     // Helper to get the full parameter for function signature
     var fullSignatureParameter: String {
         if externalName == internalName || externalName == "_" {
-            return internalName
+            internalName
         } else {
-            return "\(externalName) \(internalName)"
+            "\(externalName) \(internalName)"
         }
     }
-    
+
     // Helper to get the parameter for calling the original function
     var callParameter: String {
         if externalName == "_" {
-            return internalName
+            internalName
         } else {
-            return "\(externalName): \(internalName)"
+            "\(externalName): \(internalName)"
         }
     }
 }

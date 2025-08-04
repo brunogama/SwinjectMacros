@@ -5,7 +5,8 @@ import Swinject
 
 // MARK: - @Named Macro
 
-/// Enables named service registration for scenarios where multiple implementations of the same protocol need to be distinguished.
+/// Enables named service registration for scenarios where multiple implementations of the same protocol need to be
+/// distinguished.
 ///
 /// This macro allows you to register multiple implementations of the same service type under different names,
 /// enabling flexible service selection and implementation strategies.
@@ -144,10 +145,10 @@ public enum NamedResolutionStrategy {
 
 // MARK: - Container Extensions for Named Services
 
-public extension Container {
+extension Container {
 
     /// Register a service with multiple names
-    func registerNamed<Service>(
+    public func registerNamed<Service>(
         _ serviceType: Service.Type,
         configuration: NamedServiceConfiguration,
         factory: @escaping (Resolver) -> Service
@@ -175,7 +176,7 @@ public extension Container {
     }
 
     /// Resolve service by name with fallback strategy
-    func resolveNamed<Service>(
+    public func resolveNamed<Service>(
         _ serviceType: Service.Type,
         name: String,
         strategy: NamedResolutionStrategy = .exact
@@ -222,13 +223,13 @@ public extension Container {
     }
 
     /// Get all registered names for a service type
-    func getRegisteredNames<Service>(for serviceType: Service.Type) -> [String] {
+    public func getRegisteredNames(for serviceType: (some Any).Type) -> [String] {
         let typeName = String(describing: serviceType)
         return NamedServiceRegistry.getAllNames(for: typeName)
     }
 
     /// Check if a named service is available
-    func isNamedServiceAvailable<Service>(_ serviceType: Service.Type, name: String) -> Bool {
+    public func isNamedServiceAvailable(_ serviceType: (some Any).Type, name: String) -> Bool {
         resolve(serviceType, name: name) != nil
     }
 }

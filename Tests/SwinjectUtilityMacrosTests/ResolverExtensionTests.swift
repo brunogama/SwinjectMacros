@@ -150,7 +150,7 @@ final class ResolverExtensionTests: XCTestCase {
 
             func getCount() -> Int {
                 queue.sync {
-                    count
+                    self.count
                 }
             }
         }
@@ -162,7 +162,7 @@ final class ResolverExtensionTests: XCTestCase {
         expectation.expectedFulfillmentCount = 100
 
         // When - Access from multiple threads simultaneously
-        for _ in 0 ..< 100 {
+        for _ in 0..<100 {
             DispatchQueue.global().async {
                 let service = synchronizedResolver.synchronizedResolve(CounterService.self)
                 XCTAssertNotNil(service, "Should resolve service from any thread")

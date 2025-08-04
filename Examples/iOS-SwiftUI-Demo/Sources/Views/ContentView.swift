@@ -2,37 +2,37 @@
 // Copyright © 2025 SwinJectMacros Demo. All rights reserved.
 
 import SwiftUI
-import SwinjectUtilityMacros
 import Swinject
+import SwinjectUtilityMacros
 
 struct ContentView: View {
-    
+
     // MARK: - Injected Dependencies
-    
+
     /// Content view model injected using @InjectedStateObject macro
     @InjectedStateObject var viewModel: ContentViewModelProtocol
-    
+
     /// Navigation coordinator injected for routing
     @InjectedStateObject var navigationCoordinator: NavigationCoordinatorProtocol
-    
+
     /// Theme service injected for theming
     @InjectedStateObject var themeService: ThemeServiceProtocol
-    
+
     // MARK: - State
-    
+
     @State private var searchText = ""
     @State private var showingRefreshAlert = false
     @State private var selectedUser: User?
-    
+
     // MARK: - Body
-    
+
     var body: some View {
         NavigationView {
             ZStack {
                 // Background
                 themeService.getThemeColors().background
                     .ignoresSafeArea()
-                
+
                 if viewModel.isLoading {
                     loadingView
                 } else {
@@ -86,22 +86,22 @@ struct ContentView: View {
             }
         }
     }
-    
+
     // MARK: - Loading View
-    
+
     private var loadingView: some View {
         VStack(spacing: 20) {
             ProgressView()
                 .scaleEffect(1.5)
-            
+
             Text("Loading...")
                 .font(themeService.getThemeFonts().headline)
                 .foregroundColor(themeService.getThemeColors().secondaryText)
         }
     }
-    
+
     // MARK: - Main Content
-    
+
     private var mainContent: some View {
         ScrollView {
             LazyVStack(spacing: 16) {
@@ -109,40 +109,40 @@ struct ContentView: View {
                 if let analyticsData = viewModel.analyticsData {
                     analyticsCard(analyticsData)
                 }
-                
+
                 // Quick Actions Section
                 quickActionsSection
-                
+
                 // Users Section
                 usersSection
-                
+
                 // Demo Actions Section
                 demoActionsSection
             }
             .padding()
         }
     }
-    
+
     // MARK: - Analytics Card
-    
+
     private func analyticsCard(_ data: AnalyticsReport) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "chart.bar.fill")
                     .foregroundColor(themeService.getThemeColors().accent)
-                
+
                 Text("Analytics Summary")
                     .font(themeService.getThemeFonts().headline)
                     .foregroundColor(themeService.getThemeColors().text)
-                
+
                 Spacer()
-                
+
                 if data.isLocalReport {
                     Image(systemName: "wifi.slash")
                         .foregroundColor(themeService.getThemeColors().warning)
                 }
             }
-            
+
             HStack {
                 VStack(alignment: .leading) {
                     Text("\(data.totalEvents)")
@@ -153,9 +153,9 @@ struct ContentView: View {
                         .font(themeService.getThemeFonts().caption1)
                         .foregroundColor(themeService.getThemeColors().secondaryText)
                 }
-                
+
                 Spacer()
-                
+
                 VStack(alignment: .leading) {
                     Text("\(data.uniqueUsers)")
                         .font(themeService.getThemeFonts().title2)
@@ -165,9 +165,9 @@ struct ContentView: View {
                         .font(themeService.getThemeFonts().caption1)
                         .foregroundColor(themeService.getThemeColors().secondaryText)
                 }
-                
+
                 Spacer()
-                
+
                 VStack(alignment: .leading) {
                     Text(data.topEvents.first?.0 ?? "None")
                         .font(themeService.getThemeFonts().callout)
@@ -188,15 +188,15 @@ struct ContentView: View {
             navigationCoordinator.presentSheet(.analyticsReport)
         }
     }
-    
+
     // MARK: - Quick Actions Section
-    
+
     private var quickActionsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Quick Actions")
                 .font(themeService.getThemeFonts().headline)
                 .foregroundColor(themeService.getThemeColors().text)
-            
+
             LazyVGrid(columns: [
                 GridItem(.flexible()),
                 GridItem(.flexible()),
@@ -209,7 +209,7 @@ struct ContentView: View {
                 ) {
                     navigationCoordinator.presentSheet(.themeSelector)
                 }
-                
+
                 quickActionButton(
                     title: "Debug",
                     icon: "ladybug.fill",
@@ -217,7 +217,7 @@ struct ContentView: View {
                 ) {
                     navigationCoordinator.presentSheet(.debugConsole)
                 }
-                
+
                 quickActionButton(
                     title: "Settings",
                     icon: "gear.fill",
@@ -228,7 +228,7 @@ struct ContentView: View {
             }
         }
     }
-    
+
     private func quickActionButton(
         title: String,
         icon: String,
@@ -240,7 +240,7 @@ struct ContentView: View {
                 Image(systemName: icon)
                     .font(.title2)
                     .foregroundColor(color)
-                
+
                 Text(title)
                     .font(themeService.getThemeFonts().caption1)
                     .foregroundColor(themeService.getThemeColors().text)
@@ -253,25 +253,25 @@ struct ContentView: View {
         }
         .buttonStyle(PlainButtonStyle())
     }
-    
+
     // MARK: - Users Section
-    
+
     private var usersSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Users (\(viewModel.users.count))")
                     .font(themeService.getThemeFonts().headline)
                     .foregroundColor(themeService.getThemeColors().text)
-                
+
                 Spacer()
-                
+
                 Button("View All") {
                     navigationCoordinator.navigate(to: .userList)
                 }
                 .font(themeService.getThemeFonts().callout)
                 .foregroundColor(themeService.getThemeColors().accent)
             }
-            
+
             if viewModel.users.isEmpty {
                 emptyUsersView
             } else {
@@ -279,17 +279,17 @@ struct ContentView: View {
             }
         }
     }
-    
+
     private var emptyUsersView: some View {
         VStack(spacing: 16) {
             Image(systemName: "person.3.slash")
                 .font(.system(size: 48))
                 .foregroundColor(themeService.getThemeColors().secondaryText)
-            
+
             Text("No users found")
                 .font(themeService.getThemeFonts().headline)
                 .foregroundColor(themeService.getThemeColors().secondaryText)
-            
+
             Text("Create a demo user to get started")
                 .font(themeService.getThemeFonts().body)
                 .foregroundColor(themeService.getThemeColors().secondaryText)
@@ -300,7 +300,7 @@ struct ContentView: View {
         .background(themeService.getThemeColors().surface)
         .clipShape(RoundedRectangle(cornerRadius: ThemeConstants.cornerRadius))
     }
-    
+
     private var usersList: some View {
         LazyVStack(spacing: 8) {
             ForEach(viewModel.users.prefix(5)) { user in
@@ -308,7 +308,7 @@ struct ContentView: View {
             }
         }
     }
-    
+
     private func userRow(_ user: User) -> some View {
         HStack {
             // User Avatar
@@ -320,27 +320,27 @@ struct ContentView: View {
                         .font(themeService.getThemeFonts().headline)
                         .foregroundColor(.white)
                 )
-            
+
             // User Info
             VStack(alignment: .leading, spacing: 2) {
                 Text(user.name)
                     .font(themeService.getThemeFonts().body)
                     .foregroundColor(themeService.getThemeColors().text)
-                
+
                 Text(user.email)
                     .font(themeService.getThemeFonts().caption1)
                     .foregroundColor(themeService.getThemeColors().secondaryText)
             }
-            
+
             Spacer()
-            
+
             // Actions
             Menu {
                 Button("View Details") {
                     selectedUser = user
                     navigationCoordinator.navigate(to: .userDetail)
                 }
-                
+
                 Button("Delete", role: .destructive) {
                     Task {
                         await viewModel.deleteUser(user.id)
@@ -359,15 +359,15 @@ struct ContentView: View {
             navigationCoordinator.navigate(to: .userDetail)
         }
     }
-    
+
     // MARK: - Demo Actions Section
-    
+
     private var demoActionsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Demo Actions")
                 .font(themeService.getThemeFonts().headline)
                 .foregroundColor(themeService.getThemeColors().text)
-            
+
             VStack(spacing: 8) {
                 demoActionButton(
                     title: "Create Demo User",
@@ -378,7 +378,7 @@ struct ContentView: View {
                         await viewModel.createDemoUser()
                     }
                 }
-                
+
                 demoActionButton(
                     title: "Refresh Data",
                     icon: "arrow.clockwise",
@@ -388,7 +388,7 @@ struct ContentView: View {
                         await viewModel.refreshData()
                     }
                 }
-                
+
                 if viewModel.isAuthenticated {
                     demoActionButton(
                         title: "Logout",
@@ -401,7 +401,7 @@ struct ContentView: View {
             }
         }
     }
-    
+
     private func demoActionButton(
         title: String,
         icon: String,
@@ -412,13 +412,13 @@ struct ContentView: View {
             HStack {
                 Image(systemName: icon)
                     .foregroundColor(color)
-                
+
                 Text(title)
                     .font(themeService.getThemeFonts().body)
                     .foregroundColor(themeService.getThemeColors().text)
-                
+
                 Spacer()
-                
+
                 Image(systemName: "chevron.right")
                     .font(.caption)
                     .foregroundColor(themeService.getThemeColors().secondaryText)
@@ -429,9 +429,9 @@ struct ContentView: View {
         }
         .buttonStyle(PlainButtonStyle())
     }
-    
+
     // MARK: - Toolbar Content
-    
+
     private var toolbarContent: some ToolbarContent {
         Group {
             ToolbarItem(placement: .navigationBarLeading) {
@@ -441,17 +441,17 @@ struct ContentView: View {
                     Image(systemName: themeService.isDarkMode ? "sun.max.fill" : "moon.fill")
                 }
             }
-            
+
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
                     Button("Analytics") {
                         navigationCoordinator.presentSheet(.analyticsReport)
                     }
-                    
+
                     Button("Debug Console") {
                         navigationCoordinator.presentSheet(.debugConsole)
                     }
-                    
+
                     Button("About") {
                         navigationCoordinator.navigate(to: .about)
                     }
@@ -461,9 +461,9 @@ struct ContentView: View {
             }
         }
     }
-    
+
     // MARK: - Helper Methods
-    
+
     private func showingLogoutConfirmation() {
         let alert = AppAlert(
             title: "Logout",
@@ -483,7 +483,7 @@ struct ContentView: View {
                 handler: nil
             )
         )
-        
+
         navigationCoordinator.presentAlert(alert)
     }
 }
@@ -494,44 +494,44 @@ struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         // Create a container for preview
         let container = Container()
-        
+
         // Register mock services for preview
         container.register(LoggerServiceProtocol.self) { _ in
             MockLoggerService()
         }
-        
+
         container.register(NetworkServiceProtocol.self) { resolver in
             MockNetworkService()
         }
-        
+
         container.register(DatabaseServiceProtocol.self) { resolver in
             MockDatabaseService()
         }
-        
+
         container.register(AuthenticationServiceProtocol.self) { resolver in
             MockAuthenticationService()
         }
-        
+
         container.register(UserServiceProtocol.self) { resolver in
             MockUserService()
         }
-        
+
         container.register(AnalyticsServiceProtocol.self) { resolver in
             MockAnalyticsService()
         }
-        
+
         container.register(ThemeServiceProtocol.self) { resolver in
             MockThemeService()
         }
-        
+
         container.register(NavigationCoordinatorProtocol.self) { resolver in
             MockNavigationCoordinator()
         }
-        
+
         container.register(ContentViewModelProtocol.self) { resolver in
             MockContentViewModel()
         }
-        
+
         return ContentView()
             .stateObjectContainer(container)
     }
@@ -549,12 +549,13 @@ class MockNetworkService: NetworkServiceProtocol {
     func fetchData<T: Codable>(from endpoint: String, type: T.Type) async throws -> T {
         throw NetworkError.noData
     }
-    func postData<T: Codable>(_ data: T, to endpoint: String) async throws -> Bool { false }
+
+    func postData(_ data: some Codable, to endpoint: String) async throws -> Bool { false }
     func uploadImage(_ imageData: Data, to endpoint: String) async throws -> String { "" }
 }
 
 class MockDatabaseService: DatabaseServiceProtocol {
-    func save<T: Codable>(_ entity: T, to collection: String) async throws -> String { UUID().uuidString }
+    func save(_ entity: some Codable, to collection: String) async throws -> String { UUID().uuidString }
     func fetch<T: Codable>(from collection: String, id: String, type: T.Type) async throws -> T? { nil }
     func fetchAll<T: Codable>(from collection: String, type: T.Type) async throws -> [T] { [] }
     func delete(from collection: String, id: String) async throws -> Bool { true }
@@ -566,6 +567,7 @@ class MockAuthenticationService: AuthenticationServiceProtocol {
     func login(email: String, password: String) async throws -> AuthResult {
         throw AuthError.invalidCredentials
     }
+
     func logout() async throws {}
     func refreshToken() async throws -> String { "" }
     func getCurrentUser() async throws -> User? { nil }
@@ -576,9 +578,11 @@ class MockUserService: UserServiceProtocol {
     func createUser(_ userData: CreateUserRequest) async throws -> User {
         User(name: userData.name, email: userData.email)
     }
+
     func updateUser(_ userId: String, with data: UpdateUserRequest) async throws -> User {
         User(name: data.name ?? "Unknown", email: "unknown@example.com")
     }
+
     func deleteUser(_ userId: String) async throws -> Bool { true }
     func getUser(by id: String) async throws -> User? { nil }
     func getUserByEmail(_ email: String) async throws -> User? { nil }

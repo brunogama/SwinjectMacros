@@ -122,7 +122,13 @@ import Swinject
 ///     }
 /// }
 /// ```
-@attached(member, names: named(enableDebugMode), named(getRegistrationInfo), named(getDependencyGraph), named(getPerformanceMetrics))
+@attached(
+    member,
+    names: named(enableDebugMode),
+    named(getRegistrationInfo),
+    named(getDependencyGraph),
+    named(getPerformanceMetrics)
+)
 @attached(extension, conformances: DebuggableContainer)
 public macro DebugContainer(
     logLevel: DebugLogLevel = .info,
@@ -146,7 +152,7 @@ public enum DebugLogLevel: String, CaseIterable {
 
     /// Check if current level includes the specified level
     public func includes(_ level: DebugLogLevel) -> Bool {
-        self.rawValue >= level.rawValue
+        rawValue >= level.rawValue
     }
 }
 
@@ -263,7 +269,12 @@ public struct ResolutionMetric {
     public let timestamp: Date
     public let stackTrace: [String]?
 
-    public init(serviceType: String, resolutionTime: TimeInterval, timestamp: Date = Date(), stackTrace: [String]? = nil) {
+    public init(
+        serviceType: String,
+        resolutionTime: TimeInterval,
+        timestamp: Date = Date(),
+        stackTrace: [String]? = nil
+    ) {
         self.serviceType = serviceType
         self.resolutionTime = resolutionTime
         self.timestamp = timestamp
@@ -278,7 +289,12 @@ public struct ContainerHealthCheck {
     public let checkTimestamp: Date
     public let checkDuration: TimeInterval
 
-    public init(isHealthy: Bool, issues: [ContainerIssue] = [], checkTimestamp: Date = Date(), checkDuration: TimeInterval = 0) {
+    public init(
+        isHealthy: Bool,
+        issues: [ContainerIssue] = [],
+        checkTimestamp: Date = Date(),
+        checkDuration: TimeInterval = 0
+    ) {
         self.isHealthy = isHealthy
         self.issues = issues
         self.checkTimestamp = checkTimestamp
@@ -297,7 +313,12 @@ public struct ContainerIssue {
     public let recommendation: String?
     public let affectedServices: [String]
 
-    public init(severity: Severity, description: String, recommendation: String? = nil, affectedServices: [String] = []) {
+    public init(
+        severity: Severity,
+        description: String,
+        recommendation: String? = nil,
+        affectedServices: [String] = []
+    ) {
         self.severity = severity
         self.description = description
         self.recommendation = recommendation
@@ -343,40 +364,40 @@ public class ContainerDebugLogger {
 
     private func getLogPrefix(for level: DebugLogLevel) -> String {
         switch level {
-        case .silent: return ""
-        case .error: return "🔴 [ERROR]"
-        case .warning: return "🟡 [WARN]"
-        case .info: return "🔵 [INFO]"
-        case .verbose: return "🟢 [DEBUG]"
-        case .trace: return "🔍 [TRACE]"
+        case .silent: ""
+        case .error: "🔴 [ERROR]"
+        case .warning: "🟡 [WARN]"
+        case .info: "🔵 [INFO]"
+        case .verbose: "🟢 [DEBUG]"
+        case .trace: "🔍 [TRACE]"
         }
     }
 }
 
 // MARK: - Container Extensions for Debugging
 
-public extension Container {
+extension Container {
 
     /// Enable debug mode with default configuration
-    func enableDebugMode() {
+    public func enableDebugMode() {
         // Enable basic debug logging
         DebugLogger.info("🐛 Debug mode enabled for container at \(Date())")
     }
 
     /// Get basic registration statistics
-    func getRegistrationStats() -> (count: Int, resolvedCount: Int) {
+    public func getRegistrationStats() -> (count: Int, resolvedCount: Int) {
         // This would require introspection into Swinject's internals
         // For now, return placeholder values
         (count: 0, resolvedCount: 0)
     }
 
     /// Log container state for debugging
-    func logContainerState() {
+    public func logContainerState() {
         ContainerDebugLogger.shared.log(.info, "Container state logging not yet implemented")
     }
 
     /// Validate container configuration
-    func validateConfiguration() -> [String] {
+    public func validateConfiguration() -> [String] {
         // Return validation warnings/errors
         []
     }
@@ -385,7 +406,7 @@ public extension Container {
 // MARK: - Debug Utilities
 
 /// Utility functions for container debugging
-public struct ContainerDebugUtils {
+public enum ContainerDebugUtils {
 
     /// Generate a unique identifier for a service type
     public static func generateServiceId(for serviceType: Any.Type, name: String? = nil) -> String {
@@ -411,11 +432,11 @@ public struct ContainerDebugUtils {
     /// Format time interval for display
     public static func formatTimeInterval(_ interval: TimeInterval) -> String {
         if interval < 0.001 {
-            return String(format: "%.3fμs", interval * 1_000_000)
+            String(format: "%.3fμs", interval * 1_000_000)
         } else if interval < 1.0 {
-            return String(format: "%.3fms", interval * 1000)
+            String(format: "%.3fms", interval * 1000)
         } else {
-            return String(format: "%.3fs", interval)
+            String(format: "%.3fs", interval)
         }
     }
 }
@@ -437,7 +458,7 @@ public class ContainerMemoryTracker {
 
     /// Get memory usage trend
     public func getMemoryTrend() -> [Date: Int] {
-        queue.sync { memorySnapshots }
+        queue.sync { self.memorySnapshots }
     }
 
     private func getCurrentMemoryUsage() -> Int {

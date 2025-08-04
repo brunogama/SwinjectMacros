@@ -35,11 +35,11 @@ import Swinject
 ///
 /// class UserProfileServiceFactoryImpl: UserProfileServiceFactory {
 ///     private let resolver: Resolver
-///     
+///
 ///     init(resolver: Resolver) {
 ///         self.resolver = resolver
 ///     }
-///     
+///
 ///     func makeUserProfileService(userId: String) -> UserProfileService {
 ///         return UserProfileService(
 ///             apiClient: resolver.synchronizedResolve(APIClient.self)!,
@@ -95,7 +95,10 @@ public macro AutoFactory2() = #externalMacro(module: "SwinjectUtilityMacrosImple
 
 /// Multi-parameter factory macro for services with 3+ runtime parameters
 @attached(peer, names: suffixed(Factory), suffixed(FactoryImpl))
-public macro AutoFactoryMulti() = #externalMacro(module: "SwinjectUtilityMacrosImplementation", type: "AutoFactoryMultiMacro")
+public macro AutoFactoryMulti() = #externalMacro(
+    module: "SwinjectUtilityMacrosImplementation",
+    type: "AutoFactoryMultiMacro"
+)
 
 // MARK: - Factory Configuration
 
@@ -109,7 +112,7 @@ public struct FactoryConfig {
     public let protocolName: String?
     /// Custom factory implementation name
     public let implName: String?
-    
+
     public init(
         isAsync: Bool = false,
         canThrow: Bool = false,
@@ -151,7 +154,7 @@ public struct ParameterInfo {
     public let defaultValue: String?
     /// Parameter label for factory method
     public let label: String?
-    
+
     public init(
         name: String,
         type: String,
@@ -175,18 +178,18 @@ public struct ParameterInfo {
 public protocol BaseFactory {
     /// The resolver used for dependency injection
     var resolver: Resolver { get }
-    
+
     /// Initialize factory with resolver
     init(resolver: Resolver)
 }
 
 // MARK: - Factory Registration Extensions
 
-public extension Container {
-    
+extension Container {
+
     /// Register a factory for a service type
-    func registerFactory<Factory: BaseFactory>(
-        _ factoryType: Factory.Type,
+    public func registerFactory(
+        _ factoryType: (some BaseFactory).Type,
         scope: ObjectScope = .container
     ) {
         let registration = register(factoryType) { resolver in
@@ -194,13 +197,13 @@ public extension Container {
         }
         registration.inObjectScope(scope.swinjectScope)
     }
-    
-    /// Register a factory with custom implementation  
-    func registerFactory<Factory, Implementation>(
+
+    /// Register a factory with custom implementation
+    public func registerFactory<Factory>(
         _ factoryType: Factory.Type,
-        implementation: Implementation.Type,
+        implementation: (some BaseFactory).Type,
         scope: ObjectScope = .container
-    ) where Implementation: BaseFactory {
+    ) {
         let registration = register(factoryType) { resolver in
             implementation.init(resolver: resolver) as! Factory
         }
@@ -212,52 +215,53 @@ public extension Container {
 
 /// Utilities for working with factories
 public enum FactoryUtils {
-    
+
     /// Determine if a parameter should be injected vs provided at runtime
     static func classifyParameter(name: String, type: String, hasDefault: Bool) -> ParameterType {
         // Service-like types are dependencies
-        if  type.hasSuffix("Service") ||
+        if type.hasSuffix("Service") ||
             type.hasSuffix("Repository") ||
             type.hasSuffix("Client") ||
-            type.hasSuffix("Manager") {
+            type.hasSuffix("Manager")
+        {
             return .dependency
         }
-        
+
         // Protocol types are likely dependencies
         if type.starts(with: "any ") || type.contains("Protocol") {
             return .dependency
         }
-        
+
         // Optional parameters with defaults are configuration
         if hasDefault {
             return .optional
         }
-        
+
         // Value types are likely runtime parameters
         if isValueType(type) {
             return .runtime
         }
-        
+
         // Default to runtime parameter
         return .runtime
     }
-    
+
     /// Check if a type is a value type (String, Int, Bool, etc.)
     static func isValueType(_ type: String) -> Bool {
         let valueTypes = [
             "String", "Int", "Double", "Float", "Bool", "UUID", "Date",
             "Int8", "Int16", "Int32", "Int64", "UInt", "UInt8", "UInt16", "UInt32", "UInt64"
         ]
-        
+
         return valueTypes.contains { type.hasPrefix($0) }
     }
-    
+
     /// Generate factory method name from service name
     static func factoryMethodName(for serviceName: String) -> String {
         let withoutSuffix = serviceName.replacingOccurrences(of: "Service", with: "")
             .replacingOccurrences(of: "Repository", with: "")
             .replacingOccurrences(of: "Client", with: "")
-        
+
         return "make\(withoutSuffix.isEmpty ? serviceName : withoutSuffix)"
     }
 }
@@ -269,15 +273,15 @@ public enum FactoryError: Error, LocalizedError {
     case parameterClassificationFailed(String)
     case invalidFactoryConfiguration(String)
     case dependencyResolutionFailed(String)
-    
+
     public var errorDescription: String? {
         switch self {
         case .parameterClassificationFailed(let param):
-            return "Failed to classify parameter: \(param)"
+            "Failed to classify parameter: \(param)"
         case .invalidFactoryConfiguration(let message):
-            return "Invalid factory configuration: \(message)"
+            "Invalid factory configuration: \(message)"
         case .dependencyResolutionFailed(let dependency):
-            return "Failed to resolve dependency: \(dependency)"
+            "Failed to resolve dependency: \(dependency)"
         }
     }
 }

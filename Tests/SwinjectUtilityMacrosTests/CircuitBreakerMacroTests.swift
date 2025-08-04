@@ -8,13 +8,13 @@ import XCTest
 @testable import SwinjectUtilityMacrosImplementation
 
 final class CircuitBreakerMacroTests: XCTestCase {
-    
+
     let testMacros: [String: Macro.Type] = [
-        "CircuitBreaker": CircuitBreakerMacro.self,
+        "CircuitBreaker": CircuitBreakerMacro.self
     ]
-    
+
     // MARK: - Basic Functionality Tests
-    
+
     func testBasicCircuitBreakerExpansion() throws {
         assertMacroExpansion(
             """
@@ -27,10 +27,10 @@ final class CircuitBreakerMacroTests: XCTestCase {
             func callExternalService() throws -> String {
                 return "service response"
             }
-            
+
             public func callExternalServiceCircuitBreaker() throws -> String {
                 let circuitKey = "\\(String(describing: type(of: self))).callExternalService"
-                
+
                 // Get or create circuit breaker instance
                 let circuitBreaker = CircuitBreakerRegistry.getCircuitBreaker(
                     for: circuitKey,
@@ -39,7 +39,7 @@ final class CircuitBreakerMacroTests: XCTestCase {
                     successThreshold: 3,
                     monitoringWindow: 60.0
                 )
-                
+
                 // Check if call should be allowed
                 guard circuitBreaker.shouldAllowCall() else {
                     // Circuit is open, record blocked call and handle fallback
@@ -50,23 +50,23 @@ final class CircuitBreakerMacroTests: XCTestCase {
                         circuitState: circuitBreaker.currentState
                     )
                     CircuitBreakerRegistry.recordCall(blockedCall, for: circuitKey)
-                    
+
                     throw CircuitBreakerError.circuitOpen(circuitName: circuitKey, lastFailureTime: circuitBreaker.lastOpenedTime)
                 }
-                
+
                 // Execute the method with circuit breaker protection
                 let startTime = CFAbsoluteTimeGetCurrent()
                 var wasSuccessful = false
                 var callError: Error?
-                
+
                 do {
                     let result = try callExternalService()
                     wasSuccessful = true
-                    
+
                     // Record successful call
                     let endTime = CFAbsoluteTimeGetCurrent()
                     let responseTime = (endTime - startTime) * 1000 // Convert to milliseconds
-                    
+
                     let successfulCall = CircuitBreakerCall(
                         wasSuccessful: true,
                         wasBlocked: false,
@@ -74,19 +74,19 @@ final class CircuitBreakerMacroTests: XCTestCase {
                         circuitState: circuitBreaker.currentState
                     )
                     CircuitBreakerRegistry.recordCall(successfulCall, for: circuitKey)
-                    
+
                     // Update circuit breaker state
                     circuitBreaker.recordCall(wasSuccessful: true)
-                    
+
                     return result
                 } catch {
                     wasSuccessful = false
                     callError = error
-                    
+
                     // Record failed call
                     let endTime = CFAbsoluteTimeGetCurrent()
                     let responseTime = (endTime - startTime) * 1000
-                    
+
                     let failedCall = CircuitBreakerCall(
                         wasSuccessful: false,
                         wasBlocked: false,
@@ -95,10 +95,10 @@ final class CircuitBreakerMacroTests: XCTestCase {
                         error: error
                     )
                     CircuitBreakerRegistry.recordCall(failedCall, for: circuitKey)
-                    
+
                     // Update circuit breaker state
                     circuitBreaker.recordCall(wasSuccessful: false)
-                    
+
                     // Re-throw the error
                     throw error
                 }
@@ -107,7 +107,7 @@ final class CircuitBreakerMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     func testCircuitBreakerWithCustomThresholds() throws {
         assertMacroExpansion(
             """
@@ -120,10 +120,10 @@ final class CircuitBreakerMacroTests: XCTestCase {
             func unstableService() throws -> Bool {
                 return true
             }
-            
+
             public func unstableServiceCircuitBreaker() throws -> Bool {
                 let circuitKey = "\\(String(describing: type(of: self))).unstableService"
-                
+
                 // Get or create circuit breaker instance
                 let circuitBreaker = CircuitBreakerRegistry.getCircuitBreaker(
                     for: circuitKey,
@@ -132,7 +132,7 @@ final class CircuitBreakerMacroTests: XCTestCase {
                     successThreshold: 2,
                     monitoringWindow: 60.0
                 )
-                
+
                 // Check if call should be allowed
                 guard circuitBreaker.shouldAllowCall() else {
                     // Circuit is open, record blocked call and handle fallback
@@ -143,23 +143,23 @@ final class CircuitBreakerMacroTests: XCTestCase {
                         circuitState: circuitBreaker.currentState
                     )
                     CircuitBreakerRegistry.recordCall(blockedCall, for: circuitKey)
-                    
+
                     throw CircuitBreakerError.circuitOpen(circuitName: circuitKey, lastFailureTime: circuitBreaker.lastOpenedTime)
                 }
-                
+
                 // Execute the method with circuit breaker protection
                 let startTime = CFAbsoluteTimeGetCurrent()
                 var wasSuccessful = false
                 var callError: Error?
-                
+
                 do {
                     let result = try unstableService()
                     wasSuccessful = true
-                    
+
                     // Record successful call
                     let endTime = CFAbsoluteTimeGetCurrent()
                     let responseTime = (endTime - startTime) * 1000 // Convert to milliseconds
-                    
+
                     let successfulCall = CircuitBreakerCall(
                         wasSuccessful: true,
                         wasBlocked: false,
@@ -167,19 +167,19 @@ final class CircuitBreakerMacroTests: XCTestCase {
                         circuitState: circuitBreaker.currentState
                     )
                     CircuitBreakerRegistry.recordCall(successfulCall, for: circuitKey)
-                    
+
                     // Update circuit breaker state
                     circuitBreaker.recordCall(wasSuccessful: true)
-                    
+
                     return result
                 } catch {
                     wasSuccessful = false
                     callError = error
-                    
+
                     // Record failed call
                     let endTime = CFAbsoluteTimeGetCurrent()
                     let responseTime = (endTime - startTime) * 1000
-                    
+
                     let failedCall = CircuitBreakerCall(
                         wasSuccessful: false,
                         wasBlocked: false,
@@ -188,10 +188,10 @@ final class CircuitBreakerMacroTests: XCTestCase {
                         error: error
                     )
                     CircuitBreakerRegistry.recordCall(failedCall, for: circuitKey)
-                    
+
                     // Update circuit breaker state
                     circuitBreaker.recordCall(wasSuccessful: false)
-                    
+
                     // Re-throw the error
                     throw error
                 }
@@ -200,7 +200,7 @@ final class CircuitBreakerMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     func testCircuitBreakerWithFallbackValue() throws {
         assertMacroExpansion(
             """
@@ -213,10 +213,10 @@ final class CircuitBreakerMacroTests: XCTestCase {
             func getStatusMessage() throws -> String {
                 return "All systems operational"
             }
-            
+
             public func getStatusMessageCircuitBreaker() throws -> String {
                 let circuitKey = "\\(String(describing: type(of: self))).getStatusMessage"
-                
+
                 // Get or create circuit breaker instance
                 let circuitBreaker = CircuitBreakerRegistry.getCircuitBreaker(
                     for: circuitKey,
@@ -225,7 +225,7 @@ final class CircuitBreakerMacroTests: XCTestCase {
                     successThreshold: 3,
                     monitoringWindow: 60.0
                 )
-                
+
                 // Check if call should be allowed
                 guard circuitBreaker.shouldAllowCall() else {
                     // Circuit is open, record blocked call and handle fallback
@@ -236,23 +236,23 @@ final class CircuitBreakerMacroTests: XCTestCase {
                         circuitState: circuitBreaker.currentState
                     )
                     CircuitBreakerRegistry.recordCall(blockedCall, for: circuitKey)
-                    
+
                     return "Service Unavailable" as! String // Fallback value
                 }
-                
+
                 // Execute the method with circuit breaker protection
                 let startTime = CFAbsoluteTimeGetCurrent()
                 var wasSuccessful = false
                 var callError: Error?
-                
+
                 do {
                     let result = try getStatusMessage()
                     wasSuccessful = true
-                    
+
                     // Record successful call
                     let endTime = CFAbsoluteTimeGetCurrent()
                     let responseTime = (endTime - startTime) * 1000 // Convert to milliseconds
-                    
+
                     let successfulCall = CircuitBreakerCall(
                         wasSuccessful: true,
                         wasBlocked: false,
@@ -260,19 +260,19 @@ final class CircuitBreakerMacroTests: XCTestCase {
                         circuitState: circuitBreaker.currentState
                     )
                     CircuitBreakerRegistry.recordCall(successfulCall, for: circuitKey)
-                    
+
                     // Update circuit breaker state
                     circuitBreaker.recordCall(wasSuccessful: true)
-                    
+
                     return result
                 } catch {
                     wasSuccessful = false
                     callError = error
-                    
+
                     // Record failed call
                     let endTime = CFAbsoluteTimeGetCurrent()
                     let responseTime = (endTime - startTime) * 1000
-                    
+
                     let failedCall = CircuitBreakerCall(
                         wasSuccessful: false,
                         wasBlocked: false,
@@ -281,10 +281,10 @@ final class CircuitBreakerMacroTests: XCTestCase {
                         error: error
                     )
                     CircuitBreakerRegistry.recordCall(failedCall, for: circuitKey)
-                    
+
                     // Update circuit breaker state
                     circuitBreaker.recordCall(wasSuccessful: false)
-                    
+
                     // Re-throw the error
                     throw error
                 }
@@ -293,9 +293,9 @@ final class CircuitBreakerMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     // MARK: - Async Function Tests
-    
+
     func testAsyncCircuitBreaker() throws {
         assertMacroExpansion(
             """
@@ -308,10 +308,10 @@ final class CircuitBreakerMacroTests: XCTestCase {
             func fetchDataAsync(from url: URL) async throws -> Data {
                 return try await URLSession.shared.data(from: url).0
             }
-            
+
             public func fetchDataAsyncCircuitBreaker(from url: URL) async throws -> Data {
                 let circuitKey = "\\(String(describing: type(of: self))).fetchDataAsync"
-                
+
                 // Get or create circuit breaker instance
                 let circuitBreaker = CircuitBreakerRegistry.getCircuitBreaker(
                     for: circuitKey,
@@ -320,7 +320,7 @@ final class CircuitBreakerMacroTests: XCTestCase {
                     successThreshold: 3,
                     monitoringWindow: 60.0
                 )
-                
+
                 // Check if call should be allowed
                 guard circuitBreaker.shouldAllowCall() else {
                     // Circuit is open, record blocked call and handle fallback
@@ -331,23 +331,23 @@ final class CircuitBreakerMacroTests: XCTestCase {
                         circuitState: circuitBreaker.currentState
                     )
                     CircuitBreakerRegistry.recordCall(blockedCall, for: circuitKey)
-                    
+
                     throw CircuitBreakerError.circuitOpen(circuitName: circuitKey, lastFailureTime: circuitBreaker.lastOpenedTime)
                 }
-                
+
                 // Execute the method with circuit breaker protection
                 let startTime = CFAbsoluteTimeGetCurrent()
                 var wasSuccessful = false
                 var callError: Error?
-                
+
                 do {
                     let result = try await fetchDataAsync(from: url)
                     wasSuccessful = true
-                    
+
                     // Record successful call
                     let endTime = CFAbsoluteTimeGetCurrent()
                     let responseTime = (endTime - startTime) * 1000 // Convert to milliseconds
-                    
+
                     let successfulCall = CircuitBreakerCall(
                         wasSuccessful: true,
                         wasBlocked: false,
@@ -355,19 +355,19 @@ final class CircuitBreakerMacroTests: XCTestCase {
                         circuitState: circuitBreaker.currentState
                     )
                     CircuitBreakerRegistry.recordCall(successfulCall, for: circuitKey)
-                    
+
                     // Update circuit breaker state
                     circuitBreaker.recordCall(wasSuccessful: true)
-                    
+
                     return result
                 } catch {
                     wasSuccessful = false
                     callError = error
-                    
+
                     // Record failed call
                     let endTime = CFAbsoluteTimeGetCurrent()
                     let responseTime = (endTime - startTime) * 1000
-                    
+
                     let failedCall = CircuitBreakerCall(
                         wasSuccessful: false,
                         wasBlocked: false,
@@ -376,10 +376,10 @@ final class CircuitBreakerMacroTests: XCTestCase {
                         error: error
                     )
                     CircuitBreakerRegistry.recordCall(failedCall, for: circuitKey)
-                    
+
                     // Update circuit breaker state
                     circuitBreaker.recordCall(wasSuccessful: false)
-                    
+
                     // Re-throw the error
                     throw error
                 }
@@ -388,9 +388,9 @@ final class CircuitBreakerMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     // MARK: - Static Method Tests
-    
+
     func testStaticMethodCircuitBreaker() throws {
         assertMacroExpansion(
             """
@@ -403,10 +403,10 @@ final class CircuitBreakerMacroTests: XCTestCase {
             static func validateConfiguration(_ config: String) throws -> Bool {
                 return !config.isEmpty
             }
-            
+
             public static func validateConfigurationCircuitBreaker(_ config: String) throws -> Bool {
                 let circuitKey = "\\(String(describing: type(of: self))).validateConfiguration"
-                
+
                 // Get or create circuit breaker instance
                 let circuitBreaker = CircuitBreakerRegistry.getCircuitBreaker(
                     for: circuitKey,
@@ -415,7 +415,7 @@ final class CircuitBreakerMacroTests: XCTestCase {
                     successThreshold: 3,
                     monitoringWindow: 60.0
                 )
-                
+
                 // Check if call should be allowed
                 guard circuitBreaker.shouldAllowCall() else {
                     // Circuit is open, record blocked call and handle fallback
@@ -426,23 +426,23 @@ final class CircuitBreakerMacroTests: XCTestCase {
                         circuitState: circuitBreaker.currentState
                     )
                     CircuitBreakerRegistry.recordCall(blockedCall, for: circuitKey)
-                    
+
                     throw CircuitBreakerError.circuitOpen(circuitName: circuitKey, lastFailureTime: circuitBreaker.lastOpenedTime)
                 }
-                
+
                 // Execute the method with circuit breaker protection
                 let startTime = CFAbsoluteTimeGetCurrent()
                 var wasSuccessful = false
                 var callError: Error?
-                
+
                 do {
                     let result = try validateConfiguration(config)
                     wasSuccessful = true
-                    
+
                     // Record successful call
                     let endTime = CFAbsoluteTimeGetCurrent()
                     let responseTime = (endTime - startTime) * 1000 // Convert to milliseconds
-                    
+
                     let successfulCall = CircuitBreakerCall(
                         wasSuccessful: true,
                         wasBlocked: false,
@@ -450,19 +450,19 @@ final class CircuitBreakerMacroTests: XCTestCase {
                         circuitState: circuitBreaker.currentState
                     )
                     CircuitBreakerRegistry.recordCall(successfulCall, for: circuitKey)
-                    
+
                     // Update circuit breaker state
                     circuitBreaker.recordCall(wasSuccessful: true)
-                    
+
                     return result
                 } catch {
                     wasSuccessful = false
                     callError = error
-                    
+
                     // Record failed call
                     let endTime = CFAbsoluteTimeGetCurrent()
                     let responseTime = (endTime - startTime) * 1000
-                    
+
                     let failedCall = CircuitBreakerCall(
                         wasSuccessful: false,
                         wasBlocked: false,
@@ -471,10 +471,10 @@ final class CircuitBreakerMacroTests: XCTestCase {
                         error: error
                     )
                     CircuitBreakerRegistry.recordCall(failedCall, for: circuitKey)
-                    
+
                     // Update circuit breaker state
                     circuitBreaker.recordCall(wasSuccessful: false)
-                    
+
                     // Re-throw the error
                     throw error
                 }
@@ -483,9 +483,9 @@ final class CircuitBreakerMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     // MARK: - Non-Throwing Method Tests
-    
+
     func testNonThrowingMethodCircuitBreaker() throws {
         assertMacroExpansion(
             """
@@ -498,10 +498,10 @@ final class CircuitBreakerMacroTests: XCTestCase {
             func computeValue(input: Int) -> Int {
                 return input * 2
             }
-            
+
             public func computeValueCircuitBreaker(input: Int) throws -> Int {
                 let circuitKey = "\\(String(describing: type(of: self))).computeValue"
-                
+
                 // Get or create circuit breaker instance
                 let circuitBreaker = CircuitBreakerRegistry.getCircuitBreaker(
                     for: circuitKey,
@@ -510,7 +510,7 @@ final class CircuitBreakerMacroTests: XCTestCase {
                     successThreshold: 3,
                     monitoringWindow: 60.0
                 )
-                
+
                 // Check if call should be allowed
                 guard circuitBreaker.shouldAllowCall() else {
                     // Circuit is open, record blocked call and handle fallback
@@ -521,23 +521,23 @@ final class CircuitBreakerMacroTests: XCTestCase {
                         circuitState: circuitBreaker.currentState
                     )
                     CircuitBreakerRegistry.recordCall(blockedCall, for: circuitKey)
-                    
+
                     throw CircuitBreakerError.circuitOpen(circuitName: circuitKey, lastFailureTime: circuitBreaker.lastOpenedTime)
                 }
-                
+
                 // Execute the method with circuit breaker protection
                 let startTime = CFAbsoluteTimeGetCurrent()
                 var wasSuccessful = false
                 var callError: Error?
-                
+
                 do {
                     let result = computeValue(input: input)
                     wasSuccessful = true
-                    
+
                     // Record successful call
                     let endTime = CFAbsoluteTimeGetCurrent()
                     let responseTime = (endTime - startTime) * 1000 // Convert to milliseconds
-                    
+
                     let successfulCall = CircuitBreakerCall(
                         wasSuccessful: true,
                         wasBlocked: false,
@@ -545,19 +545,19 @@ final class CircuitBreakerMacroTests: XCTestCase {
                         circuitState: circuitBreaker.currentState
                     )
                     CircuitBreakerRegistry.recordCall(successfulCall, for: circuitKey)
-                    
+
                     // Update circuit breaker state
                     circuitBreaker.recordCall(wasSuccessful: true)
-                    
+
                     return result
                 } catch {
                     wasSuccessful = false
                     callError = error
-                    
+
                     // Record failed call
                     let endTime = CFAbsoluteTimeGetCurrent()
                     let responseTime = (endTime - startTime) * 1000
-                    
+
                     let failedCall = CircuitBreakerCall(
                         wasSuccessful: false,
                         wasBlocked: false,
@@ -566,10 +566,10 @@ final class CircuitBreakerMacroTests: XCTestCase {
                         error: error
                     )
                     CircuitBreakerRegistry.recordCall(failedCall, for: circuitKey)
-                    
+
                     // Update circuit breaker state
                     circuitBreaker.recordCall(wasSuccessful: false)
-                    
+
                     // Re-throw the error
                     throw error
                 }
@@ -578,9 +578,9 @@ final class CircuitBreakerMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     // MARK: - Void Return Type Tests
-    
+
     func testVoidReturnTypeCircuitBreaker() throws {
         assertMacroExpansion(
             """
@@ -593,10 +593,10 @@ final class CircuitBreakerMacroTests: XCTestCase {
             func performAction() throws {
                 // Action implementation
             }
-            
+
             public func performActionCircuitBreaker() throws {
                 let circuitKey = "\\(String(describing: type(of: self))).performAction"
-                
+
                 // Get or create circuit breaker instance
                 let circuitBreaker = CircuitBreakerRegistry.getCircuitBreaker(
                     for: circuitKey,
@@ -605,7 +605,7 @@ final class CircuitBreakerMacroTests: XCTestCase {
                     successThreshold: 3,
                     monitoringWindow: 60.0
                 )
-                
+
                 // Check if call should be allowed
                 guard circuitBreaker.shouldAllowCall() else {
                     // Circuit is open, record blocked call and handle fallback
@@ -616,23 +616,23 @@ final class CircuitBreakerMacroTests: XCTestCase {
                         circuitState: circuitBreaker.currentState
                     )
                     CircuitBreakerRegistry.recordCall(blockedCall, for: circuitKey)
-                    
+
                     return // Circuit is open, no operation performed
                 }
-                
+
                 // Execute the method with circuit breaker protection
                 let startTime = CFAbsoluteTimeGetCurrent()
                 var wasSuccessful = false
                 var callError: Error?
-                
+
                 do {
                     let result = try performAction()
                     wasSuccessful = true
-                    
+
                     // Record successful call
                     let endTime = CFAbsoluteTimeGetCurrent()
                     let responseTime = (endTime - startTime) * 1000 // Convert to milliseconds
-                    
+
                     let successfulCall = CircuitBreakerCall(
                         wasSuccessful: true,
                         wasBlocked: false,
@@ -640,19 +640,19 @@ final class CircuitBreakerMacroTests: XCTestCase {
                         circuitState: circuitBreaker.currentState
                     )
                     CircuitBreakerRegistry.recordCall(successfulCall, for: circuitKey)
-                    
+
                     // Update circuit breaker state
                     circuitBreaker.recordCall(wasSuccessful: true)
-                    
-                    
+
+
                 } catch {
                     wasSuccessful = false
                     callError = error
-                    
+
                     // Record failed call
                     let endTime = CFAbsoluteTimeGetCurrent()
                     let responseTime = (endTime - startTime) * 1000
-                    
+
                     let failedCall = CircuitBreakerCall(
                         wasSuccessful: false,
                         wasBlocked: false,
@@ -661,10 +661,10 @@ final class CircuitBreakerMacroTests: XCTestCase {
                         error: error
                     )
                     CircuitBreakerRegistry.recordCall(failedCall, for: circuitKey)
-                    
+
                     // Update circuit breaker state
                     circuitBreaker.recordCall(wasSuccessful: false)
-                    
+
                     // Re-throw the error
                     throw error
                 }
@@ -673,9 +673,9 @@ final class CircuitBreakerMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     // MARK: - Error Cases
-    
+
     func testCircuitBreakerOnNonFunction() throws {
         assertMacroExpansion(
             """
@@ -690,14 +690,18 @@ final class CircuitBreakerMacroTests: XCTestCase {
             }
             """,
             diagnostics: [
-                DiagnosticSpec(message: "@CircuitBreaker can only be applied to functions and methods", line: 1, column: 1)
+                DiagnosticSpec(
+                    message: "@CircuitBreaker can only be applied to functions and methods",
+                    line: 1,
+                    column: 1
+                )
             ],
             macros: testMacros
         )
     }
-    
+
     // MARK: - Complex Parameter Tests
-    
+
     func testCircuitBreakerWithComplexParameters() throws {
         assertMacroExpansion(
             """
@@ -710,10 +714,10 @@ final class CircuitBreakerMacroTests: XCTestCase {
             func processRequest(from url: URL, with headers: [String: String] = [:], timeout: TimeInterval = 30.0) async throws -> Response {
                 return Response()
             }
-            
+
             public func processRequestCircuitBreaker(from url: URL, with headers: [String: String] = [:], timeout: TimeInterval = 30.0) async throws -> Response {
                 let circuitKey = "\\(String(describing: type(of: self))).processRequest"
-                
+
                 // Get or create circuit breaker instance
                 let circuitBreaker = CircuitBreakerRegistry.getCircuitBreaker(
                     for: circuitKey,
@@ -722,7 +726,7 @@ final class CircuitBreakerMacroTests: XCTestCase {
                     successThreshold: 3,
                     monitoringWindow: 60.0
                 )
-                
+
                 // Check if call should be allowed
                 guard circuitBreaker.shouldAllowCall() else {
                     // Circuit is open, record blocked call and handle fallback
@@ -733,23 +737,23 @@ final class CircuitBreakerMacroTests: XCTestCase {
                         circuitState: circuitBreaker.currentState
                     )
                     CircuitBreakerRegistry.recordCall(blockedCall, for: circuitKey)
-                    
+
                     throw CircuitBreakerError.circuitOpen(circuitName: circuitKey, lastFailureTime: circuitBreaker.lastOpenedTime)
                 }
-                
+
                 // Execute the method with circuit breaker protection
                 let startTime = CFAbsoluteTimeGetCurrent()
                 var wasSuccessful = false
                 var callError: Error?
-                
+
                 do {
                     let result = try await processRequest(from: url, with: headers, timeout: timeout)
                     wasSuccessful = true
-                    
+
                     // Record successful call
                     let endTime = CFAbsoluteTimeGetCurrent()
                     let responseTime = (endTime - startTime) * 1000 // Convert to milliseconds
-                    
+
                     let successfulCall = CircuitBreakerCall(
                         wasSuccessful: true,
                         wasBlocked: false,
@@ -757,19 +761,19 @@ final class CircuitBreakerMacroTests: XCTestCase {
                         circuitState: circuitBreaker.currentState
                     )
                     CircuitBreakerRegistry.recordCall(successfulCall, for: circuitKey)
-                    
+
                     // Update circuit breaker state
                     circuitBreaker.recordCall(wasSuccessful: true)
-                    
+
                     return result
                 } catch {
                     wasSuccessful = false
                     callError = error
-                    
+
                     // Record failed call
                     let endTime = CFAbsoluteTimeGetCurrent()
                     let responseTime = (endTime - startTime) * 1000
-                    
+
                     let failedCall = CircuitBreakerCall(
                         wasSuccessful: false,
                         wasBlocked: false,
@@ -778,10 +782,10 @@ final class CircuitBreakerMacroTests: XCTestCase {
                         error: error
                     )
                     CircuitBreakerRegistry.recordCall(failedCall, for: circuitKey)
-                    
+
                     // Update circuit breaker state
                     circuitBreaker.recordCall(wasSuccessful: false)
-                    
+
                     // Re-throw the error
                     throw error
                 }

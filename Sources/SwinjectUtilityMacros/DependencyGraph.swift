@@ -101,7 +101,12 @@ import Swinject
 /// let mermaidGraph = ServiceRegistry.generateMermaidGraph()
 /// // Returns Mermaid.js compatible graph syntax
 /// ```
-@attached(member, names: named(generateDependencyGraph), named(detectCircularDependencies), named(exportDependencyGraph))
+@attached(
+    member,
+    names: named(generateDependencyGraph),
+    named(detectCircularDependencies),
+    named(exportDependencyGraph)
+)
 @attached(extension, conformances: DependencyGraphProvider)
 public macro DependencyGraph(
     format: GraphFormat = .graphviz,
@@ -238,7 +243,7 @@ public struct DependencyAnalysisReport {
 // MARK: - Graph Generators
 
 /// Utility for generating dependency graphs in various formats
-public struct DependencyGraphGenerator {
+public enum DependencyGraphGenerator {
 
     /// Generate GraphViz DOT format graph
     public static func generateDotGraph(
@@ -334,10 +339,10 @@ public struct DependencyGraphGenerator {
 
     private static func getNodeColor(for node: DependencyNode) -> String {
         switch node.objectScope.lowercased() {
-        case "container": return "lightblue"
-        case "graph": return "lightgreen"
-        case "transient": return "lightyellow"
-        default: return node.isResolved ? "lightgreen" : "lightgray"
+        case "container": "lightblue"
+        case "graph": "lightgreen"
+        case "transient": "lightyellow"
+        default: node.isResolved ? "lightgreen" : "lightgray"
         }
     }
 
@@ -426,11 +431,11 @@ public class CircularDependencyDetector {
 
     private static func generateResolutionSuggestion(for cycle: [String]) -> String {
         if cycle.count == 2 {
-            return "Consider using lazy injection or breaking the dependency with an interface"
+            "Consider using lazy injection or breaking the dependency with an interface"
         } else if cycle.count <= 4 {
-            return "Consider introducing a mediator service or using event-driven architecture"
+            "Consider introducing a mediator service or using event-driven architecture"
         } else {
-            return "Complex circular dependency detected. Consider refactoring to reduce coupling"
+            "Complex circular dependency detected. Consider refactoring to reduce coupling"
         }
     }
 }
@@ -438,7 +443,7 @@ public class CircularDependencyDetector {
 // MARK: - Graph Visualization Tools
 
 /// Tools for visualizing and analyzing dependency graphs
-public struct GraphVisualizationTools {
+public enum GraphVisualizationTools {
 
     /// Export graph to various formats
     public static func exportGraph(
@@ -446,28 +451,26 @@ public struct GraphVisualizationTools {
         to path: String,
         format: GraphFormat
     ) throws {
-        let content: String
-
-        switch format {
+        let content: String = switch format {
         case .graphviz:
-            content = DependencyGraphGenerator.generateDotGraph(
+            DependencyGraphGenerator.generateDotGraph(
                 nodes: graph.nodes,
                 edges: graph.edges
             )
         case .json:
-            content = DependencyGraphGenerator.generateJSONGraph(
+            DependencyGraphGenerator.generateJSONGraph(
                 nodes: graph.nodes,
                 edges: graph.edges
             )
         case .mermaid:
-            content = DependencyGraphGenerator.generateMermaidGraph(
+            DependencyGraphGenerator.generateMermaidGraph(
                 nodes: graph.nodes,
                 edges: graph.edges
             )
         case .xml:
-            content = generateXMLGraph(graph)
+            generateXMLGraph(graph)
         case .yaml:
-            content = generateYAMLGraph(graph)
+            generateYAMLGraph(graph)
         }
 
         try content.write(to: URL(fileURLWithPath: path), atomically: true, encoding: .utf8)
@@ -518,7 +521,8 @@ public struct GraphVisualizationTools {
 
         xml += "  <nodes>\n"
         for node in graph.nodes {
-            xml += "    <node id=\"\(node.id)\" label=\"\(node.label)\" serviceType=\"\(node.serviceType)\" scope=\"\(node.objectScope)\" resolved=\"\(node.isResolved)\"/>\n"
+            xml +=
+                "    <node id=\"\(node.id)\" label=\"\(node.label)\" serviceType=\"\(node.serviceType)\" scope=\"\(node.objectScope)\" resolved=\"\(node.isResolved)\"/>\n"
         }
         xml += "  </nodes>\n"
 

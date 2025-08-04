@@ -11,10 +11,10 @@ let package = Package(
         .executable(
             name: "QuickStartExample",
             targets: ["QuickStartExample"]
-        ),
+        )
     ],
     dependencies: [
-        .package(url: "https://github.com/Swinject/Swinject.git", from: "2.9.1"),
+        .package(url: "https://github.com/Swinject/Swinject.git", from: "2.9.1")
         // In a real project, you'd reference SwinJectMacros here:
         // .package(path: "../..") // or from GitHub
     ],
@@ -22,9 +22,9 @@ let package = Package(
         .executableTarget(
             name: "QuickStartExample",
             dependencies: [
-                "Swinject",
+                "Swinject"
                 // "SwinJectMacros" // Uncomment when using the real package
             ]
-        ),
+        )
     ]
 )

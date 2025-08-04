@@ -8,13 +8,13 @@ import XCTest
 @testable import SwinjectUtilityMacrosImplementation
 
 final class RetryMacroTests: XCTestCase {
-    
+
     let testMacros: [String: Macro.Type] = [
-        "Retry": RetryMacro.self,
+        "Retry": RetryMacro.self
     ]
-    
+
     // MARK: - Basic Functionality Tests
-    
+
     func testBasicRetryExpansion() throws {
         assertMacroExpansion(
             """
@@ -27,16 +27,16 @@ final class RetryMacroTests: XCTestCase {
             func fetchData() throws -> String {
                 return "data"
             }
-            
+
             public func fetchDataRetry() async throws -> String {
                 let methodKey = "\\(String(describing: type(of: self))).fetchData"
                 var lastError: Error?
-                
+
                 for attempt in 1...3 {
-                    
+
                     do {
                         let result = try fetchData()
-                        
+
                         // Record successful call
                         RetryMetricsManager.recordResult(
                             for: methodKey,
@@ -44,11 +44,11 @@ final class RetryMacroTests: XCTestCase {
                             attemptCount: attempt,
                             totalDelay: 0.0
                         )
-                        
+
                         return result
                     } catch {
                         lastError = error
-                        
+
                         // Check if this is the last attempt
                         if attempt == 3 {
                             // Record final failure
@@ -61,12 +61,12 @@ final class RetryMacroTests: XCTestCase {
                             )
                             throw error
                         }
-                        
+
                         // Calculate backoff delay
                         let baseDelay = 1.0 * pow(2.0, Double(attempt - 1))
                         let cappedDelay = min(baseDelay, 60.0)
                         let delay = cappedDelay
-                        
+
                         // Record retry attempt
                         let retryAttempt = RetryAttempt(
                             attemptNumber: attempt,
@@ -74,14 +74,14 @@ final class RetryMacroTests: XCTestCase {
                             delay: delay
                         )
                         RetryMetricsManager.recordAttempt(retryAttempt, for: methodKey)
-                        
+
                         // Wait before retry
                         if delay > 0 {
                             try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
                         }
                     }
                 }
-                
+
                 // This should never be reached, but just in case
                 throw lastError ?? RetryError.maxAttemptsExceeded(attempts: 3)
             }
@@ -89,7 +89,7 @@ final class RetryMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     func testRetryWithCustomMaxAttempts() throws {
         assertMacroExpansion(
             """
@@ -102,16 +102,16 @@ final class RetryMacroTests: XCTestCase {
             func uploadFile(data: Data) throws -> Bool {
                 return true
             }
-            
+
             public func uploadFileRetry(data: Data) async throws -> Bool {
                 let methodKey = "\\(String(describing: type(of: self))).uploadFile"
                 var lastError: Error?
-                
+
                 for attempt in 1...5 {
-                    
+
                     do {
                         let result = try uploadFile(data: data)
-                        
+
                         // Record successful call
                         RetryMetricsManager.recordResult(
                             for: methodKey,
@@ -119,11 +119,11 @@ final class RetryMacroTests: XCTestCase {
                             attemptCount: attempt,
                             totalDelay: 0.0
                         )
-                        
+
                         return result
                     } catch {
                         lastError = error
-                        
+
                         // Check if this is the last attempt
                         if attempt == 5 {
                             // Record final failure
@@ -136,12 +136,12 @@ final class RetryMacroTests: XCTestCase {
                             )
                             throw error
                         }
-                        
+
                         // Calculate backoff delay
                         let baseDelay = 1.0 * pow(2.0, Double(attempt - 1))
                         let cappedDelay = min(baseDelay, 60.0)
                         let delay = cappedDelay
-                        
+
                         // Record retry attempt
                         let retryAttempt = RetryAttempt(
                             attemptNumber: attempt,
@@ -149,14 +149,14 @@ final class RetryMacroTests: XCTestCase {
                             delay: delay
                         )
                         RetryMetricsManager.recordAttempt(retryAttempt, for: methodKey)
-                        
+
                         // Wait before retry
                         if delay > 0 {
                             try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
                         }
                     }
                 }
-                
+
                 // This should never be reached, but just in case
                 throw lastError ?? RetryError.maxAttemptsExceeded(attempts: 5)
             }
@@ -164,7 +164,7 @@ final class RetryMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     func testRetryWithJitter() throws {
         assertMacroExpansion(
             """
@@ -177,16 +177,16 @@ final class RetryMacroTests: XCTestCase {
             func networkCall() throws -> Data {
                 return Data()
             }
-            
+
             public func networkCallRetry() async throws -> Data {
                 let methodKey = "\\(String(describing: type(of: self))).networkCall"
                 var lastError: Error?
-                
+
                 for attempt in 1...3 {
-                    
+
                     do {
                         let result = try networkCall()
-                        
+
                         // Record successful call
                         RetryMetricsManager.recordResult(
                             for: methodKey,
@@ -194,11 +194,11 @@ final class RetryMacroTests: XCTestCase {
                             attemptCount: attempt,
                             totalDelay: 0.0
                         )
-                        
+
                         return result
                     } catch {
                         lastError = error
-                        
+
                         // Check if this is the last attempt
                         if attempt == 3 {
                             // Record final failure
@@ -211,14 +211,14 @@ final class RetryMacroTests: XCTestCase {
                             )
                             throw error
                         }
-                        
+
                         // Calculate backoff delay
                         let baseDelay = 1.0 * pow(2.0, Double(attempt - 1))
                         let cappedDelay = min(baseDelay, 60.0)
                         let jitterRange = cappedDelay * 0.25
                         let randomJitter = Double.random(in: -jitterRange...jitterRange)
                         let delay = max(0, cappedDelay + randomJitter)
-                        
+
                         // Record retry attempt
                         let retryAttempt = RetryAttempt(
                             attemptNumber: attempt,
@@ -226,14 +226,14 @@ final class RetryMacroTests: XCTestCase {
                             delay: delay
                         )
                         RetryMetricsManager.recordAttempt(retryAttempt, for: methodKey)
-                        
+
                         // Wait before retry
                         if delay > 0 {
                             try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
                         }
                     }
                 }
-                
+
                 // This should never be reached, but just in case
                 throw lastError ?? RetryError.maxAttemptsExceeded(attempts: 3)
             }
@@ -241,7 +241,7 @@ final class RetryMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     func testRetryWithTimeout() throws {
         assertMacroExpansion(
             """
@@ -254,22 +254,22 @@ final class RetryMacroTests: XCTestCase {
             func longRunningTask() throws -> String {
                 return "result"
             }
-            
+
             public func longRunningTaskRetry() async throws -> String {
                 let methodKey = "\\(String(describing: type(of: self))).longRunningTask"
                 var lastError: Error?
                 let startTime = Date()
                 let timeoutInterval: TimeInterval = 30.0
-                
+
                 for attempt in 1...5 {
                     // Check overall timeout
                     if Date().timeIntervalSince(startTime) >= timeoutInterval {
                         throw RetryError.timeoutExceeded(timeout: timeoutInterval)
                     }
-                    
+
                     do {
                         let result = try longRunningTask()
-                        
+
                         // Record successful call
                         RetryMetricsManager.recordResult(
                             for: methodKey,
@@ -277,11 +277,11 @@ final class RetryMacroTests: XCTestCase {
                             attemptCount: attempt,
                             totalDelay: 0.0
                         )
-                        
+
                         return result
                     } catch {
                         lastError = error
-                        
+
                         // Check if this is the last attempt
                         if attempt == 5 {
                             // Record final failure
@@ -294,12 +294,12 @@ final class RetryMacroTests: XCTestCase {
                             )
                             throw error
                         }
-                        
+
                         // Calculate backoff delay
                         let baseDelay = 1.0 * pow(2.0, Double(attempt - 1))
                         let cappedDelay = min(baseDelay, 60.0)
                         let delay = cappedDelay
-                        
+
                         // Record retry attempt
                         let retryAttempt = RetryAttempt(
                             attemptNumber: attempt,
@@ -307,14 +307,14 @@ final class RetryMacroTests: XCTestCase {
                             delay: delay
                         )
                         RetryMetricsManager.recordAttempt(retryAttempt, for: methodKey)
-                        
+
                         // Wait before retry
                         if delay > 0 {
                             try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
                         }
                     }
                 }
-                
+
                 // This should never be reached, but just in case
                 throw lastError ?? RetryError.maxAttemptsExceeded(attempts: 5)
             }
@@ -322,9 +322,9 @@ final class RetryMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     // MARK: - Async Function Tests
-    
+
     func testAsyncRetry() throws {
         assertMacroExpansion(
             """
@@ -337,16 +337,16 @@ final class RetryMacroTests: XCTestCase {
             func fetchDataAsync(from url: URL) async throws -> Data {
                 return try await URLSession.shared.data(from: url).0
             }
-            
+
             public func fetchDataAsyncRetry(from url: URL) async throws -> Data {
                 let methodKey = "\\(String(describing: type(of: self))).fetchDataAsync"
                 var lastError: Error?
-                
+
                 for attempt in 1...3 {
-                    
+
                     do {
                         let result = try await fetchDataAsync(from: url)
-                        
+
                         // Record successful call
                         RetryMetricsManager.recordResult(
                             for: methodKey,
@@ -354,11 +354,11 @@ final class RetryMacroTests: XCTestCase {
                             attemptCount: attempt,
                             totalDelay: 0.0
                         )
-                        
+
                         return result
                     } catch {
                         lastError = error
-                        
+
                         // Check if this is the last attempt
                         if attempt == 3 {
                             // Record final failure
@@ -371,12 +371,12 @@ final class RetryMacroTests: XCTestCase {
                             )
                             throw error
                         }
-                        
+
                         // Calculate backoff delay
                         let baseDelay = 1.0 * pow(2.0, Double(attempt - 1))
                         let cappedDelay = min(baseDelay, 60.0)
                         let delay = cappedDelay
-                        
+
                         // Record retry attempt
                         let retryAttempt = RetryAttempt(
                             attemptNumber: attempt,
@@ -384,14 +384,14 @@ final class RetryMacroTests: XCTestCase {
                             delay: delay
                         )
                         RetryMetricsManager.recordAttempt(retryAttempt, for: methodKey)
-                        
+
                         // Wait before retry
                         if delay > 0 {
                             try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
                         }
                     }
                 }
-                
+
                 // This should never be reached, but just in case
                 throw lastError ?? RetryError.maxAttemptsExceeded(attempts: 3)
             }
@@ -399,9 +399,9 @@ final class RetryMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     // MARK: - Static Method Tests
-    
+
     func testStaticMethodRetry() throws {
         assertMacroExpansion(
             """
@@ -414,16 +414,16 @@ final class RetryMacroTests: XCTestCase {
             static func validateInput(_ input: String) throws -> Bool {
                 return !input.isEmpty
             }
-            
+
             public static func validateInputRetry(_ input: String) async throws -> Bool {
                 let methodKey = "\\(String(describing: type(of: self))).validateInput"
                 var lastError: Error?
-                
+
                 for attempt in 1...2 {
-                    
+
                     do {
                         let result = try validateInput(input)
-                        
+
                         // Record successful call
                         RetryMetricsManager.recordResult(
                             for: methodKey,
@@ -431,11 +431,11 @@ final class RetryMacroTests: XCTestCase {
                             attemptCount: attempt,
                             totalDelay: 0.0
                         )
-                        
+
                         return result
                     } catch {
                         lastError = error
-                        
+
                         // Check if this is the last attempt
                         if attempt == 2 {
                             // Record final failure
@@ -448,12 +448,12 @@ final class RetryMacroTests: XCTestCase {
                             )
                             throw error
                         }
-                        
+
                         // Calculate backoff delay
                         let baseDelay = 1.0 * pow(2.0, Double(attempt - 1))
                         let cappedDelay = min(baseDelay, 60.0)
                         let delay = cappedDelay
-                        
+
                         // Record retry attempt
                         let retryAttempt = RetryAttempt(
                             attemptNumber: attempt,
@@ -461,14 +461,14 @@ final class RetryMacroTests: XCTestCase {
                             delay: delay
                         )
                         RetryMetricsManager.recordAttempt(retryAttempt, for: methodKey)
-                        
+
                         // Wait before retry
                         if delay > 0 {
                             try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
                         }
                     }
                 }
-                
+
                 // This should never be reached, but just in case
                 throw lastError ?? RetryError.maxAttemptsExceeded(attempts: 2)
             }
@@ -476,9 +476,9 @@ final class RetryMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     // MARK: - Non-Throwing Method Tests
-    
+
     func testNonThrowingMethodRetry() throws {
         assertMacroExpansion(
             """
@@ -491,16 +491,16 @@ final class RetryMacroTests: XCTestCase {
             func computeValue(input: Int) -> Int {
                 return input * 2
             }
-            
+
             public func computeValueRetry(input: Int) async throws -> Int {
                 let methodKey = "\\(String(describing: type(of: self))).computeValue"
                 var lastError: Error?
-                
+
                 for attempt in 1...3 {
-                    
+
                     do {
                         let result = computeValue(input: input)
-                        
+
                         // Record successful call
                         RetryMetricsManager.recordResult(
                             for: methodKey,
@@ -508,11 +508,11 @@ final class RetryMacroTests: XCTestCase {
                             attemptCount: attempt,
                             totalDelay: 0.0
                         )
-                        
+
                         return result
                     } catch {
                         lastError = error
-                        
+
                         // Check if this is the last attempt
                         if attempt == 3 {
                             // Record final failure
@@ -525,12 +525,12 @@ final class RetryMacroTests: XCTestCase {
                             )
                             throw error
                         }
-                        
+
                         // Calculate backoff delay
                         let baseDelay = 1.0 * pow(2.0, Double(attempt - 1))
                         let cappedDelay = min(baseDelay, 60.0)
                         let delay = cappedDelay
-                        
+
                         // Record retry attempt
                         let retryAttempt = RetryAttempt(
                             attemptNumber: attempt,
@@ -538,14 +538,14 @@ final class RetryMacroTests: XCTestCase {
                             delay: delay
                         )
                         RetryMetricsManager.recordAttempt(retryAttempt, for: methodKey)
-                        
+
                         // Wait before retry
                         if delay > 0 {
                             try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
                         }
                     }
                 }
-                
+
                 // This should never be reached, but just in case
                 throw lastError ?? RetryError.maxAttemptsExceeded(attempts: 3)
             }
@@ -553,9 +553,9 @@ final class RetryMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     // MARK: - Void Return Type Tests
-    
+
     func testVoidReturnTypeRetry() throws {
         assertMacroExpansion(
             """
@@ -568,16 +568,16 @@ final class RetryMacroTests: XCTestCase {
             func performAction() throws {
                 // Action implementation
             }
-            
+
             public func performActionRetry() async throws {
                 let methodKey = "\\(String(describing: type(of: self))).performAction"
                 var lastError: Error?
-                
+
                 for attempt in 1...2 {
-                    
+
                     do {
                         let result = try performAction()
-                        
+
                         // Record successful call
                         RetryMetricsManager.recordResult(
                             for: methodKey,
@@ -585,11 +585,11 @@ final class RetryMacroTests: XCTestCase {
                             attemptCount: attempt,
                             totalDelay: 0.0
                         )
-                        
-                        
+
+
                     } catch {
                         lastError = error
-                        
+
                         // Check if this is the last attempt
                         if attempt == 2 {
                             // Record final failure
@@ -602,12 +602,12 @@ final class RetryMacroTests: XCTestCase {
                             )
                             throw error
                         }
-                        
+
                         // Calculate backoff delay
                         let baseDelay = 1.0 * pow(2.0, Double(attempt - 1))
                         let cappedDelay = min(baseDelay, 60.0)
                         let delay = cappedDelay
-                        
+
                         // Record retry attempt
                         let retryAttempt = RetryAttempt(
                             attemptNumber: attempt,
@@ -615,14 +615,14 @@ final class RetryMacroTests: XCTestCase {
                             delay: delay
                         )
                         RetryMetricsManager.recordAttempt(retryAttempt, for: methodKey)
-                        
+
                         // Wait before retry
                         if delay > 0 {
                             try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
                         }
                     }
                 }
-                
+
                 // This should never be reached, but just in case
                 throw lastError ?? RetryError.maxAttemptsExceeded(attempts: 2)
             }
@@ -630,9 +630,9 @@ final class RetryMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     // MARK: - Error Cases
-    
+
     func testRetryOnNonFunction() throws {
         assertMacroExpansion(
             """
@@ -652,9 +652,9 @@ final class RetryMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     // MARK: - Complex Parameter Tests
-    
+
     func testRetryWithComplexParameters() throws {
         assertMacroExpansion(
             """
@@ -667,16 +667,16 @@ final class RetryMacroTests: XCTestCase {
             func processRequest(from url: URL, with headers: [String: String] = [:], timeout: TimeInterval = 30.0) async throws -> Response {
                 return Response()
             }
-            
+
             public func processRequestRetry(from url: URL, with headers: [String: String] = [:], timeout: TimeInterval = 30.0) async throws -> Response {
                 let methodKey = "\\(String(describing: type(of: self))).processRequest"
                 var lastError: Error?
-                
+
                 for attempt in 1...3 {
-                    
+
                     do {
                         let result = try await processRequest(from: url, with: headers, timeout: timeout)
-                        
+
                         // Record successful call
                         RetryMetricsManager.recordResult(
                             for: methodKey,
@@ -684,11 +684,11 @@ final class RetryMacroTests: XCTestCase {
                             attemptCount: attempt,
                             totalDelay: 0.0
                         )
-                        
+
                         return result
                     } catch {
                         lastError = error
-                        
+
                         // Check if this is the last attempt
                         if attempt == 3 {
                             // Record final failure
@@ -701,12 +701,12 @@ final class RetryMacroTests: XCTestCase {
                             )
                             throw error
                         }
-                        
+
                         // Calculate backoff delay
                         let baseDelay = 1.0 * pow(2.0, Double(attempt - 1))
                         let cappedDelay = min(baseDelay, 60.0)
                         let delay = cappedDelay
-                        
+
                         // Record retry attempt
                         let retryAttempt = RetryAttempt(
                             attemptNumber: attempt,
@@ -714,14 +714,14 @@ final class RetryMacroTests: XCTestCase {
                             delay: delay
                         )
                         RetryMetricsManager.recordAttempt(retryAttempt, for: methodKey)
-                        
+
                         // Wait before retry
                         if delay > 0 {
                             try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
                         }
                     }
                 }
-                
+
                 // This should never be reached, but just in case
                 throw lastError ?? RetryError.maxAttemptsExceeded(attempts: 3)
             }

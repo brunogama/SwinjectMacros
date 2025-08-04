@@ -118,21 +118,21 @@ import Swinject
 /// class UserServiceTests: XCTestCase {
 ///     var userStub: UserServiceProtocolStub!
 ///     var sut: UserController!
-///     
+///
 ///     override func setUp() {
 ///         super.setUp()
 ///         userStub = UserServiceProtocolStub()
 ///         sut = UserController(userService: userStub)
 ///     }
-///     
+///
 ///     func testGetUserDisplaysCorrectName() {
 ///         // Given
 ///         let expectedUser = User(id: "123", name: "John Doe")
 ///         userStub.getUserReturnValue = expectedUser
-///         
+///
 ///         // When
 ///         let displayName = sut.getDisplayName(for: "123")
-///         
+///
 ///         // Then
 ///         XCTAssertEqual(displayName, "John Doe")
 ///         XCTAssertEqual(userStub.getUserCallCount, 1)
@@ -157,7 +157,7 @@ public macro StubService(
 public protocol StubService {
     /// Reset all stub configurations to default values
     func resetStub()
-    
+
     /// Configure the stub with default return values
     func configureDefaults()
 }
@@ -170,7 +170,7 @@ public struct StubServiceConfiguration {
     public let throwErrors: Bool
     public let closureSupport: Bool
     public let asyncSupport: Bool
-    
+
     public init(
         prefix: String = "",
         suffix: String = "Stub",
@@ -186,10 +186,10 @@ public struct StubServiceConfiguration {
         self.closureSupport = closureSupport
         self.asyncSupport = asyncSupport
     }
-    
+
     /// Generate the stub class name for a protocol
     public func stubClassName(for protocolName: String) -> String {
-        return "\(prefix)\(protocolName)\(suffix)"
+        "\(prefix)\(protocolName)\(suffix)"
     }
 }
 
@@ -199,7 +199,7 @@ public struct StubCallRecord {
     public let arguments: [Any?]
     public let timestamp: Date
     public let callIndex: Int
-    
+
     public init(methodName: String, arguments: [Any?], timestamp: Date = Date(), callIndex: Int) {
         self.methodName = methodName
         self.arguments = arguments
@@ -211,52 +211,52 @@ public struct StubCallRecord {
 /// Registry for managing stub configurations and behaviors
 public class StubServiceRegistry {
     public static let shared = StubServiceRegistry()
-    
+
     private var configurations: [String: StubServiceConfiguration] = [:]
     private var callRecords: [String: [StubCallRecord]] = [:]
     private let lock = NSLock()
-    
+
     private init() {}
-    
+
     /// Register a stub configuration for a protocol
     public func register(configuration: StubServiceConfiguration, for protocolName: String) {
         lock.lock()
         defer { lock.unlock() }
         configurations[protocolName] = configuration
     }
-    
+
     /// Get configuration for a protocol
     public func getConfiguration(for protocolName: String) -> StubServiceConfiguration? {
         lock.lock()
         defer { lock.unlock() }
         return configurations[protocolName]
     }
-    
+
     /// Record a method call for tracking
     public func recordCall(_ record: StubCallRecord, for stubName: String) {
         lock.lock()
         defer { lock.unlock() }
-        
+
         if callRecords[stubName] == nil {
             callRecords[stubName] = []
         }
         callRecords[stubName]?.append(record)
     }
-    
+
     /// Get call records for a stub
     public func getCallRecords(for stubName: String) -> [StubCallRecord] {
         lock.lock()
         defer { lock.unlock() }
         return callRecords[stubName] ?? []
     }
-    
+
     /// Clear all call records for a stub
     public func clearCallRecords(for stubName: String) {
         lock.lock()
         defer { lock.unlock() }
         callRecords[stubName] = []
     }
-    
+
     /// Clear all call records
     public func clearAllCallRecords() {
         lock.lock()
@@ -272,30 +272,30 @@ public class StubReturnValueSequence<T> {
     private var values: [T]
     private var currentIndex = 0
     private let lock = NSLock()
-    
+
     public init(values: [T]) {
         self.values = values
     }
-    
+
     /// Get the next return value in the sequence
     public func nextValue() -> T? {
         lock.lock()
         defer { lock.unlock() }
-        
+
         guard !values.isEmpty else { return nil }
-        
+
         let value = values[currentIndex % values.count]
         currentIndex += 1
         return value
     }
-    
+
     /// Reset sequence to beginning
     public func reset() {
         lock.lock()
         defer { lock.unlock() }
         currentIndex = 0
     }
-    
+
     /// Update the values in the sequence
     public func updateValues(_ newValues: [T]) {
         lock.lock()
@@ -310,72 +310,72 @@ public actor AsyncStubBehavior<T> {
     private var returnValue: T?
     private var throwError: Error?
     private var closure: (() async throws -> T)?
-    
+
     public init() {}
-    
+
     /// Set return value for async method
     public func setReturnValue(_ value: T) {
         returnValue = value
         closure = nil
         throwError = nil
     }
-    
+
     /// Set error to throw for async method
     public func setThrowError(_ error: Error) {
         throwError = error
         returnValue = nil
         closure = nil
     }
-    
+
     /// Set closure behavior for async method
     public func setClosure(_ behavior: @escaping () async throws -> T) {
         closure = behavior
         returnValue = nil
         throwError = nil
     }
-    
+
     /// Execute the configured behavior
     public func execute() async throws -> T {
         if let closure = closure {
             return try await closure()
         }
-        
+
         if let error = throwError {
             throw error
         }
-        
+
         guard let value = returnValue else {
             fatalError("No behavior configured for async stub method")
         }
-        
+
         return value
     }
 }
 
 // MARK: - Container Extensions for Stubs
 
-public extension Container {
-    
+extension Container {
+
     /// Register a stub implementation for a protocol
-    func registerStub<T>(
+    public func registerStub<T>(
         _ protocolType: T.Type,
         stub: T,
         name: String? = nil
     ) {
         register(protocolType, name: name) { _ in stub }
     }
-    
+
     /// Create a test container with stub registrations
-    static func testContainerWithStubs(
+    public static func testContainerWithStubs(
         _ stubRegistrations: (Container) -> Void
     ) -> Container {
         let container = Container()
         stubRegistrations(container)
         return container
     }
-    
+
     /// Register multiple stubs at once
-    func registerStubs(_ registrations: [String: Any]) {
+    public func registerStubs(_ registrations: [String: Any]) {
         for (typeName, stub) in registrations {
             // Note: This would require runtime type information
             // In practice, this would be generated by the macro
@@ -387,58 +387,58 @@ public extension Container {
 // MARK: - XCTest Integration Helpers
 
 #if canImport(XCTest)
-import XCTest
+    import XCTest
 
-/// XCTest assertions for stub verification
-public extension XCTestCase {
-    
-    /// Assert that a stub method was called with expected count
-    func assertStubMethodCalled<T: StubService>(
-        _ stub: T,
-        method: String,
-        count: Int,
-        file: StaticString = #file,
-        line: UInt = #line
-    ) {
-        let records = StubServiceRegistry.shared.getCallRecords(for: String(describing: type(of: stub)))
-        let methodCalls = records.filter { $0.methodName == method }
-        
-        XCTAssertEqual(
-            methodCalls.count,
-            count,
-            "Expected \(method) to be called \(count) times, but was called \(methodCalls.count) times",
-            file: file,
-            line: line
-        )
+    /// XCTest assertions for stub verification
+    extension XCTestCase {
+
+        /// Assert that a stub method was called with expected count
+        public func assertStubMethodCalled(
+            _ stub: some StubService,
+            method: String,
+            count: Int,
+            file: StaticString = #file,
+            line: UInt = #line
+        ) {
+            let records = StubServiceRegistry.shared.getCallRecords(for: String(describing: type(of: stub)))
+            let methodCalls = records.filter { $0.methodName == method }
+
+            XCTAssertEqual(
+                methodCalls.count,
+                count,
+                "Expected \(method) to be called \(count) times, but was called \(methodCalls.count) times",
+                file: file,
+                line: line
+            )
+        }
+
+        /// Assert that a stub method was never called
+        public func assertStubMethodNotCalled(
+            _ stub: some StubService,
+            method: String,
+            file: StaticString = #file,
+            line: UInt = #line
+        ) {
+            assertStubMethodCalled(stub, method: method, count: 0, file: file, line: line)
+        }
+
+        /// Assert that stub methods were called in specific order
+        public func assertStubMethodsCalledInOrder(
+            _ stub: some StubService,
+            methods: [String],
+            file: StaticString = #file,
+            line: UInt = #line
+        ) {
+            let records = StubServiceRegistry.shared.getCallRecords(for: String(describing: type(of: stub)))
+            let actualOrder = records.map { $0.methodName }
+
+            XCTAssertEqual(
+                actualOrder,
+                methods,
+                "Expected methods to be called in order \(methods), but actual order was \(actualOrder)",
+                file: file,
+                line: line
+            )
+        }
     }
-    
-    /// Assert that a stub method was never called
-    func assertStubMethodNotCalled<T: StubService>(
-        _ stub: T,
-        method: String,
-        file: StaticString = #file,
-        line: UInt = #line
-    ) {
-        assertStubMethodCalled(stub, method: method, count: 0, file: file, line: line)
-    }
-    
-    /// Assert that stub methods were called in specific order
-    func assertStubMethodsCalledInOrder<T: StubService>(
-        _ stub: T,
-        methods: [String],
-        file: StaticString = #file,
-        line: UInt = #line
-    ) {
-        let records = StubServiceRegistry.shared.getCallRecords(for: String(describing: type(of: stub)))
-        let actualOrder = records.map { $0.methodName }
-        
-        XCTAssertEqual(
-            actualOrder,
-            methods,
-            "Expected methods to be called in order \(methods), but actual order was \(actualOrder)",
-            file: file,
-            line: line
-        )
-    }
-}
 #endif

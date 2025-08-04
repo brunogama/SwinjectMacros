@@ -873,7 +873,11 @@ final class PerformanceTrackedMacroTests: XCTestCase {
             }
             """,
             diagnostics: [
-                DiagnosticSpec(message: "@PerformanceTracked can only be applied to functions and methods", line: 1, column: 1)
+                DiagnosticSpec(
+                    message: "@PerformanceTracked can only be applied to functions and methods",
+                    line: 1,
+                    column: 1
+                )
             ],
             macros: testMacros
         )
@@ -897,7 +901,11 @@ final class PerformanceTrackedMacroTests: XCTestCase {
             }
             """,
             diagnostics: [
-                DiagnosticSpec(message: "@PerformanceTracked can only be applied to functions and methods", line: 2, column: 5)
+                DiagnosticSpec(
+                    message: "@PerformanceTracked can only be applied to functions and methods",
+                    line: 2,
+                    column: 5
+                )
             ],
             macros: testMacros
         )

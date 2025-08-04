@@ -138,7 +138,7 @@ import Foundation
 ///     func searchProducts(query: String, filters: [String]) async throws -> [Product] {
 ///         return try await productAPI.search(query: query, filters: filters)
 ///     }
-///     
+///
 ///     @Cache(
 ///         ttl: 86400,  // 24 hours
 ///         maxEntries: 10000,
@@ -148,7 +148,7 @@ import Foundation
 ///     func getConfiguration(configId: String) async throws -> Configuration {
 ///         return try await configService.fetch(configId)
 ///     }
-///     
+///
 ///     @Cache(
 ///         ttl: 300,    // 5 minutes
 ///         evictionPolicy: .lfu,
@@ -159,7 +159,7 @@ import Foundation
 ///         return try await userAPI.getProfile(userId, at: timestamp)
 ///     }
 /// }
-/// 
+///
 /// // Monitor cache performance
 /// CacheMetrics.printCacheReport()
 /// // Output:
@@ -186,24 +186,24 @@ public macro Cache(
 
 /// Cache eviction policies
 public enum CacheEvictionPolicy: String, CaseIterable {
-    case lru = "LRU"           // Least Recently Used
-    case lfu = "LFU"           // Least Frequently Used
-    case fifo = "FIFO"         // First In, First Out
+    case lru = "LRU" // Least Recently Used
+    case lfu = "LFU" // Least Frequently Used
+    case fifo = "FIFO" // First In, First Out
     case timeOnly = "TIME_ONLY" // Time-based expiration only
-    
+
     public var description: String {
-        return rawValue
+        rawValue
     }
 }
 
 /// Cache serialization strategies
 public enum CacheSerializationStrategy: String, CaseIterable {
-    case memory = "MEMORY"           // In-memory only
-    case disk = "DISK"               // Persistent disk storage
-    case hybrid = "HYBRID"           // Memory + disk backup
-    
+    case memory = "MEMORY" // In-memory only
+    case disk = "DISK" // Persistent disk storage
+    case hybrid = "HYBRID" // Memory + disk backup
+
     public var description: String {
-        return rawValue
+        rawValue
     }
 }
 
@@ -211,41 +211,41 @@ public enum CacheSerializationStrategy: String, CaseIterable {
 public struct CacheEntry<T> {
     /// The cached value
     public let value: T
-    
+
     /// When this entry was created
     public let createdAt: Date
-    
+
     /// When this entry was last accessed
     public var lastAccessed: Date
-    
+
     /// How many times this entry has been accessed
     public var accessCount: Int
-    
+
     /// When this entry expires
     public let expiresAt: Date
-    
+
     /// Size of this entry in bytes (estimated)
     public let sizeBytes: Int
-    
+
     public init(value: T, ttl: TimeInterval, sizeBytes: Int = 0) {
         self.value = value
-        self.createdAt = Date()
-        self.lastAccessed = Date()
-        self.accessCount = 1
-        self.expiresAt = Date().addingTimeInterval(ttl)
+        createdAt = Date()
+        lastAccessed = Date()
+        accessCount = 1
+        expiresAt = Date().addingTimeInterval(ttl)
         self.sizeBytes = sizeBytes
     }
-    
+
     /// Whether this entry is still valid
     public var isValid: Bool {
-        return Date() < expiresAt
+        Date() < expiresAt
     }
-    
+
     /// Age of this entry in seconds
     public var age: TimeInterval {
-        return Date().timeIntervalSince(createdAt)
+        Date().timeIntervalSince(createdAt)
     }
-    
+
     /// Record an access to this entry
     public mutating func recordAccess() {
         lastAccessed = Date()
@@ -257,49 +257,49 @@ public struct CacheEntry<T> {
 public struct CacheStats {
     /// Cache name/identifier
     public let cacheName: String
-    
+
     /// Current number of entries in cache
     public let currentSize: Int
-    
+
     /// Maximum allowed entries
     public let maxSize: Int
-    
+
     /// Total number of cache lookups
     public let totalLookups: Int
-    
+
     /// Number of cache hits
     public let hits: Int
-    
+
     /// Number of cache misses
     public let misses: Int
-    
+
     /// Cache hit rate (0.0 to 1.0)
     public let hitRate: Double
-    
+
     /// Number of entries evicted due to size limits
     public let evictions: Int
-    
+
     /// Number of entries expired due to TTL
     public let expirations: Int
-    
+
     /// Average time for cache hits (milliseconds)
     public let averageHitTime: TimeInterval
-    
+
     /// Average time for cache misses (milliseconds)
     public let averageMissTime: TimeInterval
-    
+
     /// Total memory usage in bytes
     public let memoryUsage: Int
-    
+
     /// Eviction policy being used
     public let evictionPolicy: CacheEvictionPolicy
-    
+
     /// TTL setting in seconds
     public let ttl: TimeInterval
-    
+
     /// When statistics were last updated
     public let lastUpdated: Date
-    
+
     public init(
         cacheName: String,
         currentSize: Int,
@@ -339,22 +339,22 @@ public struct CacheStats {
 public struct CacheOperation {
     /// Timestamp of the operation
     public let timestamp: Date
-    
+
     /// Whether this was a cache hit
     public let wasHit: Bool
-    
+
     /// Cache key used
     public let key: String
-    
+
     /// Time taken for the operation (milliseconds)
     public let responseTime: TimeInterval
-    
+
     /// Size of the cached value (bytes)
     public let valueSize: Int
-    
+
     /// Thread information
     public let threadInfo: ThreadInfo
-    
+
     public init(
         timestamp: Date = Date(),
         wasHit: Bool,
@@ -380,7 +380,7 @@ public class CacheRegistry {
     private static var operationHistory: [String: [CacheOperation]] = [:]
     private static let registryQueue = DispatchQueue(label: "cache.registry", attributes: .concurrent)
     private static let maxHistoryPerCache = 1000 // Circular buffer size
-    
+
     /// Gets or creates a cache instance for the given key
     public static func getCache(
         for key: String,
@@ -388,89 +388,90 @@ public class CacheRegistry {
         maxEntries: Int,
         evictionPolicy: CacheEvictionPolicy
     ) -> CacheInstance {
-        return registryQueue.sync {
+        registryQueue.sync {
             if let existing = caches[key] {
                 return existing
             }
-            
+
             let cache = CacheInstance(
                 name: key,
                 ttl: ttl,
                 maxEntries: maxEntries,
                 evictionPolicy: evictionPolicy
             )
-            
-            caches[key] = cache
+
+            self.caches[key] = cache
             return cache
         }
     }
-    
+
     /// Records a cache operation
     public static func recordOperation(_ operation: CacheOperation, for key: String) {
         registryQueue.async(flags: .barrier) {
-            operationHistory[key, default: []].append(operation)
-            
+            self.operationHistory[key, default: []].append(operation)
+
             // Maintain circular buffer
-            if operationHistory[key]!.count > maxHistoryPerCache {
-                operationHistory[key]!.removeFirst()
+            if self.operationHistory[key]!.count > self.maxHistoryPerCache {
+                self.operationHistory[key]!.removeFirst()
             }
         }
     }
-    
+
     /// Gets statistics for a specific cache
     public static func getStats(for key: String) -> CacheStats? {
-        return registryQueue.sync {
+        registryQueue.sync {
             guard let cache = caches[key],
-                  let operations = operationHistory[key] else {
+                  let operations = operationHistory[key]
+            else {
                 return nil
             }
-            
-            return calculateStats(from: operations, cache: cache)
+
+            return self.calculateStats(from: operations, cache: cache)
         }
     }
-    
+
     /// Gets statistics for all caches
     public static func getAllStats() -> [String: CacheStats] {
-        return registryQueue.sync {
+        registryQueue.sync {
             var result: [String: CacheStats] = [:]
-            
-            for (key, cache) in caches {
+
+            for (key, cache) in self.caches {
                 if let operations = operationHistory[key] {
-                    result[key] = calculateStats(from: operations, cache: cache)
+                    result[key] = self.calculateStats(from: operations, cache: cache)
                 }
             }
-            
+
             return result
         }
     }
-    
+
     /// Clears a specific cache
     public static func clear(for key: String) {
         registryQueue.async(flags: .barrier) {
-            caches[key]?.clear()
-            operationHistory[key] = []
+            self.caches[key]?.clear()
+            self.operationHistory[key] = []
         }
     }
-    
+
     /// Clears all caches
     public static func clearAll() {
         registryQueue.async(flags: .barrier) {
-            for cache in caches.values {
+            for cache in self.caches.values {
                 cache.clear()
             }
-            operationHistory.removeAll()
+            self.operationHistory.removeAll()
         }
     }
-    
+
     /// Performs cache maintenance (cleanup expired entries)
     public static func performMaintenance() {
         registryQueue.async(flags: .barrier) {
-            for cache in caches.values {
+            for cache in self.caches.values {
                 cache.performMaintenance()
             }
         }
     }
-    
+
     /// Prints a comprehensive cache report
     public static func printReport() {
         let allStats = getAllStats()
@@ -478,15 +479,25 @@ public class CacheRegistry {
             print("📦 No cache data available")
             return
         }
-        
+
         print("\n📦 Cache Report")
         print("=" * 80)
-        print(String(format: "%-25s %-8s %8s %8s %8s %8s %8s", "Cache", "Hit%", "Size", "MaxSize", "AvgHit", "AvgMiss", "Memory"))
+        print(String(
+            format: "%-25s %-8s %8s %8s %8s %8s %8s",
+            "Cache",
+            "Hit%",
+            "Size",
+            "MaxSize",
+            "AvgHit",
+            "AvgMiss",
+            "Memory"
+        ))
         print("-" * 80)
-        
+
         for (key, stats) in allStats.sorted(by: { $0.value.hitRate > $1.value.hitRate }) {
             let memoryMB = Double(stats.memoryUsage) / (1024 * 1024)
-            print(String(format: "%-25s %-8.1f %8d %8d %8.1f %8.1f %8.1f",
+            print(String(
+                format: "%-25s %-8.1f %8d %8d %8.1f %8.1f %8.1f",
                 key.suffix(25),
                 stats.hitRate * 100,
                 stats.currentSize,
@@ -496,40 +507,40 @@ public class CacheRegistry {
                 memoryMB
             ))
         }
-        
+
         print("-" * 80)
         print("Legend: Hit% = Hit rate, AvgHit/Miss = Average response time (ms), Memory = Memory usage (MB)")
     }
-    
+
     /// Gets caches with low hit rates
     public static func getLowPerformanceCaches(threshold: Double = 0.5) -> [(String, CacheStats)] {
         let allStats = getAllStats()
-        return allStats.compactMap { (key, stats) in
+        return allStats.compactMap { key, stats in
             stats.hitRate < threshold ? (key, stats) : nil
         }.sorted { $0.1.hitRate < $1.1.hitRate }
     }
-    
+
     /// Gets memory usage for all caches combined
     public static func getTotalMemoryUsage() -> Int {
-        return getAllStats().values.map { $0.memoryUsage }.reduce(0, +)
+        getAllStats().values.map { $0.memoryUsage }.reduce(0, +)
     }
-    
+
     // MARK: - Private Helper Methods
-    
+
     private static func calculateStats(from operations: [CacheOperation], cache: CacheInstance) -> CacheStats {
         let totalLookups = operations.count
         let hits = operations.filter { $0.wasHit }.count
         let misses = totalLookups - hits
         let hitRate = totalLookups > 0 ? Double(hits) / Double(totalLookups) : 0.0
-        
+
         let hitTimes = operations.filter { $0.wasHit }.map { $0.responseTime }
         let missTimes = operations.filter { !$0.wasHit }.map { $0.responseTime }
-        
+
         let averageHitTime = hitTimes.isEmpty ? 0.0 : hitTimes.reduce(0, +) / Double(hitTimes.count)
         let averageMissTime = missTimes.isEmpty ? 0.0 : missTimes.reduce(0, +) / Double(missTimes.count)
-        
+
         let memoryUsage = operations.map { $0.valueSize }.reduce(0, +)
-        
+
         return CacheStats(
             cacheName: cache.name,
             currentSize: cache.currentSize,
@@ -555,50 +566,50 @@ public class CacheInstance {
     public let ttl: TimeInterval
     public let maxEntries: Int
     public let evictionPolicy: CacheEvictionPolicy
-    
+
     private let lock = NSLock()
     private var storage: [String: CacheEntry<Any>] = [:]
     private var accessOrder: [String] = [] // For LRU
     private var accessCounts: [String: Int] = [:] // For LFU
     private var insertionOrder: [String] = [] // For FIFO
-    
-    private var _evictionCount: Int = 0
-    private var _expirationCount: Int = 0
-    
+
+    private var _evictionCount = 0
+    private var _expirationCount = 0
+
     public var currentSize: Int {
         lock.lock()
         defer { lock.unlock() }
         return storage.count
     }
-    
+
     public var evictionCount: Int {
         lock.lock()
         defer { lock.unlock() }
         return _evictionCount
     }
-    
+
     public var expirationCount: Int {
         lock.lock()
         defer { lock.unlock() }
         return _expirationCount
     }
-    
+
     public init(name: String, ttl: TimeInterval, maxEntries: Int, evictionPolicy: CacheEvictionPolicy) {
         self.name = name
         self.ttl = ttl
         self.maxEntries = maxEntries
         self.evictionPolicy = evictionPolicy
     }
-    
+
     /// Gets a value from the cache
     public func get<T>(key: String, type: T.Type) -> T? {
         lock.lock()
         defer { lock.unlock() }
-        
+
         guard var entry = storage[key] else {
             return nil
         }
-        
+
         // Check if entry is expired
         if !entry.isValid {
             storage.removeValue(forKey: key)
@@ -606,52 +617,52 @@ public class CacheInstance {
             _expirationCount += 1
             return nil
         }
-        
+
         // Update access information
         entry.recordAccess()
         storage[key] = entry
         updateAccessOrder(key: key)
-        
+
         return entry.value as? T
     }
-    
+
     /// Stores a value in the cache
-    public func set<T>(key: String, value: T) {
+    public func set(key: String, value: some Any) {
         lock.lock()
         defer { lock.unlock() }
-        
+
         let entry = CacheEntry(value: value as Any, ttl: ttl, sizeBytes: estimateSize(of: value))
-        
+
         // Check if we need to evict entries
         if storage.count >= maxEntries && storage[key] == nil {
             evictEntries()
         }
-        
+
         // Store the entry
         let isNewEntry = storage[key] == nil
         storage[key] = entry
-        
+
         if isNewEntry {
             addToOrderStructures(key: key)
         } else {
             updateAccessOrder(key: key)
         }
     }
-    
+
     /// Removes a specific key from the cache
     public func remove(key: String) {
         lock.lock()
         defer { lock.unlock() }
-        
+
         storage.removeValue(forKey: key)
         removeFromOrderStructures(key: key)
     }
-    
+
     /// Clears all cache entries
     public func clear() {
         lock.lock()
         defer { lock.unlock() }
-        
+
         storage.removeAll()
         accessOrder.removeAll()
         accessCounts.removeAll()
@@ -659,31 +670,31 @@ public class CacheInstance {
         _evictionCount = 0
         _expirationCount = 0
     }
-    
+
     /// Performs maintenance (removes expired entries)
     public func performMaintenance() {
         lock.lock()
         defer { lock.unlock() }
-        
+
         let now = Date()
-        let expiredKeys = storage.compactMap { (key, entry) in
+        let expiredKeys = storage.compactMap { key, entry in
             entry.expiresAt < now ? key : nil
         }
-        
+
         for key in expiredKeys {
             storage.removeValue(forKey: key)
             removeFromOrderStructures(key: key)
             _expirationCount += 1
         }
     }
-    
+
     // MARK: - Private Helper Methods
-    
+
     private func evictEntries() {
         guard !storage.isEmpty else { return }
-        
+
         let keyToEvict: String
-        
+
         switch evictionPolicy {
         case .lru:
             keyToEvict = accessOrder.first!
@@ -694,12 +705,12 @@ public class CacheInstance {
         case .timeOnly:
             return // No size-based eviction for time-only policy
         }
-        
+
         storage.removeValue(forKey: keyToEvict)
         removeFromOrderStructures(key: keyToEvict)
         _evictionCount += 1
     }
-    
+
     private func addToOrderStructures(key: String) {
         switch evictionPolicy {
         case .lru:
@@ -712,7 +723,7 @@ public class CacheInstance {
             break
         }
     }
-    
+
     private func updateAccessOrder(key: String) {
         switch evictionPolicy {
         case .lru:
@@ -726,7 +737,7 @@ public class CacheInstance {
             break
         }
     }
-    
+
     private func removeFromOrderStructures(key: String) {
         if let index = accessOrder.firstIndex(of: key) {
             accessOrder.remove(at: index)
@@ -736,10 +747,10 @@ public class CacheInstance {
             insertionOrder.remove(at: index)
         }
     }
-    
-    private func estimateSize<T>(of value: T) -> Int {
+
+    private func estimateSize(of value: some Any) -> Int {
         // Basic size estimation - can be improved with more sophisticated logic
-        return MemoryLayout.size(ofValue: value)
+        MemoryLayout.size(ofValue: value)
     }
 }
 
@@ -751,25 +762,21 @@ public enum CacheError: Error, LocalizedError {
     case deserializationFailed(reason: String)
     case keyGenerationFailed(reason: String)
     case cacheUnavailable(cacheName: String)
-    
+
     public var errorDescription: String? {
         switch self {
         case .serializationFailed(let reason):
-            return "Cache serialization failed: \(reason)"
+            "Cache serialization failed: \(reason)"
         case .deserializationFailed(let reason):
-            return "Cache deserialization failed: \(reason)"
+            "Cache deserialization failed: \(reason)"
         case .keyGenerationFailed(let reason):
-            return "Cache key generation failed: \(reason)"
+            "Cache key generation failed: \(reason)"
         case .cacheUnavailable(let cacheName):
-            return "Cache '\(cacheName)' is unavailable"
+            "Cache '\(cacheName)' is unavailable"
         }
     }
 }
 
 // MARK: - String Extension for Pretty Printing
 
-private extension String {
-    static func * (left: String, right: Int) -> String {
-        return String(repeating: left, count: right)
-    }
-}
+// String * operator moved to StringExtensions.swift

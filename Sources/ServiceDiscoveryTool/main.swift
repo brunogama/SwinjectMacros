@@ -7,7 +7,7 @@ import SwiftParser
 import SwiftSyntax
 
 /// Command-line tool for discovering and generating service registrations
-struct ServiceDiscoveryTool {
+enum ServiceDiscoveryTool {
     private static let logger = Logger(subsystem: "com.swinjectutilitymacros", category: "service-discovery")
 
     static func main() throws {
@@ -148,8 +148,9 @@ struct ServiceDiscoveryTool {
 
             private func hasInjectableAttribute(_ attributes: AttributeListSyntax) -> Bool {
                 for attribute in attributes {
-                    if let identifierType = attribute.as(AttributeSyntax.self)?.attributeName.as(IdentifierTypeSyntax.self),
-                       identifierType.name.text == "Injectable"
+                    if let identifierType = attribute.as(AttributeSyntax.self)?.attributeName
+                        .as(IdentifierTypeSyntax.self),
+                        identifierType.name.text == "Injectable"
                     {
                         return true
                     }
@@ -162,7 +163,7 @@ struct ServiceDiscoveryTool {
         visitor.walk(syntax)
 
         // Update file paths
-        for i in 0 ..< visitor.services.count {
+        for i in 0..<visitor.services.count {
             visitor.services[i].filePath = filePath
         }
 
@@ -222,11 +223,11 @@ enum ServiceDiscoveryError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case let .inputPathNotFound(path):
-            return "Input path not found: \(path)"
+            "Input path not found: \(path)"
         case let .outputPathNotWritable(path):
-            return "Output path not writable: \(path)"
+            "Output path not writable: \(path)"
         case let .fileParsingFailed(file):
-            return "Failed to parse file: \(file)"
+            "Failed to parse file: \(file)"
         }
     }
 }

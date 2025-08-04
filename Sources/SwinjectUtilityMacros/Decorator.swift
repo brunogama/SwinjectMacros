@@ -5,7 +5,8 @@ import Swinject
 
 // MARK: - @Decorator Macro
 
-/// Generates decorator implementations that wrap service instances with additional behavior while maintaining the same interface.
+/// Generates decorator implementations that wrap service instances with additional behavior while maintaining the same
+/// interface.
 ///
 /// This macro enables aspect-oriented programming patterns like logging, caching, validation, metrics collection,
 /// and cross-cutting concerns without modifying the original service implementation.
@@ -19,13 +20,13 @@ import Swinject
 ///         // Original implementation
 ///         return database.findUser(id: id)
 ///     }
-///     
+///
 ///     func updateUser(_ user: User) -> Bool {
 ///         // Original implementation
 ///         return database.save(user)
 ///     }
 /// }
-/// 
+///
 /// // Generated decorator can wrap the service:
 /// let decoratedService = UserServiceDecorator(
 ///     original: UserService(),
@@ -67,24 +68,24 @@ import Swinject
 ///         return try execution()
 ///     }
 /// }
-/// 
+///
 /// class CachingDecorator: ServiceDecorator {
 ///     private var cache: [String: Any] = [:]
-///     
+///
 ///     func decorate<T>(method: String, execution: () throws -> T) rethrows -> T {
 ///         let cacheKey = "\(method)_cache"
 ///         if let cached = cache[cacheKey] as? T {
 ///             print("💾 Cache hit for \(method)")
 ///             return cached
 ///         }
-///         
+///
 ///         let result = try execution()
 ///         cache[cacheKey] = result
 ///         print("💾 Cached result for \(method)")
 ///         return result
 ///     }
 /// }
-/// 
+///
 /// // Apply decorators
 /// @Decorator(decorators: ["LoggingDecorator", "CachingDecorator"])
 /// class DataService: DataServiceProtocol { }
@@ -130,7 +131,7 @@ import Swinject
 ///     let originalService = UserService(
 ///         database: resolver.resolve(DatabaseProtocol.self)!
 ///     )
-///     
+///
 ///     return UserServiceDecorator(
 ///         original: originalService,
 ///         decorators: [
@@ -156,26 +157,26 @@ public macro Decorator(
 public protocol ServiceDecorator {
     /// Decorate method execution with additional behavior
     func decorate<T>(method: String, execution: () throws -> T) rethrows -> T
-    
+
     /// Decorate async method execution
     func decorateAsync<T>(method: String, execution: () async throws -> T) async rethrows -> T
-    
+
     /// Get decorator priority (higher numbers execute first)
     var priority: Int { get }
-    
+
     /// Check if decorator should be applied to specific method
     func shouldDecorate(method: String) -> Bool
 }
 
 /// Default implementations for ServiceDecorator
-public extension ServiceDecorator {
-    var priority: Int { return 0 }
-    
-    func shouldDecorate(method: String) -> Bool { return true }
-    
-    func decorateAsync<T>(method: String, execution: () async throws -> T) async rethrows -> T {
+extension ServiceDecorator {
+    public var priority: Int { 0 }
+
+    public func shouldDecorate(method: String) -> Bool { true }
+
+    public func decorateAsync<T>(method: String, execution: () async throws -> T) async rethrows -> T {
         // Default implementation just calls the async execution
-        return try await execution()
+        try await execution()
     }
 }
 
@@ -183,41 +184,41 @@ public extension ServiceDecorator {
 public protocol DecoratedService {
     /// Add a decorator to this service
     func addDecorator(_ decorator: ServiceDecorator)
-    
+
     /// Execute code with decorator chain
     func executeWithDecorators<T>(_ method: String, execution: () throws -> T) rethrows -> T
-    
+
     /// Execute async code with decorator chain
     func executeWithDecoratorsAsync<T>(_ method: String, execution: () async throws -> T) async rethrows -> T
-    
+
     /// Get all decorators for this service
     var decorators: [ServiceDecorator] { get }
 }
 
 /// Decorator composition utilities
-public struct DecoratorComposer {
+public enum DecoratorComposer {
     /// Compose multiple decorators into a single decorator chain
     public static func compose(_ decorators: [ServiceDecorator]) -> ServiceDecorator {
-        return CompositeDecorator(decorators: decorators.sorted { $0.priority > $1.priority })
+        CompositeDecorator(decorators: decorators.sorted { $0.priority > $1.priority })
     }
 }
 
 /// Composite decorator that combines multiple decorators
 public class CompositeDecorator: ServiceDecorator {
-    public let priority: Int = Int.max
+    public let priority = Int.max
     private let decorators: [ServiceDecorator]
-    
+
     public init(decorators: [ServiceDecorator]) {
         self.decorators = decorators
     }
-    
+
     public func decorate<T>(method: String, execution: () throws -> T) rethrows -> T {
         // Simple serial execution through decorators
-        return try execution()
+        try execution()
     }
-    
+
     public func decorateAsync<T>(method: String, execution: () async throws -> T) async rethrows -> T {
-        return try await execution()
+        try await execution()
     }
 }
 
@@ -225,18 +226,18 @@ public class CompositeDecorator: ServiceDecorator {
 
 /// Simple logging decorator
 public class LoggingDecorator: ServiceDecorator {
-    public let priority: Int = 100
-    
+    public let priority = 100
+
     public init() {}
-    
+
     private func log(_ message: String) {
         print("[Decorator] \(message)")
     }
-    
+
     public func decorate<T>(method: String, execution: () throws -> T) rethrows -> T {
         log("🎯 Calling \(method)")
         let startTime = Date()
-        
+
         do {
             let result = try execution()
             let duration = Date().timeIntervalSince(startTime)
@@ -252,15 +253,15 @@ public class LoggingDecorator: ServiceDecorator {
 
 /// Simple metrics collection decorator
 public class MetricsDecorator: ServiceDecorator {
-    public let priority: Int = 90
+    public let priority = 90
     private var metrics: [String: DecoratorMetrics] = [:]
     private let lock = NSLock()
-    
+
     public init() {}
-    
+
     public func decorate<T>(method: String, execution: () throws -> T) rethrows -> T {
         let startTime = Date()
-        
+
         do {
             let result = try execution()
             recordSuccess(method: method, duration: Date().timeIntervalSince(startTime))
@@ -270,25 +271,25 @@ public class MetricsDecorator: ServiceDecorator {
             throw error
         }
     }
-    
+
     private func recordSuccess(method: String, duration: TimeInterval) {
         lock.lock()
         defer { lock.unlock() }
-        
+
         var metric = metrics[method] ?? DecoratorMetrics(method: method)
         metric.recordSuccess(duration: duration)
         metrics[method] = metric
     }
-    
+
     private func recordFailure(method: String, duration: TimeInterval, error: Error) {
         lock.lock()
         defer { lock.unlock() }
-        
+
         var metric = metrics[method] ?? DecoratorMetrics(method: method)
         metric.recordFailure(duration: duration, error: error)
         metrics[method] = metric
     }
-    
+
     /// Get metrics for all methods
     public func getMetrics() -> [String: DecoratorMetrics] {
         lock.lock()
@@ -300,18 +301,18 @@ public class MetricsDecorator: ServiceDecorator {
 /// Metrics collected by decorators
 public struct DecoratorMetrics {
     public let method: String
-    public private(set) var callCount: Int = 0
-    public private(set) var successCount: Int = 0
-    public private(set) var failureCount: Int = 0
+    public private(set) var callCount = 0
+    public private(set) var successCount = 0
+    public private(set) var failureCount = 0
     public private(set) var totalDuration: TimeInterval = 0
     public private(set) var minDuration: TimeInterval = .infinity
     public private(set) var maxDuration: TimeInterval = 0
     public private(set) var lastError: Error?
-    
+
     public init(method: String) {
         self.method = method
     }
-    
+
     public mutating func recordSuccess(duration: TimeInterval) {
         callCount += 1
         successCount += 1
@@ -319,7 +320,7 @@ public struct DecoratorMetrics {
         minDuration = min(minDuration, duration)
         maxDuration = max(maxDuration, duration)
     }
-    
+
     public mutating func recordFailure(duration: TimeInterval, error: Error) {
         callCount += 1
         failureCount += 1
@@ -328,24 +329,24 @@ public struct DecoratorMetrics {
         maxDuration = max(maxDuration, duration)
         lastError = error
     }
-    
+
     /// Average execution duration
     public var averageDuration: TimeInterval {
-        return callCount > 0 ? totalDuration / Double(callCount) : 0
+        callCount > 0 ? totalDuration / Double(callCount) : 0
     }
-    
+
     /// Success rate as percentage
     public var successRate: Double {
-        return callCount > 0 ? Double(successCount) / Double(callCount) * 100 : 0
+        callCount > 0 ? Double(successCount) / Double(callCount) * 100 : 0
     }
 }
 
 // MARK: - Container Extensions for Decorators
 
-public extension Container {
-    
+extension Container {
+
     /// Register a service with decorators
-    func registerWithDecorators<Service>(
+    public func registerWithDecorators<Service>(
         _ serviceType: Service.Type,
         decorators: [ServiceDecorator],
         factory: @escaping (Resolver) -> Service
@@ -356,9 +357,9 @@ public extension Container {
             return service
         }
     }
-    
+
     /// Register a decorator instance for dependency injection
-    func registerDecorator<D: ServiceDecorator>(_ decorator: D) {
+    public func registerDecorator<D: ServiceDecorator>(_ decorator: D) {
         register(D.self) { _ in decorator }
     }
 }

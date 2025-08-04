@@ -67,7 +67,10 @@ public struct InjectedStateObjectMacro: AccessorMacro {
                     \(backingStorageName) = StateObject(wrappedValue: {
                         let container = \(arguments.containerAccess)
                         guard let dependency = container.\(arguments.resolveCall) else {
-                            fatalError("Failed to resolve \(typeName)\(arguments.nameDescription) - ensure it's registered in the container")
+                            fatalError("Failed to resolve \(typeName)\(
+                                arguments
+                                    .nameDescription
+                ) - ensure it's registered in the container")
                         }
                         return dependency
                     }())
@@ -98,26 +101,26 @@ public struct InjectedStateObjectMacro: AccessorMacro {
 
 // MARK: - Argument Extraction
 
-private extension InjectedStateObjectMacro {
+extension InjectedStateObjectMacro {
 
-    struct MacroArguments {
+    fileprivate struct MacroArguments {
         let name: String?
         let containerName: String?
         let resolverName: String
 
         var containerAccess: String {
             if let containerName = containerName {
-                return "Container.named(\"\(containerName)\")"
+                "Container.named(\"\(containerName)\")"
             } else {
-                return "Container.shared ?? Environment(\\.stateObjectContainer).wrappedValue ?? Container()"
+                "Container.shared ?? Environment(\\.stateObjectContainer).wrappedValue ?? Container()"
             }
         }
 
         var resolveCall: String {
             if let name = name {
-                return "resolve(\(resolverName == "resolver" ? "" : "\(resolverName): ")\(name.isEmpty ? "" : "name: \"\(name)\", "))"
+                "resolve(\(resolverName == "resolver" ? "" : "\(resolverName): ")\(name.isEmpty ? "" : "name: \"\(name)\", "))"
             } else {
-                return "resolve(\(resolverName == "resolver" ? "" : "\(resolverName): "))"
+                "resolve(\(resolverName == "resolver" ? "" : "\(resolverName): "))"
             }
         }
 
@@ -129,7 +132,7 @@ private extension InjectedStateObjectMacro {
         }
     }
 
-    static func extractArguments(from node: AttributeSyntax) -> MacroArguments {
+    fileprivate static func extractArguments(from node: AttributeSyntax) -> MacroArguments {
         var name: String? = nil
         var containerName: String? = nil
         var resolverName = "resolver"

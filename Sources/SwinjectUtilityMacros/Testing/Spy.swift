@@ -18,18 +18,18 @@ import Foundation
 ///         // Original implementation
 ///         return repository.findUser(id: id)
 ///     }
-///     
+///
 ///     @Spy
 ///     func createUser(_ user: User) throws -> Bool {
 ///         // Original implementation
 ///         return try repository.save(user)
 ///     }
 /// }
-/// 
+///
 /// // In tests:
 /// let service = UserService()
 /// let user = service.getUserById("123")
-/// 
+///
 /// // Verify calls
 /// XCTAssertEqual(service.getUserByIdSpyCalls.count, 1)
 /// XCTAssertEqual(service.getUserByIdSpyCalls[0].arguments.0, "123")
@@ -56,7 +56,7 @@ import Foundation
 ///     }
 ///     return Data("mock response".utf8)
 /// }
-/// 
+///
 /// let result = try await service.fetchData(from: URL(string: "https://api.example.com/data")!)
 /// XCTAssertEqual(String(data: result, encoding: .utf8), "mock response")
 /// ```
@@ -82,21 +82,21 @@ import Foundation
 ///     let returnValue: User?
 ///     let thrownError: Error?
 /// }
-/// 
+///
 /// // Spy state
 /// private var _getUserByIdSpyCalls: [GetUserByIdSpyCall] = []
 /// private let _getUserByIdSpyLock = NSLock()
-/// 
+///
 /// // Public access to spy data
 /// var getUserByIdSpyCalls: [GetUserByIdSpyCall] {
 ///     _getUserByIdSpyLock.lock()
 ///     defer { _getUserByIdSpyLock.unlock() }
 ///     return _getUserByIdSpyCalls
 /// }
-/// 
+///
 /// // Optional behavior override
 /// var getUserByIdSpyBehavior: ((String) -> User?)?
-/// 
+///
 /// // Reset spy data
 /// func resetGetUserByIdSpy() {
 ///     _getUserByIdSpyLock.lock()
@@ -117,7 +117,7 @@ import Foundation
 ///         resetCreateUserSpy()
 ///         // ... other spy resets
 ///     }
-///     
+///
 ///     /// Get total number of spy calls across all methods
 ///     var totalSpyCalls: Int {
 ///         return getUserByIdSpyCalls.count + createUserSpyCalls.count
@@ -138,13 +138,13 @@ import Foundation
 ///         return PaymentResult.success
 ///     }
 /// }
-/// 
+///
 /// // In tests:
 /// let service = PaymentService()
 /// XCTAssertThrowsError(try service.processPayment(-10)) { error in
 ///     XCTAssertTrue(error is PaymentError)
 /// }
-/// 
+///
 /// // Verify the error was recorded
 /// XCTAssertEqual(service.processPaymentSpyCalls.count, 1)
 /// XCTAssertNotNil(service.processPaymentSpyCalls[0].thrownError)
@@ -160,11 +160,11 @@ import Foundation
 ///         return try await apiClient.fetchUserProfile(userId)
 ///     }
 /// }
-/// 
+///
 /// // Testing async spied methods:
 /// let service = DataService()
 /// let profile = try await service.loadUserProfile("user123")
-/// 
+///
 /// XCTAssertEqual(service.loadUserProfileSpyCalls.count, 1)
 /// XCTAssertEqual(service.loadUserProfileSpyCalls[0].arguments.0, "user123")
 /// ```
@@ -173,25 +173,25 @@ import Foundation
 ///
 /// ```swift
 /// import XCTest
-/// 
+///
 /// class UserServiceTests: XCTestCase {
 ///     var userService: UserService!
-///     
+///
 ///     override func setUp() {
 ///         super.setUp()
 ///         userService = UserService()
 ///         userService.resetAllSpies()
 ///     }
-///     
+///
 ///     func testUserCreation() {
 ///         // Setup spy behavior
 ///         userService.createUserSpyBehavior = { user in
 ///             return user.id != nil
 ///         }
-///         
+///
 ///         // Execute
 ///         let result = try! userService.createUser(User(name: "John"))
-///         
+///
 ///         // Verify
 ///         XCTAssertTrue(result)
 ///         XCTAssertEqual(userService.createUserSpyCalls.count, 1)
@@ -243,7 +243,7 @@ public protocol SpyCall {
 public protocol Spyable {
     /// Reset all spy data for this object
     func resetAllSpies()
-    
+
     /// Get total number of spy calls across all methods
     var totalSpyCalls: Int { get }
 }
@@ -252,28 +252,28 @@ public protocol Spyable {
 public class SpyCallRecorder<CallType: SpyCall> {
     private var calls: [CallType] = []
     private let lock = NSLock()
-    
+
     /// Record a new spy call
     public func record(_ call: CallType) {
         lock.lock()
         defer { lock.unlock() }
         calls.append(call)
     }
-    
+
     /// Get all recorded calls
     public var allCalls: [CallType] {
         lock.lock()
         defer { lock.unlock() }
         return calls
     }
-    
+
     /// Reset all recorded calls
     public func reset() {
         lock.lock()
         defer { lock.unlock() }
         calls.removeAll()
     }
-    
+
     /// Get number of recorded calls
     public var count: Int {
         lock.lock()
@@ -286,10 +286,10 @@ public class SpyCallRecorder<CallType: SpyCall> {
 
 /// Utilities for verifying spy calls in tests
 public enum SpyVerification {
-    
+
     /// Verify that a method was called a specific number of times
-    public static func verifyCalled<T: SpyCall>(
-        _ calls: [T],
+    public static func verifyCalled(
+        _ calls: [some SpyCall],
         times expectedCount: Int,
         file: StaticString = #file,
         line: UInt = #line
@@ -302,19 +302,19 @@ public enum SpyVerification {
             )
         }
     }
-    
+
     /// Verify that a method was never called
-    public static func verifyNeverCalled<T: SpyCall>(
-        _ calls: [T],
+    public static func verifyNeverCalled(
+        _ calls: [some SpyCall],
         file: StaticString = #file,
         line: UInt = #line
     ) {
         verifyCalled(calls, times: 0, file: file, line: line)
     }
-    
+
     /// Verify that a method was called at least once
-    public static func verifyCalledAtLeastOnce<T: SpyCall>(
-        _ calls: [T],
+    public static func verifyCalledAtLeastOnce(
+        _ calls: [some SpyCall],
         file: StaticString = #file,
         line: UInt = #line
     ) {
@@ -322,21 +322,26 @@ public enum SpyVerification {
             fatalError("Expected at least one call but method was never called", file: file, line: line)
         }
     }
-    
+
     /// Verify call order between different spy methods
-    public static func verifyCallOrder<T: SpyCall, U: SpyCall>(
-        _ firstCalls: [T],
-        before secondCalls: [U],
+    public static func verifyCallOrder(
+        _ firstCalls: [some SpyCall],
+        before secondCalls: [some SpyCall],
         file: StaticString = #file,
         line: UInt = #line
     ) {
         guard let firstCall = firstCalls.first,
-              let secondCall = secondCalls.first else {
+              let secondCall = secondCalls.first
+        else {
             fatalError("Both methods must be called to verify order", file: file, line: line)
         }
-        
+
         guard firstCall.timestamp < secondCall.timestamp else {
-            fatalError("Expected \(firstCall.methodName) to be called before \(secondCall.methodName)", file: file, line: line)
+            fatalError(
+                "Expected \(firstCall.methodName) to be called before \(secondCall.methodName)",
+                file: file,
+                line: line
+            )
         }
     }
 }

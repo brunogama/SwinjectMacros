@@ -17,12 +17,12 @@ import Swinject
 /// class DataService {
 ///     @AsyncInject var database: DatabaseProtocol
 ///     @AsyncInject var configService: ConfigurationService
-///     
+///
 ///     func fetchData() async throws -> [DataModel] {
 ///         // Dependencies are resolved asynchronously on first access
 ///         let db = try await database
 ///         let config = try await configService
-///         
+///
 ///         return try await db.query(config.defaultQuery)
 ///     }
 /// }
@@ -35,18 +35,18 @@ import Swinject
 ///     @AsyncInject("primary") var primaryAPI: APIClientProtocol
 ///     @AsyncInject(container: "network", timeout: 10.0) var authService: AuthServiceProtocol
 ///     @AsyncInject(initializationTimeout: 30.0) var cryptoService: CryptoServiceProtocol
-///     
+///
 ///     func makeAuthenticatedRequest() async throws -> APIResponse {
 ///         // Async resolution with custom timeouts and initialization
 ///         async let api = try await primaryAPI
-///         async let auth = try await authService  
+///         async let auth = try await authService
 ///         async let crypto = try await cryptoService
-///         
+///
 ///         let (resolvedAPI, resolvedAuth, resolvedCrypto) = try await (api, auth, crypto)
-///         
+///
 ///         let token = try await resolvedAuth.getToken()
 ///         let signature = try await resolvedCrypto.sign(token)
-///         
+///
 ///         return try await resolvedAPI.request(token: token, signature: signature)
 ///     }
 /// }
@@ -102,14 +102,14 @@ import Swinject
 /// actor DataProcessor {
 ///     @AsyncInject var databasePool: DatabasePoolProtocol
 ///     @AsyncInject var cacheManager: CacheManagerProtocol
-///     
+///
 ///     func processData(_ data: [DataItem]) async throws -> [ProcessedData] {
 ///         // Async resolution within actor context
 ///         async let db = try await databasePool
 ///         async let cache = try await cacheManager
-///         
+///
 ///         let (database, cacheSystem) = try await (db, cache)
-///         
+///
 ///         // Concurrent processing with resolved dependencies
 ///         return try await withTaskGroup(of: ProcessedData.self) { group in
 ///             for item in data {
@@ -117,7 +117,7 @@ import Swinject
 ///                     try await self.processItem(item, database: database, cache: cacheSystem)
 ///                 }
 ///             }
-///             
+///
 ///             var results: [ProcessedData] = []
 ///             for try await result in group {
 ///                 results.append(result)
@@ -179,43 +179,43 @@ import Swinject
 ///     @AsyncInject("database") var primaryDatabase: DatabaseService
 ///     @AsyncInject(container: "external", timeout: 20.0) var externalAPIClient: ExternalAPIClient
 ///     @AsyncInject(initializationTimeout: 45.0) var mlModelService: MLModelService
-///     
+///
 ///     func initializeApplication() async throws {
 ///         // Concurrent initialization of all async dependencies
 ///         async let config = try await configurationService
 ///         async let database = try await primaryDatabase
 ///         async let apiClient = try await externalAPIClient
 ///         async let mlModel = try await mlModelService
-///         
+///
 ///         let (cfg, db, api, ml) = try await (config, database, apiClient, mlModel)
-///         
+///
 ///         // Configure services based on resolved dependencies
 ///         try await db.configure(with: cfg.databaseConfig)
 ///         try await api.authenticate(with: cfg.apiCredentials)
 ///         try await ml.loadModel(cfg.modelPath)
-///         
+///
 ///         print("Application fully initialized with async dependencies")
 ///     }
 /// }
-/// 
+///
 /// class StreamingService {
 ///     @AsyncInject var mediaEncoder: MediaEncoderProtocol
 ///     @AsyncInject("gpu") var gpuAccelerator: GPUAcceleratorProtocol?
 ///     @AsyncInject(container: "streaming") var streamManager: StreamManagerProtocol
-///     
+///
 ///     func startStream(input: MediaInput) async throws -> StreamHandle {
 ///         // Parallel resolution of streaming dependencies
 ///         async let encoder = try await mediaEncoder
 ///         async let gpu = try await gpuAccelerator
 ///         async let manager = try await streamManager
-///         
+///
 ///         let (resolvedEncoder, resolvedGPU, resolvedManager) = try await (encoder, gpu, manager)
-///         
+///
 ///         // Configure encoding pipeline
 ///         if let gpuAccel = resolvedGPU {
 ///             try await resolvedEncoder.enableGPUAcceleration(gpuAccel)
 ///         }
-///         
+///
 ///         // Start streaming with fully configured dependencies
 ///         return try await resolvedManager.createStream(
 ///             input: input,
@@ -223,7 +223,7 @@ import Swinject
 ///         )
 ///     }
 /// }
-/// 
+///
 /// // Monitor async injection performance
 /// AsyncInjectionMetrics.printAsyncResolutionReport()
 /// // Output:
@@ -253,15 +253,15 @@ public macro AsyncInject(
 
 /// Async resolution states for tracking lifecycle
 public enum AsyncResolutionState: String, CaseIterable {
-    case pending = "PENDING"           // Not yet started resolution
-    case resolving = "RESOLVING"       // Currently resolving asynchronously
-    case resolved = "RESOLVED"         // Successfully resolved
-    case failed = "FAILED"             // Resolution failed
-    case timedOut = "TIMED_OUT"        // Resolution timed out
-    case cancelled = "CANCELLED"       // Resolution was cancelled
-    
+    case pending = "PENDING" // Not yet started resolution
+    case resolving = "RESOLVING" // Currently resolving asynchronously
+    case resolved = "RESOLVED" // Successfully resolved
+    case failed = "FAILED" // Resolution failed
+    case timedOut = "TIMED_OUT" // Resolution timed out
+    case cancelled = "CANCELLED" // Resolution was cancelled
+
     public var description: String {
-        return rawValue
+        rawValue
     }
 }
 
@@ -269,46 +269,46 @@ public enum AsyncResolutionState: String, CaseIterable {
 public struct AsyncPropertyInfo {
     /// Property name
     public let propertyName: String
-    
+
     /// Property type
     public let propertyType: String
-    
+
     /// Container name used for resolution
     public let containerName: String
-    
+
     /// Service name (if named injection)
     public let serviceName: String?
-    
+
     /// Timeout configuration
     public let timeout: TimeInterval
-    
+
     /// Initialization timeout
     public let initializationTimeout: TimeInterval
-    
+
     /// Retry count configuration
     public let retryCount: Int
-    
+
     /// Current async resolution state
     public let state: AsyncResolutionState
-    
+
     /// When resolution was started
     public let resolutionStartTime: Date?
-    
+
     /// When resolution completed (success or failure)
     public let resolutionEndTime: Date?
-    
+
     /// Time taken for resolution (milliseconds)
     public let resolutionDuration: TimeInterval?
-    
+
     /// Number of retry attempts made
     public let attemptCount: Int
-    
+
     /// Error encountered during resolution
     public let resolutionError: Error?
-    
+
     /// Task information
     public let taskInfo: TaskInfo?
-    
+
     public init(
         propertyName: String,
         propertyType: String,
@@ -346,13 +346,13 @@ public struct AsyncPropertyInfo {
 public struct TaskInfo {
     /// Task priority
     public let priority: TaskPriority?
-    
+
     /// Whether task is cancelled
     public let isCancelled: Bool
-    
+
     /// Task creation time
     public let creationTime: Date
-    
+
     public init(priority: TaskPriority? = nil, isCancelled: Bool = false, creationTime: Date = Date()) {
         self.priority = priority
         self.isCancelled = isCancelled
@@ -364,46 +364,46 @@ public struct TaskInfo {
 public struct AsyncInjectionStats {
     /// Total number of async properties registered
     public let totalAsyncProperties: Int
-    
+
     /// Number of properties that have been resolved successfully
     public let resolvedProperties: Int
-    
+
     /// Number of properties currently resolving
     public let resolvingProperties: Int
-    
+
     /// Number of properties that failed to resolve
     public let failedProperties: Int
-    
+
     /// Number of properties that timed out
     public let timedOutProperties: Int
-    
+
     /// Number of properties that were cancelled
     public let cancelledProperties: Int
-    
+
     /// Average time for successful resolutions (milliseconds)
     public let averageResolutionTime: TimeInterval
-    
+
     /// Total time spent on all resolutions (milliseconds)
     public let totalResolutionTime: TimeInterval
-    
+
     /// Average number of retry attempts per property
     public let averageRetryAttempts: Double
-    
+
     /// Properties by resolution state
     public let propertiesByState: [AsyncResolutionState: Int]
-    
+
     /// Container usage statistics
     public let containerUsage: [String: Int]
-    
+
     /// Timeout configuration statistics
     public let timeoutDistribution: [TimeInterval: Int]
-    
+
     /// Most common resolution errors
     public let commonErrors: [String: Int]
-    
+
     /// Time range covered by these statistics
     public let timeRange: DateInterval
-    
+
     public init(
         totalAsyncProperties: Int,
         resolvedProperties: Int,
@@ -445,33 +445,33 @@ public class AsyncInjectionMetrics {
     private static var resolutionHistory: [String: [AsyncPropertyInfo]] = [:]
     private static let metricsQueue = DispatchQueue(label: "async.injection.metrics", attributes: .concurrent)
     private static let maxHistoryPerProperty = 100 // Circular buffer size
-    
+
     /// Registers an async property for tracking
     public static func registerProperty(_ info: AsyncPropertyInfo) {
         metricsQueue.async(flags: .barrier) {
             let key = "\(info.propertyName):\(info.propertyType)"
-            propertyRegistry[key] = info
+            self.propertyRegistry[key] = info
         }
     }
-    
+
     /// Records an async resolution state change
     public static func recordResolution(_ info: AsyncPropertyInfo) {
         metricsQueue.async(flags: .barrier) {
             let key = "\(info.propertyName):\(info.propertyType)"
-            propertyRegistry[key] = info
-            
-            resolutionHistory[key, default: []].append(info)
-            
+            self.propertyRegistry[key] = info
+
+            self.resolutionHistory[key, default: []].append(info)
+
             // Maintain circular buffer
-            if resolutionHistory[key]!.count > maxHistoryPerProperty {
-                resolutionHistory[key]!.removeFirst()
+            if self.resolutionHistory[key]!.count > self.maxHistoryPerProperty {
+                self.resolutionHistory[key]!.removeFirst()
             }
         }
     }
-    
+
     /// Gets statistics for all async properties
     public static func getStats() -> AsyncInjectionStats {
-        return metricsQueue.sync {
+        metricsQueue.sync {
             let properties = Array(propertyRegistry.values)
             let totalProperties = properties.count
             let resolvedProperties = properties.filter { $0.state == .resolved }.count
@@ -479,46 +479,47 @@ public class AsyncInjectionMetrics {
             let failedProperties = properties.filter { $0.state == .failed }.count
             let timedOutProperties = properties.filter { $0.state == .timedOut }.count
             let cancelledProperties = properties.filter { $0.state == .cancelled }.count
-            
+
             let resolutionTimes = properties.compactMap { $0.resolutionDuration }
-            let averageResolutionTime = resolutionTimes.isEmpty ? 0.0 : resolutionTimes.reduce(0, +) / Double(resolutionTimes.count)
+            let averageResolutionTime = resolutionTimes.isEmpty ? 0.0 : resolutionTimes
+                .reduce(0, +) / Double(resolutionTimes.count)
             let totalResolutionTime = resolutionTimes.reduce(0, +)
-            
+
             let totalAttempts = properties.map { $0.attemptCount }.reduce(0, +)
             let averageRetryAttempts = totalProperties > 0 ? Double(totalAttempts) / Double(totalProperties) : 0.0
-            
+
             // Calculate properties by state
             var propertiesByState: [AsyncResolutionState: Int] = [:]
             for state in AsyncResolutionState.allCases {
                 propertiesByState[state] = properties.filter { $0.state == state }.count
             }
-            
+
             // Calculate container usage
             let containerUsage = properties.reduce(into: [String: Int]()) { counts, property in
                 counts[property.containerName, default: 0] += 1
             }
-            
+
             // Calculate timeout distribution
             let timeoutDistribution = properties.reduce(into: [TimeInterval: Int]()) { counts, property in
                 counts[property.timeout, default: 0] += 1
             }
-            
+
             // Calculate common errors
             let commonErrors = properties.compactMap { $0.resolutionError?.localizedDescription }
                 .reduce(into: [String: Int]()) { counts, error in
                     counts[error, default: 0] += 1
                 }
-            
+
             // Calculate time range
             let allTimes = properties.compactMap { property in
                 [property.resolutionStartTime, property.resolutionEndTime].compactMap { $0 }
             }.flatMap { $0 }
-            
+
             let timeRange = DateInterval(
                 start: allTimes.min() ?? Date(),
                 end: allTimes.max() ?? Date()
             )
-            
+
             return AsyncInjectionStats(
                 totalAsyncProperties: totalProperties,
                 resolvedProperties: resolvedProperties,
@@ -537,41 +538,42 @@ public class AsyncInjectionMetrics {
             )
         }
     }
-    
+
     /// Gets information for a specific property
     public static func getPropertyInfo(name: String, type: String) -> AsyncPropertyInfo? {
-        return metricsQueue.sync {
+        metricsQueue.sync {
             let key = "\(name):\(type)"
-            return propertyRegistry[key]
+            return self.propertyRegistry[key]
         }
     }
-    
+
     /// Gets all registered async properties
     public static func getAllProperties() -> [AsyncPropertyInfo] {
-        return metricsQueue.sync {
-            return Array(propertyRegistry.values)
+        metricsQueue.sync {
+            Array(self.propertyRegistry.values)
         }
     }
-    
+
     /// Prints a comprehensive async resolution report
     public static func printAsyncResolutionReport() {
         let stats = getStats()
         let properties = getAllProperties()
-        
+
         guard !properties.isEmpty else {
             print("🔄 No async injection data available")
             return
         }
-        
+
         print("\n🔄 Async Injection Report")
         print("=" * 80)
         print(String(format: "%-30s %-12s %8s %8s %10s", "Property", "State", "ResTime", "Attempts", "Container"))
         print("-" * 80)
-        
+
         for property in properties.sorted(by: { $0.propertyName < $1.propertyName }) {
             let resolutionTime = property.resolutionDuration.map { String(format: "%.0fms", $0 * 1000) } ?? "-"
-            
-            print(String(format: "%-30s %-12s %8s %8d %10s",
+
+            print(String(
+                format: "%-30s %-12s %8s %8d %10s",
                 property.propertyName.suffix(30),
                 property.state.description,
                 resolutionTime,
@@ -579,7 +581,7 @@ public class AsyncInjectionMetrics {
                 property.containerName.suffix(10)
             ))
         }
-        
+
         print("-" * 80)
         print("Summary:")
         print("  Total Properties: \(stats.totalAsyncProperties)")
@@ -589,34 +591,35 @@ public class AsyncInjectionMetrics {
         print("  Average Resolution Time: \(String(format: "%.0f", stats.averageResolutionTime * 1000))ms")
         print("  Average Retry Attempts: \(String(format: "%.1f", stats.averageRetryAttempts))")
     }
-    
+
     /// Gets properties that are currently resolving
     public static func getResolvingProperties() -> [AsyncPropertyInfo] {
-        return getAllProperties().filter { $0.state == .resolving }
+        getAllProperties().filter { $0.state == .resolving }
     }
-    
+
     /// Gets properties that failed to resolve
     public static func getFailedProperties() -> [AsyncPropertyInfo] {
-        return getAllProperties().filter { $0.state == .failed }
+        getAllProperties().filter { $0.state == .failed }
     }
-    
+
     /// Gets properties that timed out
     public static func getTimedOutProperties() -> [AsyncPropertyInfo] {
-        return getAllProperties().filter { $0.state == .timedOut }
+        getAllProperties().filter { $0.state == .timedOut }
     }
-    
+
     /// Clears all metrics data
     public static func reset() {
         metricsQueue.async(flags: .barrier) {
-            propertyRegistry.removeAll()
-            resolutionHistory.removeAll()
+            self.propertyRegistry.removeAll()
+            self.resolutionHistory.removeAll()
         }
     }
-    
+
     /// Gets the success rate for async resolutions
     public static func getSuccessRate() -> Double {
         let stats = getStats()
-        let totalCompleted = stats.resolvedProperties + stats.failedProperties + stats.timedOutProperties + stats.cancelledProperties
+        let totalCompleted = stats.resolvedProperties + stats.failedProperties + stats.timedOutProperties + stats
+            .cancelledProperties
         guard totalCompleted > 0 else { return 0.0 }
         return Double(stats.resolvedProperties) / Double(totalCompleted)
     }
@@ -633,7 +636,7 @@ public enum AsyncInjectionError: Error, LocalizedError {
     case resolutionFailed(type: String, underlyingError: Error?)
     case resolutionCancelled(type: String)
     case maxRetriesExceeded(type: String, attempts: Int)
-    
+
     public var errorDescription: String? {
         switch self {
         case .containerNotFound(let containerName):
@@ -658,11 +661,7 @@ public enum AsyncInjectionError: Error, LocalizedError {
 
 // MARK: - String Extension for Pretty Printing
 
-private extension String {
-    static func * (left: String, right: Int) -> String {
-        return String(repeating: left, count: right)
-    }
-}
+// String * operator moved to StringExtensions.swift
 
 // MARK: - Thread Information Support
 // Note: ThreadInfo is defined in PerformanceTracked.swift and shared across all macro types

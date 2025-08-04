@@ -17,7 +17,7 @@ import Swinject
 /// struct ContentView: View {
 ///     @InjectedStateObject var viewModel: UserViewModel
 ///     @InjectedStateObject var settings: AppSettings
-///     
+///
 ///     var body: some View {
 ///         VStack {
 ///             Text("Welcome \(viewModel.currentUser?.name ?? "Guest")")
@@ -36,7 +36,7 @@ import Swinject
 /// struct DashboardView: View {
 ///     @InjectedStateObject("main") var viewModel: DashboardViewModel
 ///     @InjectedStateObject("analytics") var tracker: AnalyticsTracker
-///     
+///
 ///     var body: some View {
 ///         ScrollView {
 ///             ForEach(viewModel.dashboardItems) { item in
@@ -56,7 +56,7 @@ import Swinject
 /// struct ProfileView: View {
 ///     @InjectedStateObject(container: "userSession") var profile: UserProfile
 ///     @InjectedStateObject(resolver: "customResolver") var preferences: UserPreferences
-///     
+///
 ///     var body: some View {
 ///         Form {
 ///             Section("Profile") {
@@ -122,7 +122,7 @@ public struct InjectedStateObjectConfiguration {
     public let containerName: String?
     public let resolverName: String
     public let requiresObservableObject: Bool
-    
+
     public init(
         name: String? = nil,
         containerName: String? = nil,
@@ -142,7 +142,7 @@ public enum SwiftUIInjectionError: Error, LocalizedError {
     case containerNotFound(String)
     case dependencyNotRegistered(String, String?)
     case previewConfigurationMissing(String)
-    
+
     public var errorDescription: String? {
         switch self {
         case .notObservableObject(let type):
@@ -162,7 +162,7 @@ public enum SwiftUIInjectionError: Error, LocalizedError {
 public protocol SwiftUIPreviewContainer {
     /// Configure preview container with test dependencies
     static func configurePreviewDependencies()
-    
+
     /// Get preview-specific container instance
     static var previewContainer: Container { get }
 }
@@ -171,26 +171,26 @@ public protocol SwiftUIPreviewContainer {
 public class DefaultPreviewContainer: SwiftUIPreviewContainer {
     public static let shared = DefaultPreviewContainer()
     private let container = Container()
-    
+
     private init() {
         Self.configurePreviewDependencies()
     }
-    
+
     public static func configurePreviewDependencies() {
         // Override in subclasses to register preview-specific dependencies
     }
-    
+
     public static var previewContainer: Container {
-        return shared.container
+        shared.container
     }
 }
 
 // MARK: - Container Extensions for SwiftUI
 
-public extension Container {
-    
+extension Container {
+
     /// Register an ObservableObject for SwiftUI StateObject injection
-    func registerStateObject<T: ObservableObject>(
+    public func registerStateObject<T: ObservableObject>(
         _ serviceType: T.Type,
         name: String? = nil,
         factory: @escaping (Resolver) -> T
@@ -198,21 +198,21 @@ public extension Container {
         let registration = register(serviceType, name: name, factory: factory)
         registration.inObjectScope(.container) // Ensure singleton for StateObject
     }
-    
+
     /// Resolve a StateObject dependency for SwiftUI views
-    func resolveStateObject<T: ObservableObject>(
+    public func resolveStateObject<T: ObservableObject>(
         _ serviceType: T.Type,
         name: String? = nil
     ) -> T? {
-        return resolve(serviceType, name: name)
+        resolve(serviceType, name: name)
     }
-    
+
     /// Check if a StateObject dependency is available
-    func hasStateObjectDependency<T: ObservableObject>(
-        _ serviceType: T.Type,
+    public func hasStateObjectDependency(
+        _ serviceType: (some ObservableObject).Type,
         name: String? = nil
     ) -> Bool {
-        return resolve(serviceType, name: name) != nil
+        resolve(serviceType, name: name) != nil
     }
 }
 
@@ -223,17 +223,17 @@ private struct StateObjectContainerKey: EnvironmentKey {
     static let defaultValue: Container? = nil
 }
 
-public extension EnvironmentValues {
+extension EnvironmentValues {
     /// Access the dependency injection container for StateObject injection
-    var stateObjectContainer: Container? {
+    public var stateObjectContainer: Container? {
         get { self[StateObjectContainerKey.self] }
         set { self[StateObjectContainerKey.self] = newValue }
     }
 }
 
-public extension View {
+extension View {
     /// Provide a dependency injection container for StateObject injection
-    func stateObjectContainer(_ container: Container) -> some View {
+    public func stateObjectContainer(_ container: Container) -> some View {
         environment(\.stateObjectContainer, container)
     }
 }
@@ -241,8 +241,8 @@ public extension View {
 // MARK: - SwiftUI Preview Helpers
 
 /// Helper for configuring SwiftUI previews with dependency injection
-public struct PreviewDependencyConfiguration {
-    
+public enum PreviewDependencyConfiguration {
+
     /// Configure a preview container with common dependencies
     public static func configurePreview<T: ObservableObject>(
         _ container: Container,
@@ -252,10 +252,10 @@ public struct PreviewDependencyConfiguration {
             container.registerStateObject(T.self, name: name) { _ in dependency }
         }
     }
-    
+
     /// Create a preview-configured view with dependencies
-    public static func previewView<Content: View>(
-        @ViewBuilder content: @escaping () -> Content,
+    public static func previewView(
+        @ViewBuilder content: @escaping () -> some View,
         dependencies: (Container) -> Void
     ) -> some View {
         let container = Container()

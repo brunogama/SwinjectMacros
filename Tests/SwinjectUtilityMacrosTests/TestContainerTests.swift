@@ -71,7 +71,12 @@ final class TestContainerTests: XCTestCase {
             }
             """,
             diagnostics: [
-                DiagnosticSpec(message: "@TestContainer can only be applied to classes or structs", line: 1, column: 1, severity: .error)
+                DiagnosticSpec(
+                    message: "@TestContainer can only be applied to classes or structs",
+                    line: 1,
+                    column: 1,
+                    severity: .error
+                )
             ],
             macros: testMacros
         )

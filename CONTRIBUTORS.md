@@ -5,7 +5,8 @@ This project exists thanks to all the people who contribute.
 ## Core Contributors
 
 ### Bruno Gama (@brunogama)
-- Project founder and lead developer  
+
+- Project founder and lead developer
 - Core macro implementations and architecture
 - Performance optimization and thread safety
 - Comprehensive test suite development
@@ -15,18 +16,21 @@ This project exists thanks to all the people who contribute.
 We welcome contributions from the community! Here are ways you can help:
 
 ### Code Contributions
+
 - Fix bugs and implement new features
 - Improve macro performance and reliability
 - Add comprehensive tests and edge case coverage
 - Enhance documentation and examples
 
 ### Issue Reporting
+
 - Report bugs with detailed reproduction steps
 - Suggest new macro features and improvements
 - Request documentation improvements
 - Share usage patterns and edge cases
 
 ### Documentation
+
 - Improve README and setup instructions
 - Add usage examples and best practices
 - Create tutorials and guides
@@ -35,10 +39,10 @@ We welcome contributions from the community! Here are ways you can help:
 ## Contribution Guidelines
 
 1. **Fork the repository** and create a feature branch
-2. **Write tests** for any new functionality
-3. **Follow the existing code style** and patterns
-4. **Update documentation** for any API changes
-5. **Submit a pull request** with a clear description
+1. **Write tests** for any new functionality
+1. **Follow the existing code style** and patterns
+1. **Update documentation** for any API changes
+1. **Submit a pull request** with a clear description
 
 ## Development Setup
 

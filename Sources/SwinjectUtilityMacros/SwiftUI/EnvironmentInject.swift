@@ -17,7 +17,7 @@ import Swinject
 /// struct UserProfileView: View {
 ///     @EnvironmentInject var userService: UserServiceProtocol
 ///     @EnvironmentInject var analytics: AnalyticsProtocol
-///     
+///
 ///     var body: some View {
 ///         VStack {
 ///             Text("User: \(userService.currentUser.name)")
@@ -37,13 +37,13 @@ import Swinject
 /// @main
 /// struct MyApp: App {
 ///     let container = Container()
-///     
+///
 ///     init() {
 ///         // Configure your services
 ///         container.register(UserServiceProtocol.self) { _ in UserService() }
 ///         container.register(AnalyticsProtocol.self) { _ in AnalyticsService() }
 ///     }
-///     
+///
 ///     var body: some Scene {
 ///         WindowGroup {
 ///             ContentView()
@@ -60,7 +60,7 @@ import Swinject
 ///     @EnvironmentInject("primary") var primaryAPI: APIClientProtocol
 ///     @EnvironmentInject("fallback") var fallbackAPI: APIClientProtocol
 ///     @EnvironmentInject(required: false) var optionalService: OptionalServiceProtocol?
-///     
+///
 ///     var body: some View {
 ///         VStack {
 ///             AsyncButton("Fetch Data") {
@@ -85,10 +85,10 @@ import Swinject
 /// struct UserProfileView_Previews: PreviewProvider {
 ///     static var previews: some View {
 ///         let mockContainer = Container()
-///         mockContainer.register(UserServiceProtocol.self) { _ in 
+///         mockContainer.register(UserServiceProtocol.self) { _ in
 ///             MockUserService(user: User.preview)
 ///         }
-///         
+///
 ///         UserProfileView()
 ///             .environmentObject(DIContainer(mockContainer))
 ///     }
@@ -112,11 +112,11 @@ import Swinject
 /// // Without macro - manual container access
 /// struct ContentView: View {
 ///     @EnvironmentObject var diContainer: DIContainer
-///     
+///
 ///     var body: some View {
 ///         let userService = diContainer.resolve(UserServiceProtocol.self)!
 ///         let analytics = diContainer.resolve(AnalyticsProtocol.self)!
-///         
+///
 ///         VStack {
 ///             Text("User: \(userService.currentUser.name)")
 ///             Button("Track") { analytics.track("button_tapped") }
@@ -128,7 +128,7 @@ import Swinject
 /// struct ContentView: View {
 ///     @EnvironmentInject var userService: UserServiceProtocol
 ///     @EnvironmentInject var analytics: AnalyticsProtocol
-///     
+///
 ///     var body: some View {
 ///         VStack {
 ///             Text("User: \(userService.currentUser.name)")
@@ -152,7 +152,7 @@ import Swinject
 /// struct ProblematicView: View {
 ///     @EnvironmentInject var service: UnregisteredService  // Compilation warning
 ///     @EnvironmentInject var value: Int                    // Error: not a service type
-///     
+///
 ///     var body: some View {
 ///         Text("Content")
 ///     }
@@ -166,7 +166,7 @@ import Swinject
 /// ```swift
 /// struct NavigationRootView: View {
 ///     @EnvironmentInject var coordinator: NavigationCoordinator
-///     
+///
 ///     var body: some View {
 ///         NavigationStack(path: $coordinator.path) {
 ///             HomeView()
@@ -204,7 +204,7 @@ import Swinject
 ///     @EnvironmentInject var productService: ProductServiceProtocol
 ///     @EnvironmentInject var cartManager: CartManagerProtocol
 ///     @EnvironmentInject("wishlist") var wishlistService: WishlistServiceProtocol
-///     
+///
 ///     var body: some View {
 ///         List(productService.products) { product in
 ///             ProductRow(product: product) {
@@ -213,13 +213,13 @@ import Swinject
 ///         }
 ///     }
 /// }
-/// 
+///
 /// // Social Media App
 /// struct TimelineView: View {
 ///     @EnvironmentInject var postService: PostServiceProtocol
 ///     @EnvironmentInject var userManager: UserManagerProtocol
 ///     @EnvironmentInject var imageCache: ImageCacheProtocol
-///     
+///
 ///     var body: some View {
 ///         LazyVStack {
 ///             ForEach(postService.timeline) { post in
@@ -229,18 +229,18 @@ import Swinject
 ///         }
 ///     }
 /// }
-/// 
+///
 /// // Settings App
 /// struct SettingsView: View {
 ///     @EnvironmentInject var settings: SettingsManagerProtocol
 ///     @EnvironmentInject var sync: SyncServiceProtocol
 ///     @EnvironmentInject(required: false) var analytics: AnalyticsProtocol?
-///     
+///
 ///     var body: some View {
 ///         Form {
 ///             Toggle("Dark Mode", isOn: $settings.isDarkMode)
 ///             Toggle("Sync Enabled", isOn: $settings.syncEnabled)
-///             
+///
 ///             if settings.syncEnabled {
 ///                 Button("Sync Now") {
 ///                     Task { await sync.performSync() }
@@ -275,7 +275,9 @@ extension EnvironmentValues {
     /// Runtime-failing accessor for DIContainer
     public var requireDIContainer: DIContainer {
         guard let container = diContainer else {
-            fatalError("DIContainer not found in SwiftUI Environment. Make sure to add .environmentObject(DIContainer(container)) or .diContainer(...) to your view hierarchy.")
+            fatalError(
+                "DIContainer not found in SwiftUI Environment. Make sure to add .environmentObject(DIContainer(container)) or .diContainer(...) to your view hierarchy."
+            )
         }
         return container
     }
@@ -285,22 +287,26 @@ extension EnvironmentValues {
 @MainActor
 public class DIContainer: ObservableObject {
     private let container: Container
-    
+
     public init(_ container: Container) {
         self.container = container
     }
-    
+
     /// Resolve a service from the container
     public func resolve<Service>(_ serviceType: Service.Type, name: String? = nil) -> Service? {
         if let name = name {
-            return container.synchronize().resolve(serviceType, name: name)
+            container.synchronize().resolve(serviceType, name: name)
         } else {
-            return container.synchronize().resolve(serviceType)
+            container.synchronize().resolve(serviceType)
         }
     }
-    
+
     /// Register a service in the container
-    public func register<Service>(_ serviceType: Service.Type, name: String? = nil, factory: @escaping (Resolver) -> Service) {
+    public func register<Service>(
+        _ serviceType: Service.Type,
+        name: String? = nil,
+        factory: @escaping (Resolver) -> Service
+    ) {
         if let name = name {
             container.register(serviceType, name: name, factory: factory)
         } else {
@@ -317,7 +323,7 @@ public enum EnvironmentInjectError: Error, LocalizedError {
     case serviceNotRegistered(serviceName: String?, type: String)
     case requiredServiceMissing(type: String)
     case environmentNotConfigured
-    
+
     public var errorDescription: String? {
         switch self {
         case .containerNotFound:
@@ -338,29 +344,29 @@ public enum EnvironmentInjectError: Error, LocalizedError {
 extension View {
     /// Configure the DI container for the view hierarchy
     public func diContainer(_ container: Container) -> some View {
-        self.environmentObject(DIContainer(container))
+        environmentObject(DIContainer(container))
     }
-    
+
     /// Configure the DI container with a DIContainer instance
     public func diContainer(_ diContainer: DIContainer) -> some View {
-        self.environmentObject(diContainer)
+        environmentObject(diContainer)
     }
 }
 
 // MARK: - Preview Utilities
 
 /// Utilities for creating mock containers in SwiftUI previews
-public struct PreviewContainer {
+public enum PreviewContainer {
     /// Create a container with mock services for previews
     public static func mock() -> Container {
         let container = Container()
-        
+
         // Register common mock services
         // Users can extend this or create their own mock containers
-        
+
         return container
     }
-    
+
     /// Create a container with specific mock registrations
     public static func mock(configure: (Container) -> Void) -> Container {
         let container = Container()
@@ -368,4 +374,3 @@ public struct PreviewContainer {
         return container
     }
 }
-

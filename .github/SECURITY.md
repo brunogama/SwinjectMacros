@@ -52,52 +52,59 @@ SwinjectUtilityMacros generates code at compile time. While this provides perfor
 
 1. **Code Generation**: Macros generate Swift code that becomes part of your application. Always review generated code in critical applications.
 
-2. **Dependency Injection**: Be cautious about what dependencies you inject, especially when dealing with sensitive data or external resources.
+1. **Dependency Injection**: Be cautious about what dependencies you inject, especially when dealing with sensitive data or external resources.
 
-3. **Build-Time Security**: Ensure your build environment is secure, as macros execute during compilation.
+1. **Build-Time Security**: Ensure your build environment is secure, as macros execute during compilation.
 
 ### Best Practices
 
 #### For Library Users
 
 1. **Pin Versions**: Use specific versions rather than ranges to ensure consistent behavior:
+
    ```swift
    .package(url: "https://github.com/user/SwinjectUtilityMacros.git", exact: "1.0.0")
    ```
 
-2. **Review Dependencies**: Regularly audit your dependencies using tools like `swift package audit`.
+1. **Review Dependencies**: Regularly audit your dependencies using tools like `swift package audit`.
 
-3. **Secure Configuration**: When using macros with configuration, validate input parameters:
+1. **Secure Configuration**: When using macros with configuration, validate input parameters:
+
    ```swift
    @LazyInject(timeout: 30) // Use reasonable timeouts
    var service: ServiceProtocol = ServiceImpl()
    ```
 
-4. **Testing**: Always test macro-generated code thoroughly, especially in security-critical applications.
+1. **Testing**: Always test macro-generated code thoroughly, especially in security-critical applications.
 
 #### For Contributors
 
 1. **Input Validation**: Validate all macro parameters and provide clear error messages for invalid input.
 
-2. **Safe Code Generation**: Generate code that follows security best practices:
+1. **Safe Code Generation**: Generate code that follows security best practices:
+
    - Use appropriate access controls
    - Validate dependencies before injection
    - Handle errors gracefully
 
-3. **Documentation**: Document security considerations for each macro.
+1. **Documentation**: Document security considerations for each macro.
 
 ### Common Security Scenarios
 
 #### Thread Safety
+
 SwinjectUtilityMacros implements thread-safe dependency injection. However, be aware that:
+
 - The injected dependencies themselves must be thread-safe
 - Lazy initialization is protected, but subsequent access depends on the dependency's implementation
 
 #### Memory Management
+
 - Use `@WeakInject` for dependencies that might create retain cycles
 - Be cautious with `@AsyncInject` to avoid memory leaks in long-running async operations
 
 #### SwiftUI Integration
+
 - Environment-based injection is secure by default
 - Be cautious when injecting sensitive services into SwiftUI views
 
@@ -106,8 +113,8 @@ SwinjectUtilityMacros implements thread-safe dependency injection. However, be a
 Security updates will be released as patch versions and announced through:
 
 1. **GitHub Security Advisories**
-2. **Release Notes**
-3. **Email notifications** (if you're subscribed to security updates)
+1. **Release Notes**
+1. **Email notifications** (if you're subscribed to security updates)
 
 ## Acknowledgments
 
@@ -117,7 +124,7 @@ We would like to thank the following individuals for their responsible disclosur
 
 *No security vulnerabilities have been reported yet.*
 
----
+______________________________________________________________________
 
 ## Contact
 

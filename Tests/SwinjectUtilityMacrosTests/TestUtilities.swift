@@ -49,8 +49,14 @@ public struct RetryAttempt {
     }
 }
 
-public struct RetryMetricsManager {
-    public static func recordResult(for key: String, succeeded: Bool, attemptCount: Int, totalDelay: TimeInterval, finalError: Error? = nil) {
+public enum RetryMetricsManager {
+    public static func recordResult(
+        for key: String,
+        succeeded: Bool,
+        attemptCount: Int,
+        totalDelay: TimeInterval,
+        finalError: Error? = nil
+    ) {
         // Implementation placeholder
     }
 
@@ -101,7 +107,7 @@ public class TestContainer {
     public let container: Container
 
     public init() {
-        self.container = Container()
+        container = Container()
         registerBasicServices()
     }
 
@@ -222,7 +228,7 @@ public struct CachedValue<T> {
     public let timestamp: Date
     public init(_ value: T) {
         self.value = value
-        self.timestamp = Date()
+        timestamp = Date()
     }
 }
 
@@ -241,6 +247,7 @@ public protocol APIClientProtocol {
     func request(_ endpoint: String) async throws -> Data
     func get(_ url: String) async throws -> Any
     func post(_ url: String, body: Any) async throws -> Any
+    func fetchData() -> String
 }
 
 public protocol DatabaseProtocol {
@@ -293,6 +300,11 @@ public class MockAPIClient: APIClientProtocol {
 
     public func post(_ url: String, body: Any) async throws -> Any {
         try await request(url)
+    }
+
+    public func fetchData() -> String {
+        requestCalled = true
+        return "mock-data"
     }
 }
 
@@ -412,6 +424,11 @@ public class FastMockAPIClient: APIClientProtocol, PerformanceMockProtocol {
         return Data()
     }
 
+    public func fetchData() -> String {
+        operationCount += 1
+        return "fast-mock-data"
+    }
+
     public func reset() {
         operationCount = 0
     }
@@ -455,11 +472,11 @@ public class SwiftUIMockAPIClient: MockAPIClient, ObservableObject {
     @Published public var lastResult: Any?
 
     override public func request(_ endpoint: String) async throws -> Data {
-        await MainActor.run { isLoading = true }
+        await MainActor.run { self.isLoading = true }
         defer { Task { @MainActor in isLoading = false } }
 
         let result = try await super.request(endpoint)
-        await MainActor.run { lastResult = result }
+        await MainActor.run { self.lastResult = result }
         return result
     }
 }
@@ -512,11 +529,158 @@ public func measureTime<T>(block: () throws -> T) rethrows -> (result: T, time: 
     return (result, time)
 }
 
-public func assertNoThrow<T>(_ expression: @autoclosure () throws -> T, message: String = "Expression threw unexpectedly", file: StaticString = #file, line: UInt = #line) -> T? {
+public func assertNoThrow<T>(
+    _ expression: @autoclosure () throws -> T,
+    message: String = "Expression threw unexpectedly",
+    file: StaticString = #file,
+    line: UInt = #line
+) -> T? {
     do {
         return try expression()
     } catch {
         XCTFail("\(message): \(error)", file: file, line: line)
         return nil
+    }
+}
+
+// MARK: - Additional Mock Types
+
+protocol MockDelegate: AnyObject {
+    func didPerformAction()
+    func didReceiveValue(_ value: Int)
+    func performAction() -> Int
+}
+
+class MockDelegateImpl: MockDelegate {
+    var actionCount = 0
+    var receivedValues: [Int] = []
+
+    func didPerformAction() {
+        actionCount += 1
+    }
+
+    func didReceiveValue(_ value: Int) {
+        receivedValues.append(value)
+    }
+
+    func performAction() -> Int {
+        actionCount += 1
+        return actionCount
+    }
+}
+
+protocol MockObserver: AnyObject {
+    func didObserveChange()
+    func didObserveError(_ error: Error)
+    func observeEvent() -> Int
+}
+
+class MockObserverImpl: MockObserver {
+    var changeCount = 0
+    var errors: [Error] = []
+
+    func didObserveChange() {
+        changeCount += 1
+    }
+
+    func didObserveError(_ error: Error) {
+        errors.append(error)
+    }
+
+    func observeEvent() -> Int {
+        changeCount += 1
+        return changeCount
+    }
+}
+
+protocol MockValidator {
+    func validate(_ value: String) -> Bool
+    func validate(_ value: Int) -> Bool
+}
+
+class MockValidatorImpl: MockValidator {
+    var validationCount = 0
+
+    func validate(_ value: String) -> Bool {
+        validationCount += 1
+        return !value.isEmpty
+    }
+
+    func validate(_ value: Int) -> Bool {
+        validationCount += 1
+        return value > 0
+    }
+}
+
+class MockExpensiveResource {
+    let id = UUID()
+    var isInitialized = false
+    var accessCount = 0
+
+    init() {
+        Thread.sleep(forTimeInterval: 0.1) // Simulate expensive initialization
+        isInitialized = true
+    }
+
+    func access() {
+        accessCount += 1
+    }
+
+    func heavyComputation() -> String {
+        accessCount += 1
+        return "computed-\(id.uuidString.prefix(8))"
+    }
+}
+
+// ThreadInfo is imported from SwinjectUtilityMacros
+
+// LazyPropertyInfo is imported from SwinjectUtilityMacros
+
+// LazyResolutionState is imported from SwinjectUtilityMacros
+
+// MARK: - Test Dependencies
+
+class TestDependency1 {
+    let id = UUID()
+    var value = "TestDependency1"
+}
+
+class TestDependency2 {
+    let id = UUID()
+    var value = "TestDependency2"
+}
+
+class TestDependency3 {
+    let id = UUID()
+    var value = "TestDependency3"
+}
+
+// MARK: - Module Scope Extension
+
+extension Swinject.ObjectScope {
+    static let module = Swinject.ObjectScope.container
+}
+
+// MARK: - Performance Monitor
+
+class PerformanceMonitor {
+    private var startTime: Date?
+    private var measurements: [TimeInterval] = []
+
+    func start() {
+        startTime = Date()
+    }
+
+    func stop() -> TimeInterval {
+        guard let start = startTime else { return 0 }
+        let elapsed = Date().timeIntervalSince(start)
+        measurements.append(elapsed)
+        startTime = nil
+        return elapsed
+    }
+
+    var average: TimeInterval {
+        guard !measurements.isEmpty else { return 0 }
+        return measurements.reduce(0, +) / Double(measurements.count)
     }
 }

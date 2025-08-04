@@ -114,18 +114,18 @@ public enum ObjectScope {
     case transient
     /// Weak scope - shared while strong references exist
     case weak
-    
+
     /// Convert to Swinject ObjectScope
-    internal var swinjectScope: Swinject.ObjectScope {
+    var swinjectScope: Swinject.ObjectScope {
         switch self {
         case .graph:
-            return .graph
+            .graph
         case .container:
-            return .container
+            .container
         case .transient:
-            return .transient
+            .transient
         case .weak:
-            return .weak
+            .weak
         }
     }
 }
@@ -144,12 +144,12 @@ public struct DependencyInfo {
     public let defaultValue: String?
     /// Suggested scope for this dependency
     public let scopeHint: ObjectScope?
-    
+
     public init(
-        name: String, 
-        type: String, 
-        isOptional: Bool = false, 
-        defaultValue: String? = nil, 
+        name: String,
+        type: String,
+        isOptional: Bool = false,
+        defaultValue: String? = nil,
         scopeHint: ObjectScope? = nil
     ) {
         self.name = name
@@ -163,10 +163,10 @@ public struct DependencyInfo {
 // MARK: - Service Registration Helpers
 
 /// Helper methods for service registration
-public extension Container {
-    
+extension Container {
+
     /// Register a service with automatic dependency resolution
-    func registerService<Service>(
+    public func registerService<Service>(
         _ serviceType: Service.Type,
         scope: ObjectScope = .graph,
         name: String? = nil,
@@ -175,9 +175,9 @@ public extension Container {
         let registration = register(serviceType, name: name, factory: factory)
         registration.inObjectScope(scope.swinjectScope)
     }
-    
+
     /// Register a service with completion handler for circular dependencies
-    func registerService<Service>(
+    public func registerService<Service>(
         _ serviceType: Service.Type,
         scope: ObjectScope = .graph,
         name: String? = nil,
@@ -198,7 +198,7 @@ public protocol AutoRegisterAssembly: Assembly {
     func didCompleteAutoRegistration(in container: Container)
 }
 
-public extension AutoRegisterAssembly {
+extension AutoRegisterAssembly {
     /// Default implementation - no additional setup needed
-    func didCompleteAutoRegistration(in container: Container) {}
+    public func didCompleteAutoRegistration(in container: Container) {}
 }

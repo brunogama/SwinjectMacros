@@ -618,21 +618,38 @@ enum CompositionCircuitBreakerError: Error {
 }
 
 // Mock registries and managers
-struct CompositionRetryMetricsManager {
-    static func recordResult(for key: String, succeeded: Bool, attemptCount: Int, totalDelay: TimeInterval, finalError: Error? = nil) {}
+enum CompositionRetryMetricsManager {
+    static func recordResult(
+        for key: String,
+        succeeded: Bool,
+        attemptCount: Int,
+        totalDelay: TimeInterval,
+        finalError: Error? = nil
+    ) {}
     static func recordAttempt(_ attempt: CompositionRetryAttempt, for key: String) {}
 }
 
-struct CompositionCircuitBreakerRegistry {
-    static func getCircuitBreaker(for key: String, failureThreshold: Int, timeout: TimeInterval, successThreshold: Int, monitoringWindow: TimeInterval) -> CompositionMockCircuitBreaker {
+enum CompositionCircuitBreakerRegistry {
+    static func getCircuitBreaker(
+        for key: String,
+        failureThreshold: Int,
+        timeout: TimeInterval,
+        successThreshold: Int,
+        monitoringWindow: TimeInterval
+    ) -> CompositionMockCircuitBreaker {
         CompositionMockCircuitBreaker()
     }
 
     static func recordCall(_ call: CompositionCircuitBreakerCall, for key: String) {}
 }
 
-struct CompositionCacheRegistry {
-    static func getCache(for key: String, maxSize: Int, ttl: TimeInterval, evictionPolicy: CompositionCacheEvictionPolicy) -> CompositionMockCache {
+enum CompositionCacheRegistry {
+    static func getCache(
+        for key: String,
+        maxSize: Int,
+        ttl: TimeInterval,
+        evictionPolicy: CompositionCacheEvictionPolicy
+    ) -> CompositionMockCache {
         CompositionMockCache()
     }
 

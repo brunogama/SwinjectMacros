@@ -73,7 +73,12 @@ final class AutoFactoryTests: XCTestCase {
             }
             """,
             diagnostics: [
-                DiagnosticSpec(message: "@AutoFactory requires a class or struct with an initializer", line: 1, column: 1, severity: .error)
+                DiagnosticSpec(
+                    message: "@AutoFactory requires a class or struct with an initializer",
+                    line: 1,
+                    column: 1,
+                    severity: .error
+                )
             ],
             macros: testMacros
         )

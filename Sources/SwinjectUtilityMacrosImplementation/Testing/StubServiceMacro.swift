@@ -1,30 +1,30 @@
 // StubServiceMacro.swift - Test stub generation implementation
 
-import SwiftSyntax
-import SwiftSyntaxMacros
-import SwiftSyntaxBuilder
 import SwiftDiagnostics
+import SwiftSyntax
+import SwiftSyntaxBuilder
+import SwiftSyntaxMacros
 
 /// Implementation of the @StubService macro for generating test stub implementations
-/// 
+///
 /// Automatically generates stub implementations of protocols with configurable return values,
 /// call recording, and flexible behavior configuration for comprehensive testing.
 public struct StubServiceMacro: MemberMacro, ExtensionMacro {
-    
+
     public static func expansion(
         of node: AttributeSyntax,
         providingMembersOf declaration: some DeclGroupSyntax,
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
-        
+
         // Validate that this is applied to a protocol or extension
         guard declaration.is(ProtocolDeclSyntax.self) || declaration.is(ExtensionDeclSyntax.self) else {
-            
+
             context.diagnose(Diagnostic(
                 node: declaration,
                 message: StubServiceMacroError(message: """
                 @StubService can only be applied to protocols or protocol extensions.
-                
+
                 Example:
                 @StubService
                 protocol UserServiceProtocol {
@@ -34,20 +34,20 @@ public struct StubServiceMacro: MemberMacro, ExtensionMacro {
             ))
             return []
         }
-        
+
         // Extract macro arguments
         let arguments = extractArguments(from: node)
-        
+
         // Generate stub implementation
         let stubImplementation = try generateStubImplementation(
             for: declaration,
             with: arguments,
             in: context
         )
-        
+
         return stubImplementation
     }
-    
+
     public static func expansion(
         of node: AttributeSyntax,
         attachedTo declaration: some DeclGroupSyntax,
@@ -55,7 +55,7 @@ public struct StubServiceMacro: MemberMacro, ExtensionMacro {
         conformingTo protocols: [TypeSyntax],
         in context: some MacroExpansionContext
     ) throws -> [ExtensionDeclSyntax] {
-        
+
         // Generate extension for StubService conformance
         let stubExtension = ExtensionDeclSyntax(
             extendedType: type,
@@ -79,7 +79,7 @@ public struct StubServiceMacro: MemberMacro, ExtensionMacro {
                     """)))
                 ])
             }
-            
+
             // Generate configureDefaults method
             FunctionDeclSyntax(
                 name: .identifier("configureDefaults"),
@@ -97,36 +97,36 @@ public struct StubServiceMacro: MemberMacro, ExtensionMacro {
                 ])
             }
         }
-        
+
         return [stubExtension]
     }
 }
 
 // MARK: - Implementation Generation
 
-private extension StubServiceMacro {
-    
-    struct MacroArguments {
+extension StubServiceMacro {
+
+    fileprivate struct MacroArguments {
         let prefix: String
         let suffix: String
         let recordCalls: Bool
         let throwErrors: Bool
         let closureSupport: Bool
         let asyncSupport: Bool
-        
+
         func stubClassName(for protocolName: String) -> String {
-            return "\(prefix)\(protocolName)\(suffix)"
+            "\(prefix)\(protocolName)\(suffix)"
         }
     }
-    
-    static func extractArguments(from node: AttributeSyntax) -> MacroArguments {
+
+    fileprivate static func extractArguments(from node: AttributeSyntax) -> MacroArguments {
         var prefix = ""
         var suffix = "Stub"
         var recordCalls = true
         var throwErrors = true
         var closureSupport = false
         var asyncSupport = true
-        
+
         if let arguments = node.arguments?.as(LabeledExprListSyntax.self) {
             for argument in arguments {
                 switch argument.label?.text {
@@ -159,7 +159,7 @@ private extension StubServiceMacro {
                 }
             }
         }
-        
+
         return MacroArguments(
             prefix: prefix,
             suffix: suffix,
@@ -169,16 +169,16 @@ private extension StubServiceMacro {
             asyncSupport: asyncSupport
         )
     }
-    
-    static func generateStubImplementation(
+
+    fileprivate static func generateStubImplementation(
         for declaration: some DeclGroupSyntax,
         with arguments: MacroArguments,
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
-        
+
         var protocolName = "Unknown"
         var methods: [FunctionDeclSyntax] = []
-        
+
         // Extract protocol information
         if let protocolDecl = declaration.as(ProtocolDeclSyntax.self) {
             protocolName = protocolDecl.name.text
@@ -193,9 +193,9 @@ private extension StubServiceMacro {
                 member.decl.as(FunctionDeclSyntax.self)
             }
         }
-        
+
         let stubClassName = arguments.stubClassName(for: protocolName)
-        
+
         // Generate stub class declaration
         let stubClass = try ClassDeclSyntax(
             name: .identifier(stubClassName),
@@ -218,7 +218,7 @@ private extension StubServiceMacro {
                     """)))
                 ])
             }
-            
+
             // Generate stub properties and methods for each protocol method
             for method in methods {
                 // Generate return value property
@@ -238,10 +238,10 @@ private extension StubServiceMacro {
                             )
                         ])
                     )
-                    
+
                     DeclSyntax(variableDecl)
                 }
-                
+
                 // Generate call count property (if recording enabled)
                 if arguments.recordCalls {
                     let callCountProperty = VariableDeclSyntax(
@@ -251,7 +251,9 @@ private extension StubServiceMacro {
                         bindingSpecifier: .keyword(.var),
                         bindings: PatternBindingListSyntax([
                             PatternBindingSyntax(
-                                pattern: IdentifierPatternSyntax(identifier: .identifier("\(method.name.text)CallCount")),
+                                pattern: IdentifierPatternSyntax(
+                                    identifier: .identifier("\(method.name.text)CallCount")
+                                ),
                                 typeAnnotation: TypeAnnotationSyntax(
                                     type: IdentifierTypeSyntax(name: .identifier("Int"))
                                 ),
@@ -261,40 +263,40 @@ private extension StubServiceMacro {
                             )
                         ])
                     )
-                    
+
                     DeclSyntax(callCountProperty)
                 }
-                
+
                 // Generate stub method implementation
-                let stubMethod = generateStubMethod(
+                let stubMethod = self.generateStubMethod(
                     from: method,
                     with: arguments,
                     protocolName: protocolName
                 )
-                
+
                 DeclSyntax(stubMethod)
             }
-            
+
             // Generate StubService conformance methods
-            for stubMethod in generateStubServiceMethods(arguments: arguments) {
+            for stubMethod in self.generateStubServiceMethods(arguments: arguments) {
                 stubMethod
             }
         }
-        
+
         return [DeclSyntax(stubClass)]
     }
-    
-    static func generateStubMethod(
+
+    fileprivate static func generateStubMethod(
         from method: FunctionDeclSyntax,
         with arguments: MacroArguments,
         protocolName: String
     ) -> FunctionDeclSyntax {
-        
+
         let methodName = method.name.text
         let returnType = method.signature.returnClause?.type
         let isAsync = method.signature.effectSpecifiers?.asyncSpecifier != nil
         let isThrows = method.signature.effectSpecifiers?.throwsSpecifier != nil
-        
+
         return FunctionDeclSyntax(
             modifiers: DeclModifierListSyntax([
                 DeclModifierSyntax(name: .keyword(.public))
@@ -307,21 +309,21 @@ private extension StubServiceMacro {
                 CodeBlockItemSyntax(item: .expr(ExprSyntax(stringLiteral: arguments.recordCalls ? """
                 \(methodName)CallCount += 1
                 """ : "// Call recording disabled"))),
-                
+
                 // Check for closure override if enabled
                 CodeBlockItemSyntax(item: .expr(ExprSyntax(stringLiteral: arguments.closureSupport ? """
                 if let closure = \(methodName)Closure {
                     return \(isAsync ? "await " : "")\(isThrows ? "try " : "")closure()
                 }
                 """ : "// Closure support disabled"))),
-                
+
                 // Check for error throwing if enabled
                 CodeBlockItemSyntax(item: .expr(ExprSyntax(stringLiteral: arguments.throwErrors && isThrows ? """
                 if let error = \(methodName)ThrowError {
                     throw error
                 }
                 """ : "// Error throwing disabled"))),
-                
+
                 // Return configured value
                 CodeBlockItemSyntax(item: .expr(ExprSyntax(stringLiteral: returnType != nil ? """
                 return \(methodName)ReturnValue ?? {
@@ -331,9 +333,9 @@ private extension StubServiceMacro {
             ])
         }
     }
-    
-    static func generateStubServiceMethods(arguments: MacroArguments) -> [DeclSyntax] {
-        return [
+
+    fileprivate static func generateStubServiceMethods(arguments: MacroArguments) -> [DeclSyntax] {
+        [
             // resetStub implementation
             DeclSyntax(FunctionDeclSyntax(
                 modifiers: DeclModifierListSyntax([
@@ -354,7 +356,7 @@ private extension StubServiceMacro {
                     """)))
                 ])
             }),
-            
+
             // configureDefaults implementation
             DeclSyntax(FunctionDeclSyntax(
                 modifiers: DeclModifierListSyntax([

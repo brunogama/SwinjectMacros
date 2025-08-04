@@ -19,7 +19,7 @@ let package = Package(
     dependencies: [
         // Local dependency on SwinJectMacros
         .package(path: "../.."),
-        
+
         // Additional dependencies for demo features
         .package(url: "https://github.com/Swinject/Swinject.git", from: "2.9.1")
     ],
@@ -31,7 +31,7 @@ let package = Package(
                 .product(name: "Swinject", package: "Swinject")
             ],
             path: "Sources"
-        ),
+        )
         // .testTarget(
         //     name: "SwinJectMacrosiOSDemoTests",
         //     dependencies: [

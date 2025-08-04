@@ -67,12 +67,12 @@ body:
         // Current approach (without the feature)
         class MyService {
             private let dependency: DependencyProtocol
-            
+
             init(dependency: DependencyProtocol) {
                 self.dependency = dependency
             }
         }
-        
+
         // Proposed approach (with the feature)
         class MyService {
             @CustomMacro(config: .advanced)

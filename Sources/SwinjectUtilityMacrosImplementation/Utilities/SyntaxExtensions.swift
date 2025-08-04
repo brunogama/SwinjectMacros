@@ -1,46 +1,46 @@
 // SyntaxExtensions.swift - SwiftSyntax convenience extensions
 // Copyright © 2025 SwinjectUtilityMacros. All rights reserved.
 
+import SwiftDiagnostics
+import SwiftParser
 import SwiftSyntax
 import SwiftSyntaxMacros
-import SwiftParser
-import SwiftDiagnostics
 
 // MARK: - TypeSyntax Extensions
 
 extension TypeSyntax {
     /// Returns the trimmed description without trivia
     var cleanDescription: String {
-        return trimmedDescription
+        trimmedDescription
     }
-    
+
     /// Checks if this type is optional
     var isOptional: Bool {
-        return self.as(OptionalTypeSyntax.self) != nil || 
-               trimmedDescription.hasSuffix("?")
+        self.as(OptionalTypeSyntax.self) != nil ||
+            trimmedDescription.hasSuffix("?")
     }
-    
+
     /// Returns the non-optional version of this type
     var nonOptionalType: TypeSyntax {
         if let optionalType = self.as(OptionalTypeSyntax.self) {
             return optionalType.wrappedType
         }
-        
+
         let description = trimmedDescription
         if description.hasSuffix("?") {
             let nonOptionalDescription = String(description.dropLast())
             return TypeSyntax(stringLiteral: nonOptionalDescription)
         }
-        
+
         return self
     }
-    
+
     /// Checks if this type has generic parameters
     var hasGenericParameters: Bool {
         let description = trimmedDescription
         return description.contains("<") && description.contains(">")
     }
-    
+
     /// Extracts the base type name without generic parameters
     var baseTypeName: String {
         let description = trimmedDescription
@@ -56,42 +56,42 @@ extension TypeSyntax {
 extension FunctionDeclSyntax {
     /// Returns the function name as a string
     var functionName: String {
-        return name.text
+        name.text
     }
-    
+
     /// Checks if the function is async
     var isAsync: Bool {
-        return signature.effectSpecifiers?.asyncSpecifier != nil
+        signature.effectSpecifiers?.asyncSpecifier != nil
     }
-    
+
     /// Checks if the function can throw
     var canThrow: Bool {
-        return signature.effectSpecifiers?.throwsSpecifier != nil
+        signature.effectSpecifiers?.throwsSpecifier != nil
     }
-    
+
     /// Returns the return type or Void if none specified
     var returnTypeName: String {
-        return signature.returnClause?.type.trimmedDescription ?? "Void"
+        signature.returnClause?.type.trimmedDescription ?? "Void"
     }
-    
+
     /// Returns all parameter names
     var parameterNames: [String] {
-        return signature.parameterClause.parameters.map { $0.firstName.text }
+        signature.parameterClause.parameters.map { $0.firstName.text }
     }
-    
+
     /// Returns all parameter types
     var parameterTypes: [String] {
-        return signature.parameterClause.parameters.map { $0.type.trimmedDescription }
+        signature.parameterClause.parameters.map { $0.type.trimmedDescription }
     }
-    
+
     /// Checks if function has public access
     var isPublic: Bool {
-        return modifiers.contains { $0.name.text == "public" }
+        modifiers.contains { $0.name.text == "public" }
     }
-    
+
     /// Checks if function is static
     var isStatic: Bool {
-        return modifiers.contains { $0.name.text == "static" }
+        modifiers.contains { $0.name.text == "static" }
     }
 }
 
@@ -100,7 +100,7 @@ extension FunctionDeclSyntax {
 extension InitializerDeclSyntax {
     /// Returns all parameter information
     var parameterInfo: [ParameterInfo] {
-        return signature.parameterClause.parameters.map { param in
+        signature.parameterClause.parameters.map { param in
             ParameterInfo(
                 name: param.firstName.text,
                 type: param.type.trimmedDescription,
@@ -110,20 +110,20 @@ extension InitializerDeclSyntax {
             )
         }
     }
-    
+
     /// Checks if initializer is public
     var isPublic: Bool {
-        return modifiers.contains { $0.name.text == "public" }
+        modifiers.contains { $0.name.text == "public" }
     }
-    
+
     /// Checks if initializer can throw
     var canThrow: Bool {
-        return signature.effectSpecifiers?.throwsSpecifier != nil
+        signature.effectSpecifiers?.throwsSpecifier != nil
     }
-    
+
     /// Checks if initializer is async
     var isAsync: Bool {
-        return signature.effectSpecifiers?.asyncSpecifier != nil
+        signature.effectSpecifiers?.asyncSpecifier != nil
     }
 }
 
@@ -132,52 +132,52 @@ extension InitializerDeclSyntax {
 extension ClassDeclSyntax {
     /// Returns the class name as a string
     var className: String {
-        return name.text
+        name.text
     }
-    
+
     /// Returns all initializers in the class
     var initializers: [InitializerDeclSyntax] {
-        return memberBlock.members.compactMap { member in
+        memberBlock.members.compactMap { member in
             member.decl.as(InitializerDeclSyntax.self)
         }
     }
-    
+
     /// Returns the primary (first public or first available) initializer
     var primaryInitializer: InitializerDeclSyntax? {
         let publicInitializers = initializers.filter { $0.isPublic }
         return publicInitializers.first ?? initializers.first
     }
-    
+
     /// Returns all inherited types (protocols, superclasses)
     var inheritedTypeNames: [String] {
-        return inheritanceClause?.inheritedTypes.map { 
-            $0.type.trimmedDescription 
+        inheritanceClause?.inheritedTypes.map {
+            $0.type.trimmedDescription
         } ?? []
     }
-    
+
     /// Checks if class conforms to a specific protocol
     func conformsTo(_ protocolName: String) -> Bool {
-        return inheritedTypeNames.contains(protocolName)
+        inheritedTypeNames.contains(protocolName)
     }
-    
+
     /// Checks if class is public
     var isPublic: Bool {
-        return modifiers.contains { $0.name.text == "public" }
+        modifiers.contains { $0.name.text == "public" }
     }
-    
+
     /// Checks if class is final
     var isFinal: Bool {
-        return modifiers.contains { $0.name.text == "final" }
+        modifiers.contains { $0.name.text == "final" }
     }
-    
+
     /// Returns generic parameters if any
     var genericParameters: [String] {
-        return genericParameterClause?.parameters.map { $0.name.text } ?? []
+        genericParameterClause?.parameters.map { $0.name.text } ?? []
     }
-    
+
     /// Checks if class is generic
     var isGeneric: Bool {
-        return genericParameterClause != nil
+        genericParameterClause != nil
     }
 }
 
@@ -186,47 +186,47 @@ extension ClassDeclSyntax {
 extension StructDeclSyntax {
     /// Returns the struct name as a string
     var structName: String {
-        return name.text
+        name.text
     }
-    
+
     /// Returns all initializers in the struct
     var initializers: [InitializerDeclSyntax] {
-        return memberBlock.members.compactMap { member in
+        memberBlock.members.compactMap { member in
             member.decl.as(InitializerDeclSyntax.self)
         }
     }
-    
+
     /// Returns the primary (first public or first available) initializer
     var primaryInitializer: InitializerDeclSyntax? {
         let publicInitializers = initializers.filter { $0.isPublic }
         return publicInitializers.first ?? initializers.first
     }
-    
+
     /// Returns all inherited types (protocols)
     var inheritedTypeNames: [String] {
-        return inheritanceClause?.inheritedTypes.map { 
-            $0.type.trimmedDescription 
+        inheritanceClause?.inheritedTypes.map {
+            $0.type.trimmedDescription
         } ?? []
     }
-    
+
     /// Checks if struct conforms to a specific protocol
     func conformsTo(_ protocolName: String) -> Bool {
-        return inheritedTypeNames.contains(protocolName)
+        inheritedTypeNames.contains(protocolName)
     }
-    
+
     /// Checks if struct is public
     var isPublic: Bool {
-        return modifiers.contains { $0.name.text == "public" }
+        modifiers.contains { $0.name.text == "public" }
     }
-    
+
     /// Returns generic parameters if any
     var genericParameters: [String] {
-        return genericParameterClause?.parameters.map { $0.name.text } ?? []
+        genericParameterClause?.parameters.map { $0.name.text } ?? []
     }
-    
+
     /// Checks if struct is generic
     var isGeneric: Bool {
-        return genericParameterClause != nil
+        genericParameterClause != nil
     }
 }
 
@@ -235,7 +235,7 @@ extension StructDeclSyntax {
 extension FunctionParameterSyntax {
     /// Returns parameter information
     var parameterInfo: ParameterInfo {
-        return ParameterInfo(
+        ParameterInfo(
             name: firstName.text,
             type: type.trimmedDescription,
             isOptional: type.isOptional,
@@ -243,37 +243,37 @@ extension FunctionParameterSyntax {
             label: secondName?.text
         )
     }
-    
+
     /// Checks if parameter has a default value
     var hasDefaultValue: Bool {
-        return defaultValue != nil
+        defaultValue != nil
     }
-    
+
     /// Returns the parameter label (external name)
     var label: String {
-        return secondName?.text ?? firstName.text
+        secondName?.text ?? firstName.text
     }
-    
+
     /// Returns the parameter name (internal name)
     var parameterName: String {
-        return firstName.text
+        firstName.text
     }
 }
 
 // MARK: - AttributeSyntax Extensions
 
 extension AttributeSyntax {
-    /// Returns the attribute name  
+    /// Returns the attribute name
     var attributeNameText: String {
-        return attributeName.trimmedDescription
+        attributeName.trimmedDescription
     }
-    
+
     /// Extracts string arguments from the attribute
     var stringArguments: [String] {
         guard let arguments = arguments?.as(LabeledExprListSyntax.self) else {
             return []
         }
-        
+
         return arguments.compactMap { arg in
             if let stringLiteral = arg.expression.as(StringLiteralExprSyntax.self) {
                 return stringLiteral.segments.first?.as(StringSegmentSyntax.self)?.content.text
@@ -281,26 +281,27 @@ extension AttributeSyntax {
             return nil
         }
     }
-    
+
     /// Extracts named arguments from the attribute
     var namedArguments: [String: String] {
         guard let arguments = arguments?.as(LabeledExprListSyntax.self) else {
             return [:]
         }
-        
+
         var result: [String: String] = [:]
-        
+
         for arg in arguments {
             let key = arg.label?.text ?? ""
-            
+
             if let stringLiteral = arg.expression.as(StringLiteralExprSyntax.self),
-               let value = stringLiteral.segments.first?.as(StringSegmentSyntax.self)?.content.text {
+               let value = stringLiteral.segments.first?.as(StringSegmentSyntax.self)?.content.text
+            {
                 result[key] = value
             } else {
                 result[key] = arg.expression.trimmedDescription
             }
         }
-        
+
         return result
     }
 }
@@ -310,14 +311,14 @@ extension AttributeSyntax {
 extension DeclModifierListSyntax {
     /// Checks if modifiers contain a specific modifier
     func contains(_ modifierName: String) -> Bool {
-        return contains { $0.name.text == modifierName }
+        contains { $0.name.text == modifierName }
     }
-    
+
     /// Returns all modifier names
     var modifierNames: [String] {
-        return map { $0.name.text }
+        map { $0.name.text }
     }
-    
+
     /// Checks for access level modifiers
     var accessLevel: AccessLevel {
         if contains("public") { return .public }
@@ -328,7 +329,6 @@ extension DeclModifierListSyntax {
     }
 }
 
-
 // MARK: - Supporting Types
 
 /// Parameter information extracted from syntax
@@ -338,7 +338,7 @@ public struct ParameterInfo {
     public let isOptional: Bool
     public let defaultValue: String?
     public let label: String?
-    
+
     public init(
         name: String,
         type: String,
@@ -367,7 +367,7 @@ public struct SimpleDiagnosticMessage: DiagnosticMessage {
     public let message: String
     public let diagnosticID: MessageID
     public let severity: DiagnosticSeverity
-    
+
     public init(message: String, diagnosticID: MessageID, severity: DiagnosticSeverity) {
         self.message = message
         self.diagnosticID = diagnosticID
@@ -382,12 +382,12 @@ extension DeclSyntax {
     static func function(_ code: String) -> DeclSyntax {
         // In practice, you would use SwiftSyntaxBuilder to construct proper syntax trees
         // This is a placeholder implementation
-        return DeclSyntax(stringLiteral: code)
+        DeclSyntax(stringLiteral: code)
     }
-    
+
     /// Creates an extension declaration from a string
     static func `extension`(_ code: String) -> DeclSyntax {
-        return DeclSyntax(stringLiteral: code)
+        DeclSyntax(stringLiteral: code)
     }
 }
 
@@ -409,7 +409,9 @@ extension DeclSyntax {
                     bindings: PatternBindingListSyntax([
                         PatternBindingSyntax(
                             pattern: IdentifierPatternSyntax(identifier: .identifier("placeholder")),
-                            typeAnnotation: TypeAnnotationSyntax(type: IdentifierTypeSyntax(name: .identifier("String"))),
+                            typeAnnotation: TypeAnnotationSyntax(
+                                type: IdentifierTypeSyntax(name: .identifier("String"))
+                            ),
                             initializer: InitializerClauseSyntax(value: StringLiteralExprSyntax(content: "placeholder"))
                         )
                     ])

@@ -8,13 +8,13 @@ import XCTest
 @testable import SwinjectUtilityMacrosImplementation
 
 final class LazyInjectMacroTests: XCTestCase {
-    
+
     let testMacros: [String: Macro.Type] = [
-        "LazyInject": LazyInjectMacro.self,
+        "LazyInject": LazyInjectMacro.self
     ]
-    
+
     // MARK: - Basic Functionality Tests
-    
+
     func testBasicLazyInjectExpansion() throws {
         assertMacroExpansion(
             """
@@ -25,16 +25,16 @@ final class LazyInjectMacroTests: XCTestCase {
             expandedSource: """
             class UserService {
                 @LazyInject var database: DatabaseProtocol
-                
+
                 private var _databaseBacking: DatabaseProtocol?
-                
+
                 private var _databaseOnceToken = pthread_once_t()
-                
+
                 private func _databaseLazyAccessor() -> DatabaseProtocol {
                     // Thread-safe lazy initialization
                     pthread_once(&_databaseOnceToken) {
                         let startTime = CFAbsoluteTimeGetCurrent()
-                        
+
                         // Register property for metrics tracking
                         let pendingInfo = LazyPropertyInfo(
                             propertyName: "database",
@@ -47,12 +47,12 @@ final class LazyInjectMacroTests: XCTestCase {
                             threadInfo: ThreadInfo()
                         )
                         LazyInjectionMetrics.recordResolution(pendingInfo)
-                        
+
                         do {
                             // Resolve dependency
                             guard let resolved = Container.shared.synchronizedResolve(DatabaseProtocol.self) else {
                                 let error = LazyInjectionError.serviceNotRegistered(serviceName: nil, type: "DatabaseProtocol")
-                                
+
                                 // Record failed resolution
                                 let failedInfo = LazyPropertyInfo(
                                     propertyName: "database",
@@ -66,16 +66,16 @@ final class LazyInjectMacroTests: XCTestCase {
                                     threadInfo: ThreadInfo()
                                 )
                                 LazyInjectionMetrics.recordResolution(failedInfo)
-                                
+
                                 fatalError("Required lazy property 'database' of type 'DatabaseProtocol' could not be resolved: \\(error.localizedDescription)")
                             }
-                            
+
                             _databaseBacking = resolved
-                            
+
                             // Record successful resolution
                             let endTime = CFAbsoluteTimeGetCurrent()
                             let resolutionDuration = endTime - startTime
-                            
+
                             let resolvedInfo = LazyPropertyInfo(
                                 propertyName: "database",
                                 propertyType: "DatabaseProtocol",
@@ -88,12 +88,12 @@ final class LazyInjectMacroTests: XCTestCase {
                                 threadInfo: ThreadInfo()
                             )
                             LazyInjectionMetrics.recordResolution(resolvedInfo)
-                            
+
                         } catch {
                             // Record failed resolution
                             let endTime = CFAbsoluteTimeGetCurrent()
                             let resolutionDuration = endTime - startTime
-                            
+
                             let failedInfo = LazyPropertyInfo(
                                 propertyName: "database",
                                 propertyType: "DatabaseProtocol",
@@ -107,13 +107,13 @@ final class LazyInjectMacroTests: XCTestCase {
                                 threadInfo: ThreadInfo()
                             )
                             LazyInjectionMetrics.recordResolution(failedInfo)
-                            
+
                             if true {
                                 fatalError("Failed to resolve required lazy property 'database': \\(error.localizedDescription)")
                             }
                         }
                     }
-                    
+
                     return _databaseBacking!
                 }
             }
@@ -121,7 +121,7 @@ final class LazyInjectMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     func testLazyInjectWithNamedService() throws {
         assertMacroExpansion(
             """
@@ -132,16 +132,16 @@ final class LazyInjectMacroTests: XCTestCase {
             expandedSource: """
             class PaymentService {
                 @LazyInject("primary") var primaryDB: DatabaseProtocol
-                
+
                 private var _primaryDBBacking: DatabaseProtocol?
-                
+
                 private var _primaryDBOnceToken = pthread_once_t()
-                
+
                 private func _primaryDBLazyAccessor() -> DatabaseProtocol {
                     // Thread-safe lazy initialization
                     pthread_once(&_primaryDBOnceToken) {
                         let startTime = CFAbsoluteTimeGetCurrent()
-                        
+
                         // Register property for metrics tracking
                         let pendingInfo = LazyPropertyInfo(
                             propertyName: "primaryDB",
@@ -154,12 +154,12 @@ final class LazyInjectMacroTests: XCTestCase {
                             threadInfo: ThreadInfo()
                         )
                         LazyInjectionMetrics.recordResolution(pendingInfo)
-                        
+
                         do {
                             // Resolve dependency
                             guard let resolved = Container.shared.synchronizedResolve(DatabaseProtocol.self, name: "primary") else {
                                 let error = LazyInjectionError.serviceNotRegistered(serviceName: "primary", type: "DatabaseProtocol")
-                                
+
                                 // Record failed resolution
                                 let failedInfo = LazyPropertyInfo(
                                     propertyName: "primaryDB",
@@ -173,16 +173,16 @@ final class LazyInjectMacroTests: XCTestCase {
                                     threadInfo: ThreadInfo()
                                 )
                                 LazyInjectionMetrics.recordResolution(failedInfo)
-                                
+
                                 fatalError("Required lazy property 'primaryDB' of type 'DatabaseProtocol' could not be resolved: \\(error.localizedDescription)")
                             }
-                            
+
                             _primaryDBBacking = resolved
-                            
+
                             // Record successful resolution
                             let endTime = CFAbsoluteTimeGetCurrent()
                             let resolutionDuration = endTime - startTime
-                            
+
                             let resolvedInfo = LazyPropertyInfo(
                                 propertyName: "primaryDB",
                                 propertyType: "DatabaseProtocol",
@@ -195,12 +195,12 @@ final class LazyInjectMacroTests: XCTestCase {
                                 threadInfo: ThreadInfo()
                             )
                             LazyInjectionMetrics.recordResolution(resolvedInfo)
-                            
+
                         } catch {
                             // Record failed resolution
                             let endTime = CFAbsoluteTimeGetCurrent()
                             let resolutionDuration = endTime - startTime
-                            
+
                             let failedInfo = LazyPropertyInfo(
                                 propertyName: "primaryDB",
                                 propertyType: "DatabaseProtocol",
@@ -214,13 +214,13 @@ final class LazyInjectMacroTests: XCTestCase {
                                 threadInfo: ThreadInfo()
                             )
                             LazyInjectionMetrics.recordResolution(failedInfo)
-                            
+
                             if true {
                                 fatalError("Failed to resolve required lazy property 'primaryDB': \\(error.localizedDescription)")
                             }
                         }
                     }
-                    
+
                     return _primaryDBBacking!
                 }
             }
@@ -228,7 +228,7 @@ final class LazyInjectMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     func testLazyInjectWithCustomContainer() throws {
         assertMacroExpansion(
             """
@@ -239,16 +239,16 @@ final class LazyInjectMacroTests: XCTestCase {
             expandedSource: """
             class TestService {
                 @LazyInject(container: "test") var mockService: ServiceProtocol
-                
+
                 private var _mockServiceBacking: ServiceProtocol?
-                
+
                 private var _mockServiceOnceToken = pthread_once_t()
-                
+
                 private func _mockServiceLazyAccessor() -> ServiceProtocol {
                     // Thread-safe lazy initialization
                     pthread_once(&_mockServiceOnceToken) {
                         let startTime = CFAbsoluteTimeGetCurrent()
-                        
+
                         // Register property for metrics tracking
                         let pendingInfo = LazyPropertyInfo(
                             propertyName: "mockService",
@@ -261,12 +261,12 @@ final class LazyInjectMacroTests: XCTestCase {
                             threadInfo: ThreadInfo()
                         )
                         LazyInjectionMetrics.recordResolution(pendingInfo)
-                        
+
                         do {
                             // Resolve dependency
                             guard let resolved = Container.named("test").resolve(ServiceProtocol.self) else {
                                 let error = LazyInjectionError.serviceNotRegistered(serviceName: nil, type: "ServiceProtocol")
-                                
+
                                 // Record failed resolution
                                 let failedInfo = LazyPropertyInfo(
                                     propertyName: "mockService",
@@ -280,16 +280,16 @@ final class LazyInjectMacroTests: XCTestCase {
                                     threadInfo: ThreadInfo()
                                 )
                                 LazyInjectionMetrics.recordResolution(failedInfo)
-                                
+
                                 fatalError("Required lazy property 'mockService' of type 'ServiceProtocol' could not be resolved: \\(error.localizedDescription)")
                             }
-                            
+
                             _mockServiceBacking = resolved
-                            
+
                             // Record successful resolution
                             let endTime = CFAbsoluteTimeGetCurrent()
                             let resolutionDuration = endTime - startTime
-                            
+
                             let resolvedInfo = LazyPropertyInfo(
                                 propertyName: "mockService",
                                 propertyType: "ServiceProtocol",
@@ -302,12 +302,12 @@ final class LazyInjectMacroTests: XCTestCase {
                                 threadInfo: ThreadInfo()
                             )
                             LazyInjectionMetrics.recordResolution(resolvedInfo)
-                            
+
                         } catch {
                             // Record failed resolution
                             let endTime = CFAbsoluteTimeGetCurrent()
                             let resolutionDuration = endTime - startTime
-                            
+
                             let failedInfo = LazyPropertyInfo(
                                 propertyName: "mockService",
                                 propertyType: "ServiceProtocol",
@@ -321,13 +321,13 @@ final class LazyInjectMacroTests: XCTestCase {
                                 threadInfo: ThreadInfo()
                             )
                             LazyInjectionMetrics.recordResolution(failedInfo)
-                            
+
                             if true {
                                 fatalError("Failed to resolve required lazy property 'mockService': \\(error.localizedDescription)")
                             }
                         }
                     }
-                    
+
                     return _mockServiceBacking!
                 }
             }
@@ -335,7 +335,7 @@ final class LazyInjectMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     func testLazyInjectOptionalService() throws {
         assertMacroExpansion(
             """
@@ -346,16 +346,16 @@ final class LazyInjectMacroTests: XCTestCase {
             expandedSource: """
             class AnalyticsService {
                 @LazyInject(required: false) var optionalTracker: TrackerProtocol?
-                
+
                 private var _optionalTrackerBacking: TrackerProtocol??
-                
+
                 private var _optionalTrackerOnceToken = pthread_once_t()
-                
+
                 private func _optionalTrackerLazyAccessor() -> TrackerProtocol? {
                     // Thread-safe lazy initialization
                     pthread_once(&_optionalTrackerOnceToken) {
                         let startTime = CFAbsoluteTimeGetCurrent()
-                        
+
                         // Register property for metrics tracking
                         let pendingInfo = LazyPropertyInfo(
                             propertyName: "optionalTracker",
@@ -368,15 +368,15 @@ final class LazyInjectMacroTests: XCTestCase {
                             threadInfo: ThreadInfo()
                         )
                         LazyInjectionMetrics.recordResolution(pendingInfo)
-                        
+
                         do {
                             // Resolve dependency
                             _optionalTrackerBacking = Container.shared.synchronizedResolve(TrackerProtocol?.self)
-                            
+
                             // Record successful resolution
                             let endTime = CFAbsoluteTimeGetCurrent()
                             let resolutionDuration = endTime - startTime
-                            
+
                             let resolvedInfo = LazyPropertyInfo(
                                 propertyName: "optionalTracker",
                                 propertyType: "TrackerProtocol?",
@@ -389,12 +389,12 @@ final class LazyInjectMacroTests: XCTestCase {
                                 threadInfo: ThreadInfo()
                             )
                             LazyInjectionMetrics.recordResolution(resolvedInfo)
-                            
+
                         } catch {
                             // Record failed resolution
                             let endTime = CFAbsoluteTimeGetCurrent()
                             let resolutionDuration = endTime - startTime
-                            
+
                             let failedInfo = LazyPropertyInfo(
                                 propertyName: "optionalTracker",
                                 propertyType: "TrackerProtocol?",
@@ -408,13 +408,13 @@ final class LazyInjectMacroTests: XCTestCase {
                                 threadInfo: ThreadInfo()
                             )
                             LazyInjectionMetrics.recordResolution(failedInfo)
-                            
+
                             if false {
                                 fatalError("Failed to resolve required lazy property 'optionalTracker': \\(error.localizedDescription)")
                             }
                         }
                     }
-                    
+
                     return _optionalTrackerBacking!
                 }
             }
@@ -422,9 +422,9 @@ final class LazyInjectMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     // MARK: - Error Cases
-    
+
     func testLazyInjectOnNonVariable() throws {
         assertMacroExpansion(
             """
@@ -443,7 +443,7 @@ final class LazyInjectMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     func testLazyInjectOnComputedProperty() throws {
         assertMacroExpansion(
             """
@@ -466,7 +466,7 @@ final class LazyInjectMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     func testLazyInjectWithoutTypeAnnotation() throws {
         assertMacroExpansion(
             """
@@ -485,9 +485,9 @@ final class LazyInjectMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     // MARK: - Complex Configuration Tests
-    
+
     func testLazyInjectWithAllParameters() throws {
         assertMacroExpansion(
             """
@@ -498,16 +498,16 @@ final class LazyInjectMacroTests: XCTestCase {
             expandedSource: """
             class ComplexService {
                 @LazyInject("premium", container: "production", required: true) var premiumService: PremiumServiceProtocol
-                
+
                 private var _premiumServiceBacking: PremiumServiceProtocol?
-                
+
                 private var _premiumServiceOnceToken = pthread_once_t()
-                
+
                 private func _premiumServiceLazyAccessor() -> PremiumServiceProtocol {
                     // Thread-safe lazy initialization
                     pthread_once(&_premiumServiceOnceToken) {
                         let startTime = CFAbsoluteTimeGetCurrent()
-                        
+
                         // Register property for metrics tracking
                         let pendingInfo = LazyPropertyInfo(
                             propertyName: "premiumService",
@@ -520,12 +520,12 @@ final class LazyInjectMacroTests: XCTestCase {
                             threadInfo: ThreadInfo()
                         )
                         LazyInjectionMetrics.recordResolution(pendingInfo)
-                        
+
                         do {
                             // Resolve dependency
                             guard let resolved = Container.named("production").resolve(PremiumServiceProtocol.self, name: "premium") else {
                                 let error = LazyInjectionError.serviceNotRegistered(serviceName: "premium", type: "PremiumServiceProtocol")
-                                
+
                                 // Record failed resolution
                                 let failedInfo = LazyPropertyInfo(
                                     propertyName: "premiumService",
@@ -539,16 +539,16 @@ final class LazyInjectMacroTests: XCTestCase {
                                     threadInfo: ThreadInfo()
                                 )
                                 LazyInjectionMetrics.recordResolution(failedInfo)
-                                
+
                                 fatalError("Required lazy property 'premiumService' of type 'PremiumServiceProtocol' could not be resolved: \\(error.localizedDescription)")
                             }
-                            
+
                             _premiumServiceBacking = resolved
-                            
+
                             // Record successful resolution
                             let endTime = CFAbsoluteTimeGetCurrent()
                             let resolutionDuration = endTime - startTime
-                            
+
                             let resolvedInfo = LazyPropertyInfo(
                                 propertyName: "premiumService",
                                 propertyType: "PremiumServiceProtocol",
@@ -561,12 +561,12 @@ final class LazyInjectMacroTests: XCTestCase {
                                 threadInfo: ThreadInfo()
                             )
                             LazyInjectionMetrics.recordResolution(resolvedInfo)
-                            
+
                         } catch {
                             // Record failed resolution
                             let endTime = CFAbsoluteTimeGetCurrent()
                             let resolutionDuration = endTime - startTime
-                            
+
                             let failedInfo = LazyPropertyInfo(
                                 propertyName: "premiumService",
                                 propertyType: "PremiumServiceProtocol",
@@ -580,13 +580,13 @@ final class LazyInjectMacroTests: XCTestCase {
                                 threadInfo: ThreadInfo()
                             )
                             LazyInjectionMetrics.recordResolution(failedInfo)
-                            
+
                             if true {
                                 fatalError("Failed to resolve required lazy property 'premiumService': \\(error.localizedDescription)")
                             }
                         }
                     }
-                    
+
                     return _premiumServiceBacking!
                 }
             }

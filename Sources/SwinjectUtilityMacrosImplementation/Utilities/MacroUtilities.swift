@@ -1,14 +1,14 @@
 // MacroUtilities.swift - Shared utilities for macro implementations
 
+import SwiftDiagnostics
 import SwiftSyntax
 import SwiftSyntaxMacros
-import SwiftDiagnostics
 
 /// Shared utilities for macro implementations to eliminate code duplication
 public enum MacroUtilities {
-    
+
     // MARK: - Variable Name Mangling for Collision-Free Code Generation
-    
+
     /// Generates a mangled variable name that's guaranteed to be unique
     /// - Parameters:
     ///   - baseName: The base variable name (e.g., "startTime", "duration")
@@ -25,16 +25,17 @@ public enum MacroUtilities {
         // Create deterministic hash from context + macro type
         let contextHash = "\(context)_\(macroType)".hashValue
         let hashString = String(abs(contextHash), radix: 36) // Base36 for shorter strings
-        
-        var mangledName = "_\(macroType)\(context.capitalizingFirstLetter())\(baseName.capitalizingFirstLetter())_\(hashString)"
-        
+
+        var mangledName =
+            "_\(macroType)\(context.capitalizingFirstLetter())\(baseName.capitalizingFirstLetter())_\(hashString)"
+
         if let suffix = suffix {
             mangledName += "_\(suffix)"
         }
-        
+
         return mangledName
     }
-    
+
     /// Generates a mangled property backing variable name
     /// - Parameters:
     ///   - propertyName: Name of the property being backed
@@ -44,13 +45,13 @@ public enum MacroUtilities {
         propertyName: String,
         macroType: String
     ) -> String {
-        return mangledVariableName(
+        mangledVariableName(
             baseName: "Backing",
             context: propertyName,
             macroType: macroType
         )
     }
-    
+
     /// Generates a mangled lock variable name for thread safety
     /// - Parameters:
     ///   - propertyName: Name of the property being protected
@@ -60,13 +61,13 @@ public enum MacroUtilities {
         propertyName: String,
         macroType: String
     ) -> String {
-        return mangledVariableName(
+        mangledVariableName(
             baseName: "Lock",
             context: propertyName,
             macroType: macroType
         )
     }
-    
+
     /// Generates a mangled once token variable name
     /// - Parameters:
     ///   - propertyName: Name of the property
@@ -76,13 +77,13 @@ public enum MacroUtilities {
         propertyName: String,
         macroType: String
     ) -> String {
-        return mangledVariableName(
+        mangledVariableName(
             baseName: "OnceToken",
             context: propertyName,
             macroType: macroType
         )
     }
-    
+
     /// Generates mangled method-scoped variable names for AOP macros
     /// - Parameters:
     ///   - baseName: Base variable name
@@ -94,15 +95,15 @@ public enum MacroUtilities {
         methodName: String,
         macroType: String
     ) -> String {
-        return mangledVariableName(
+        mangledVariableName(
             baseName: baseName,
             context: methodName,
             macroType: macroType
         )
     }
-    
+
     // MARK: - Declaration Validation
-    
+
     /// Validates that a macro is applied to a supported declaration type
     /// - Parameters:
     ///   - declaration: The declaration to validate
@@ -110,8 +111,8 @@ public enum MacroUtilities {
     ///   - macroName: Name of the macro for error messages
     ///   - context: Macro expansion context for diagnostics
     /// - Returns: true if valid, false otherwise
-    public static func validateDeclarationType<T: DeclGroupSyntax>(
-        _ declaration: T,
+    public static func validateDeclarationType(
+        _ declaration: some DeclGroupSyntax,
         supportedTypes: [Any.Type],
         macroName: String,
         context: some MacroExpansionContext
@@ -126,29 +127,29 @@ public enum MacroUtilities {
             }
             return false
         }
-        
+
         if !isSupported {
             let supportedTypeNames = supportedTypes.map { "\($0)" }
                 .joined(separator: ", ")
-            
+
             let diagnostic = Diagnostic(
                 node: declaration.root,
                 message: MacroValidationError(message: """
                 @\(macroName) can only be applied to: \(supportedTypeNames)
-                
+
                 Please apply this macro to a supported declaration type.
                 """)
             )
             context.diagnose(diagnostic)
         }
-        
+
         return isSupported
     }
-    
+
     /// Extracts the name from a declaration
     /// - Parameter declaration: The declaration to extract name from
     /// - Returns: The name if found, nil otherwise
-    public static func extractDeclarationName<T: DeclGroupSyntax>(from declaration: T) -> String? {
+    public static func extractDeclarationName(from declaration: some DeclGroupSyntax) -> String? {
         if let classDecl = declaration.as(ClassDeclSyntax.self) {
             return classDecl.name.text
         } else if let structDecl = declaration.as(StructDeclSyntax.self) {
@@ -160,11 +161,11 @@ public enum MacroUtilities {
         }
         return nil
     }
-    
+
     /// Extracts the member block from a declaration
     /// - Parameter declaration: The declaration to extract member block from
     /// - Returns: The member block if found, nil otherwise
-    public static func extractMemberBlock<T: DeclGroupSyntax>(from declaration: T) -> MemberBlockSyntax? {
+    public static func extractMemberBlock(from declaration: some DeclGroupSyntax) -> MemberBlockSyntax? {
         if let classDecl = declaration.as(ClassDeclSyntax.self) {
             return classDecl.memberBlock
         } else if let structDecl = declaration.as(StructDeclSyntax.self) {
@@ -176,61 +177,61 @@ public enum MacroUtilities {
         }
         return nil
     }
-    
+
     // MARK: - Initializer Discovery
-    
+
     /// Finds all initializers in a member block
     /// - Parameter memberBlock: The member block to search
     /// - Returns: Array of found initializers
     public static func findInitializers(in memberBlock: MemberBlockSyntax) -> [InitializerDeclSyntax] {
-        return memberBlock.members.compactMap { member in
+        memberBlock.members.compactMap { member in
             member.decl.as(InitializerDeclSyntax.self)
         }
     }
-    
+
     /// Finds the primary initializer (prefers public, then first available)
     /// - Parameter memberBlock: The member block to search
     /// - Returns: The primary initializer if found, nil otherwise
     public static func findPrimaryInitializer(in memberBlock: MemberBlockSyntax) -> InitializerDeclSyntax? {
         let initializers = findInitializers(in: memberBlock)
-        
+
         // Prefer public initializers
         let publicInitializers = initializers.filter { initializer in
             hasPublicModifier(initializer.modifiers)
         }
-        
+
         return publicInitializers.first ?? initializers.first
     }
-    
+
     /// Checks if modifiers contain public access
     /// - Parameter modifiers: The modifiers to check
     /// - Returns: true if public modifier is present
     public static func hasPublicModifier(_ modifiers: DeclModifierListSyntax) -> Bool {
-        return modifiers.contains { modifier in
+        modifiers.contains { modifier in
             modifier.name.text == "public"
         }
     }
-    
+
     // MARK: - Function Analysis
-    
+
     /// Extracts parameter names from a function declaration
     /// - Parameter function: The function to analyze
     /// - Returns: Array of parameter names
     public static func extractParameterNames(from function: FunctionDeclSyntax) -> [String] {
-        return function.signature.parameterClause.parameters.map { param in
+        function.signature.parameterClause.parameters.map { param in
             param.firstName.text
         }
     }
-    
+
     /// Extracts parameter types from a function declaration
     /// - Parameter function: The function to analyze
     /// - Returns: Array of parameter types as strings
     public static func extractParameterTypes(from function: FunctionDeclSyntax) -> [String] {
-        return function.signature.parameterClause.parameters.map { param in
+        function.signature.parameterClause.parameters.map { param in
             param.type.description
         }
     }
-    
+
     /// Builds a parameter call list for function invocation
     /// - Parameter function: The function to build call for
     /// - Returns: Comma-separated parameter call string
@@ -238,20 +239,21 @@ public enum MacroUtilities {
         let paramNames = extractParameterNames(from: function)
         return paramNames.joined(separator: ", ")
     }
-    
+
     // MARK: - Attribute Parsing
-    
+
     /// Parses string literal from attribute argument
     /// - Parameter expression: The expression to parse
     /// - Returns: The string value if found, nil otherwise
     public static func parseStringLiteral(from expression: ExprSyntax) -> String? {
         guard let stringLiteral = expression.as(StringLiteralExprSyntax.self),
-              let segment = stringLiteral.segments.first?.as(StringSegmentSyntax.self) else {
+              let segment = stringLiteral.segments.first?.as(StringSegmentSyntax.self)
+        else {
             return nil
         }
         return segment.content.text
     }
-    
+
     /// Parses member access expression to extract member name
     /// - Parameter expression: The expression to parse
     /// - Returns: The member name if found, nil otherwise
@@ -261,7 +263,7 @@ public enum MacroUtilities {
         }
         return memberAccess.declName.baseName.text
     }
-    
+
     /// Parses boolean literal from attribute argument
     /// - Parameter expression: The expression to parse
     /// - Returns: The boolean value if found, nil otherwise
@@ -271,9 +273,9 @@ public enum MacroUtilities {
         }
         return boolLiteral.literal.text == "true"
     }
-    
+
     // MARK: - Code Generation Helpers
-    
+
     /// Generates a method signature string
     /// - Parameters:
     ///   - methodName: Name of the method
@@ -290,31 +292,31 @@ public enum MacroUtilities {
         canThrow: Bool = false
     ) -> String {
         var signature = "func \(methodName)(\(parameters))"
-        
+
         if isAsync {
             signature += " async"
         }
-        
+
         if canThrow {
             signature += " throws"
         }
-        
+
         if returnType != "Void" {
             signature += " -> \(returnType)"
         }
-        
+
         return signature
     }
-    
+
     /// Generates import statements for required dependencies
     /// - Parameter requiredImports: Set of import names
     /// - Returns: Array of import statement strings
     public static func generateImportStatements(for requiredImports: Set<String>) -> [String] {
-        return Array(requiredImports).sorted().map { "import \($0)" }
+        Array(requiredImports).sorted().map { "import \($0)" }
     }
-    
+
     // MARK: - Diagnostic Helpers
-    
+
     /// Creates a standardized error diagnostic
     /// - Parameters:
     ///   - node: Syntax node for the diagnostic
@@ -326,7 +328,7 @@ public enum MacroUtilities {
         macroName: String,
         message: String
     ) -> Diagnostic {
-        return Diagnostic(
+        Diagnostic(
             node: node.root,
             message: MacroError(
                 macroName: macroName,
@@ -335,7 +337,7 @@ public enum MacroUtilities {
             )
         )
     }
-    
+
     /// Creates a standardized warning diagnostic
     /// - Parameters:
     ///   - node: Syntax node for the diagnostic
@@ -347,7 +349,7 @@ public enum MacroUtilities {
         macroName: String,
         message: String
     ) -> Diagnostic {
-        return Diagnostic(
+        Diagnostic(
             node: node.root,
             message: MacroError(
                 macroName: macroName,
@@ -372,7 +374,7 @@ private struct MacroError: DiagnosticMessage {
     let macroName: String
     let message: String
     let severity: DiagnosticSeverity
-    
+
     var diagnosticID: MessageID {
         MessageID(domain: "SwinjectUtilityMacros", id: "\(macroName)Error")
     }
@@ -383,6 +385,6 @@ private struct MacroError: DiagnosticMessage {
 extension String {
     /// Capitalizes the first letter of the string
     func capitalizingFirstLetter() -> String {
-        return prefix(1).capitalized + dropFirst()
+        prefix(1).capitalized + dropFirst()
     }
 }

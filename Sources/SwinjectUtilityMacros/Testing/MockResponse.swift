@@ -24,14 +24,14 @@ import Foundation
 ///         return try JSONDecoder().decode(UserProfile.self, from: data)
 ///     }
 /// }
-/// 
+///
 /// // In tests:
 /// let client = APIClient()
-/// 
+///
 /// // First call returns success after 0.1s delay
 /// let profile = try await client.fetchUserProfile("123")
 /// XCTAssertEqual(profile.name, "Mock User")
-/// 
+///
 /// // Second call throws error after 0.2s delay
 /// XCTAssertThrowsError(try await client.fetchUserProfile("456"))
 /// ```
@@ -76,16 +76,16 @@ import Foundation
 ///         return try await repository.findUser(email: email)
 ///     }
 /// }
-/// 
+///
 /// // Testing:
 /// let service = UserService()
-/// 
+///
 /// let admin = try await service.getUser(byEmail: "admin@example.com")
 /// XCTAssertTrue(admin.isAdmin)
-/// 
+///
 /// let guest = try await service.getUser(byEmail: "guest@example.com")
 /// XCTAssertFalse(guest.isAdmin)
-/// 
+///
 /// XCTAssertThrowsError(try await service.getUser(byEmail: "unknown@example.com"))
 /// ```
 ///
@@ -105,18 +105,18 @@ import Foundation
 ///         return try await paymentGateway.charge(amount)
 ///     }
 /// }
-/// 
+///
 /// // Testing sequence:
 /// let service = PaymentService()
-/// 
+///
 /// // First call: processing
 /// let result1 = try await service.processPayment(100.0)
 /// XCTAssertEqual(result1, .processing)
-/// 
+///
 /// // Second call: completed
 /// let result2 = try await service.processPayment(100.0)
 /// XCTAssertEqual(result2, .completed)
-/// 
+///
 /// // Third call: throws declined error
 /// XCTAssertThrowsError(try await service.processPayment(100.0))
 /// ```
@@ -141,12 +141,12 @@ import Foundation
 ///             let query = args.0 as String
 ///             return query.count < 3
 ///         }).return(.failure(SearchError.queryTooShort)),
-///         
+///
 ///         .matcher({ args in
 ///             let query = args.0 as String
 ///             return query.contains("swift")
 ///         }).return(.success(SearchResult.swiftResults)),
-///         
+///
 ///         .default(.success(SearchResult.empty))
 ///     ])
 ///     func search(_ query: String) async throws -> SearchResult {
@@ -178,22 +178,22 @@ import Foundation
 /// ```swift
 /// class APIClientTests: XCTestCase {
 ///     var apiClient: APIClient!
-///     
+///
 ///     override func setUp() {
 ///         super.setUp()
 ///         apiClient = APIClient()
 ///         apiClient.resetMockResponses()
 ///     }
-///     
+///
 ///     func testSuccessfulUserFetch() async throws {
 ///         // Mock responses are already configured via @MockResponse
 ///         let user = try await apiClient.fetchUserProfile("123")
 ///         XCTAssertEqual(user.name, "Mock User")
-///         
+///
 ///         // Verify the mock was called
 ///         XCTAssertEqual(apiClient.fetchUserProfileMockCallCount, 1)
 ///     }
-///     
+///
 ///     func testCustomMockResponse() async throws {
 ///         // Override configured mocks for specific test
 ///         apiClient.setFetchUserProfileMockBehavior { userId in
@@ -202,7 +202,7 @@ import Foundation
 ///             }
 ///             throw APIError.userNotFound
 ///         }
-///         
+///
 ///         let user = try await apiClient.fetchUserProfile("special")
 ///         XCTAssertEqual(user.type, .special)
 ///     }
@@ -248,25 +248,25 @@ public macro MockResponse(
 
 /// Configuration for mock responses
 public indirect enum MockResponseConfiguration {
-    
+
     /// Successful response with optional delay
     case success(Any, delay: TimeInterval = 0)
-    
+
     /// Error response with optional delay
     case failure(Error, delay: TimeInterval = 0)
-    
+
     /// Sequence of responses to return in order
     case sequence([MockResponseConfiguration])
-    
+
     /// HTTP response with status code, data, and headers
     case httpResponse(statusCode: Int, data: Data, headers: [String: String] = [:])
-    
+
     /// Conditional response based on predicate
     case conditional(predicate: (Any) -> Bool, response: MockResponseConfiguration)
-    
+
     /// Default response when no other conditions match
     case `default`(MockResponseConfiguration)
-    
+
     /// Stateful response that maintains state between calls
     case stateful(initialState: Any, handler: (Any, Any) -> (MockResponseConfiguration, Any))
 }
@@ -275,22 +275,22 @@ public indirect enum MockResponseConfiguration {
 
 /// Builder for creating complex mock response configurations
 public class MockResponseBuilder {
-    internal var configurations: [MockResponseConfiguration] = []
-    
+    var configurations: [MockResponseConfiguration] = []
+
     /// Add a successful response
     @discardableResult
-    public func success<T>(_ value: T, delay: TimeInterval = 0) -> MockResponseBuilder {
+    public func success(_ value: some Any, delay: TimeInterval = 0) -> MockResponseBuilder {
         configurations.append(.success(value, delay: delay))
         return self
     }
-    
+
     /// Add an error response
     @discardableResult
     public func failure(_ error: Error, delay: TimeInterval = 0) -> MockResponseBuilder {
         configurations.append(.failure(error, delay: delay))
         return self
     }
-    
+
     /// Add an HTTP response
     @discardableResult
     public func httpResponse(
@@ -301,16 +301,16 @@ public class MockResponseBuilder {
         configurations.append(.httpResponse(statusCode: statusCode, data: data, headers: headers))
         return self
     }
-    
+
     /// Add a conditional response
     @discardableResult
     public func when(_ predicate: @escaping (Any) -> Bool) -> ConditionalResponseBuilder {
-        return ConditionalResponseBuilder(builder: self, predicate: predicate)
+        ConditionalResponseBuilder(builder: self, predicate: predicate)
     }
-    
+
     /// Build the final configuration array
     public func build() -> [MockResponseConfiguration] {
-        return configurations
+        configurations
     }
 }
 
@@ -318,20 +318,20 @@ public class MockResponseBuilder {
 public class ConditionalResponseBuilder {
     private let builder: MockResponseBuilder
     private let predicate: (Any) -> Bool
-    
+
     init(builder: MockResponseBuilder, predicate: @escaping (Any) -> Bool) {
         self.builder = builder
         self.predicate = predicate
     }
-    
+
     /// Set the response for this condition
     @discardableResult
-    public func `return`<T>(_ value: T) -> MockResponseBuilder {
+    public func `return`(_ value: some Any) -> MockResponseBuilder {
         let response = MockResponseConfiguration.success(value)
         builder.configurations.append(.conditional(predicate: predicate, response: response))
         return builder
     }
-    
+
     /// Set an error response for this condition
     @discardableResult
     public func throwError(_ error: Error) -> MockResponseBuilder {
@@ -345,29 +345,29 @@ public class ConditionalResponseBuilder {
 
 /// Utilities for working with mock responses in tests
 public enum MockResponseUtilities {
-    
+
     /// Create a simple success response
-    public static func success<T>(_ value: T, delay: TimeInterval = 0) -> [MockResponseConfiguration] {
-        return [.success(value, delay: delay)]
+    public static func success(_ value: some Any, delay: TimeInterval = 0) -> [MockResponseConfiguration] {
+        [.success(value, delay: delay)]
     }
-    
+
     /// Create a simple error response
     public static func failure(_ error: Error, delay: TimeInterval = 0) -> [MockResponseConfiguration] {
-        return [.failure(error, delay: delay)]
+        [.failure(error, delay: delay)]
     }
-    
+
     /// Create an HTTP response
     public static func httpResponse(
         statusCode: Int,
         data: Data,
         headers: [String: String] = [:]
     ) -> [MockResponseConfiguration] {
-        return [.httpResponse(statusCode: statusCode, data: data, headers: headers)]
+        [.httpResponse(statusCode: statusCode, data: data, headers: headers)]
     }
-    
+
     /// Create a JSON response
-    public static func jsonResponse<T: Codable>(
-        _ object: T,
+    public static func jsonResponse(
+        _ object: some Codable,
         statusCode: Int = 200,
         headers: [String: String] = [:]
     ) throws -> [MockResponseConfiguration] {
@@ -385,24 +385,24 @@ public struct HTTPResponse {
     public let data: Data
     public let statusCode: Int
     public let headers: [String: String]
-    
+
     public init(data: Data, statusCode: Int, headers: [String: String] = [:]) {
         self.data = data
         self.statusCode = statusCode
         self.headers = headers
     }
-    
+
     public init(data: Data, response: HTTPURLResponse) {
         self.data = data
-        self.statusCode = response.statusCode
-        
+        statusCode = response.statusCode
+
         var headerDict: [String: String] = [:]
         for (key, value) in response.allHeaderFields {
             if let keyString = key as? String, let valueString = value as? String {
                 headerDict[keyString] = valueString
             }
         }
-        self.headers = headerDict
+        headers = headerDict
     }
 }
 
@@ -414,17 +414,17 @@ public enum MockResponseError: Error, LocalizedError {
     case invalidResponseType
     case mockResponsesExhausted
     case predicateEvaluationFailed
-    
+
     public var errorDescription: String? {
         switch self {
         case .noResponseConfigured:
-            return "No mock response configured for this method call"
+            "No mock response configured for this method call"
         case .invalidResponseType:
-            return "Mock response type does not match expected return type"
+            "Mock response type does not match expected return type"
         case .mockResponsesExhausted:
-            return "All configured mock responses have been used"
+            "All configured mock responses have been used"
         case .predicateEvaluationFailed:
-            return "Failed to evaluate mock response predicate"
+            "Failed to evaluate mock response predicate"
         }
     }
 }

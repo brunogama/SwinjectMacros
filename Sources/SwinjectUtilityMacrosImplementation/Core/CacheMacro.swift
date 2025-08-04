@@ -1,23 +1,23 @@
 // CacheMacro.swift - @Cache macro implementation
 // Copyright © 2025 SwinjectUtilityMacros. All rights reserved.
 
+import Foundation
+import SwiftDiagnostics
 import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
-import SwiftDiagnostics
-import Foundation
 
 /// Implementation of the @Cache macro for automatic method result caching.
 public struct CacheMacro: PeerMacro {
-    
+
     // MARK: - PeerMacro Implementation
-    
+
     public static func expansion(
         of node: AttributeSyntax,
         providingPeersOf declaration: some DeclSyntaxProtocol,
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
-        
+
         // Validate that this is applied to a function
         guard let functionDecl = declaration.as(FunctionDeclSyntax.self) else {
             let diagnostic = Diagnostic(
@@ -27,13 +27,13 @@ public struct CacheMacro: PeerMacro {
             context.diagnose(diagnostic)
             return []
         }
-        
+
         // Parse macro configuration
         let config = try parseCacheConfig(from: node)
-        
+
         // Extract function information
         let functionInfo = extractFunctionInfo(from: functionDecl)
-        
+
         // Generate cached version of the function
         let cachedFunction = try generateCachedFunction(
             original: functionDecl,
@@ -41,12 +41,12 @@ public struct CacheMacro: PeerMacro {
             config: config,
             context: context
         )
-        
+
         return [cachedFunction]
     }
-    
+
     // MARK: - Configuration Parsing
-    
+
     private static func parseCacheConfig(from node: AttributeSyntax) throws -> CacheConfig {
         var ttl = 300.0
         var maxEntries = 1000
@@ -55,7 +55,7 @@ public struct CacheMacro: PeerMacro {
         var shouldCache: String? = nil
         var refreshInBackground = false
         var serializationStrategy = "memory"
-        
+
         // Parse attribute arguments
         if let arguments = node.arguments?.as(LabeledExprListSyntax.self) {
             for argument in arguments {
@@ -87,7 +87,7 @@ public struct CacheMacro: PeerMacro {
                 }
             }
         }
-        
+
         return CacheConfig(
             ttl: ttl,
             maxEntries: maxEntries,
@@ -98,20 +98,20 @@ public struct CacheMacro: PeerMacro {
             serializationStrategy: serializationStrategy
         )
     }
-    
+
     // MARK: - Function Information Extraction
-    
+
     private static func extractFunctionInfo(from functionDecl: FunctionDeclSyntax) -> CacheFunctionInfo {
         let functionName = functionDecl.name.text
         let isAsync = functionDecl.signature.effectSpecifiers?.asyncSpecifier != nil
         let canThrow = functionDecl.signature.effectSpecifiers?.throwsSpecifier != nil
         let returnType = functionDecl.signature.returnClause?.type.trimmedDescription ?? "Void"
-        
+
         // Extract parameters
         let parameters = functionDecl.signature.parameterClause.parameters.map { param in
             let externalName = param.firstName.text
             let internalName = param.secondName?.text ?? param.firstName.text
-            
+
             return CacheParameterInfo(
                 externalName: externalName,
                 internalName: internalName,
@@ -120,7 +120,7 @@ public struct CacheMacro: PeerMacro {
                 defaultValue: param.defaultValue?.value.trimmedDescription
             )
         }
-        
+
         return CacheFunctionInfo(
             name: functionName,
             parameters: parameters,
@@ -131,7 +131,7 @@ public struct CacheMacro: PeerMacro {
             accessLevel: extractAccessLevel(from: functionDecl.modifiers)
         )
     }
-    
+
     private static func extractAccessLevel(from modifiers: DeclModifierListSyntax) -> String {
         for modifier in modifiers {
             switch modifier.name.text {
@@ -144,19 +144,19 @@ public struct CacheMacro: PeerMacro {
         }
         return "internal" // Default access level
     }
-    
+
     // MARK: - Code Generation
-    
+
     private static func generateCachedFunction(
         original: FunctionDeclSyntax,
         functionInfo: CacheFunctionInfo,
         config: CacheConfig,
         context: some MacroExpansionContext
     ) throws -> DeclSyntax {
-        
+
         let originalName = functionInfo.name
         let cachedName = "\(originalName)Cached"
-        
+
         // Generate parameter list for function signature
         let parameterList = functionInfo.parameters.map { param in
             let fullParam = param.fullSignatureParameter
@@ -167,31 +167,31 @@ public struct CacheMacro: PeerMacro {
                 return "\(fullParam): \(paramType)"
             }
         }.joined(separator: ", ")
-        
+
         // Generate parameter names for original function call
         let parameterNames = functionInfo.parameters.map { param in
             param.callParameter
         }.joined(separator: ", ")
-        
+
         // Build function signature
         var functionSignature = "public"
         if functionInfo.isStatic {
             functionSignature += " static"
         }
         functionSignature += " func \(cachedName)(\(parameterList))"
-        
+
         if functionInfo.isAsync {
             functionSignature += " async"
         }
-        
+
         if functionInfo.canThrow {
             functionSignature += " throws"
         }
-        
+
         if functionInfo.returnType != "Void" {
             functionSignature += " -> \(functionInfo.returnType)"
         }
-        
+
         // Generate the cached function body
         let functionBody = try createCachedFunctionBody(
             signature: functionSignature,
@@ -200,12 +200,12 @@ public struct CacheMacro: PeerMacro {
             config: config,
             functionInfo: functionInfo
         )
-        
+
         return DeclSyntax.fromString(functionBody)
     }
-    
+
     // MARK: - Helper Methods
-    
+
     private static func createCachedFunctionBody(
         signature: String,
         originalName: String,
@@ -213,25 +213,25 @@ public struct CacheMacro: PeerMacro {
         config: CacheConfig,
         functionInfo: CacheFunctionInfo
     ) throws -> String {
-        
+
         // Generate cache key
         let cacheKey = generateCacheKey(originalName: originalName, functionInfo: functionInfo)
-        
+
         // Generate method call
         let methodCall = if functionInfo.canThrow {
             "try \(functionInfo.isAsync ? "await " : "")\(originalName)(\(parameterNames))"
         } else {
             "\(functionInfo.isAsync ? "await " : "")\(originalName)(\(parameterNames))"
         }
-        
+
         // Generate return handling
         let returnHandling = generateReturnHandling(functionInfo: functionInfo)
-        
+
         // Generate the complete cached function body
         return """
         \(signature) {
             let cacheKey = \(cacheKey)
-            
+
             // Get or create cache instance
             let cache = CacheRegistry.getCache(
                 for: "\(originalName)",
@@ -239,16 +239,16 @@ public struct CacheMacro: PeerMacro {
                 maxEntries: \(config.maxEntries),
                 evictionPolicy: .\(config.evictionPolicy)
             )
-            
+
             // Record cache operation start time
             let startTime = CFAbsoluteTimeGetCurrent()
-            
+
             // Check for cached result
             if let cachedResult = cache.get(key: cacheKey, type: \(functionInfo.returnType).self) {
                 // Cache hit - record metrics and return cached result
                 let endTime = CFAbsoluteTimeGetCurrent()
                 let responseTime = (endTime - startTime) * 1000 // Convert to milliseconds
-                
+
                 let hitOperation = CacheOperation(
                     wasHit: true,
                     key: cacheKey,
@@ -256,17 +256,17 @@ public struct CacheMacro: PeerMacro {
                     valueSize: MemoryLayout.size(ofValue: cachedResult)
                 )
                 CacheRegistry.recordOperation(hitOperation, for: "\(originalName)")
-                
+
                 return cachedResult
             }
-            
+
             // Cache miss - execute original method
             let result = \(methodCall)
-            
+
             // Record cache miss metrics
             let endTime = CFAbsoluteTimeGetCurrent()
             let responseTime = (endTime - startTime) * 1000
-            
+
             let missOperation = CacheOperation(
                 wasHit: false,
                 key: cacheKey,
@@ -274,33 +274,33 @@ public struct CacheMacro: PeerMacro {
                 valueSize: MemoryLayout.size(ofValue: result)
             )
             CacheRegistry.recordOperation(missOperation, for: "\(originalName)")
-            
+
             // Store result in cache
             cache.set(key: cacheKey, value: result)
-            
+
             \(returnHandling)
         }
         """
     }
-    
+
     private static func generateCacheKey(originalName: String, functionInfo: CacheFunctionInfo) -> String {
         // Generate a cache key based on method name and parameters
         let parameterKeyParts = functionInfo.parameters.map { param in
             "\\(\(param.internalName))"
         }.joined(separator: ":")
-        
+
         if parameterKeyParts.isEmpty {
             return "\"\(originalName)\""
         } else {
             return "\"\(originalName):\(parameterKeyParts)\""
         }
     }
-    
+
     private static func generateReturnHandling(functionInfo: CacheFunctionInfo) -> String {
         if functionInfo.returnType != "Void" {
-            return "return result"
+            "return result"
         } else {
-            return ""
+            ""
         }
     }
 }
@@ -328,27 +328,27 @@ private struct CacheFunctionInfo {
 }
 
 private struct CacheParameterInfo {
-    let externalName: String  // The external parameter name (e.g., "from")
-    let internalName: String  // The internal parameter name (e.g., "url")
+    let externalName: String // The external parameter name (e.g., "from")
+    let internalName: String // The internal parameter name (e.g., "url")
     let type: String
     let isOptional: Bool
     let defaultValue: String?
-    
+
     // Helper to get the full parameter for function signature
     var fullSignatureParameter: String {
         if externalName == internalName || externalName == "_" {
-            return internalName
+            internalName
         } else {
-            return "\(externalName) \(internalName)"
+            "\(externalName) \(internalName)"
         }
     }
-    
+
     // Helper to get the parameter for calling the original function
     var callParameter: String {
         if externalName == "_" {
-            return internalName
+            internalName
         } else {
-            return "\(externalName): \(internalName)"
+            "\(externalName): \(internalName)"
         }
     }
 }

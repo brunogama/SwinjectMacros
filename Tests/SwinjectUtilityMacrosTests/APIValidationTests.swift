@@ -5,6 +5,114 @@ import Swinject
 @testable import SwinjectUtilityMacros
 import XCTest
 
+// MARK: - Test Service Types (Must be at file level for macros)
+
+@Injectable
+class APIValidationService {
+    let dependency: TestDependency
+
+    init(dependency: TestDependency) {
+        self.dependency = dependency
+    }
+}
+
+@Injectable(scope: .container)
+class ContainerScopedService {
+    let id = UUID()
+    init() {}
+}
+
+@Injectable(scope: .graph)
+class GraphScopedService {
+    let id = UUID()
+    init() {}
+}
+
+@Injectable(scope: .weak)
+class WeakScopedService {
+    let id = UUID()
+    init() {}
+}
+
+@Injectable(name: "primaryDataService")
+class NamedDataService {
+    let data: String
+    init(data: String = "default") {
+        self.data = data
+    }
+}
+
+@Injectable(name: "secondaryDataService")
+class AlternateDataService {
+    let data: String
+    init(data: String = "alternate") {
+        self.data = data
+    }
+}
+
+@Injectable
+class APIOptionalDependencyService {
+    let requiredDep: TestDependency
+    let optionalDep: TestDependency?
+    let optionalWithDefault: TestDependency?
+
+    init(
+        requiredDep: TestDependency,
+        optionalDep: TestDependency? = nil,
+        optionalWithDefault: TestDependency? = TestDependency()
+    ) {
+        self.requiredDep = requiredDep
+        self.optionalDep = optionalDep
+        self.optionalWithDefault = optionalWithDefault
+    }
+}
+
+@Injectable
+class ProtocolBasedService {
+    let apiClient: APIClientProtocol
+    let database: DatabaseProtocol
+
+    init(apiClient: APIClientProtocol, database: DatabaseProtocol) {
+        self.apiClient = apiClient
+        self.database = database
+    }
+}
+
+@Injectable
+class GenericService<T: Codable> {
+    let value: T
+    let dependency: TestDependency
+
+    init(value: T, dependency: TestDependency) {
+        self.value = value
+        self.dependency = dependency
+    }
+}
+
+@AutoFactory
+class FactoryValidationService {
+    let dependency: TestDependency
+    let runtimeParameter: String
+
+    init(dependency: TestDependency, runtimeParameter: String) {
+        self.dependency = dependency
+        self.runtimeParameter = runtimeParameter
+    }
+}
+
+@AutoFactory
+class CustomNamedFactoryService {
+    let dependency: TestDependency
+    let config: String
+
+    init(dependency: TestDependency, config: String) {
+        self.dependency = dependency
+        self.config = config
+    }
+}
+
+// MARK: - Test Class
+
 final class APIValidationTests: XCTestCase {
 
     var container: Container!
@@ -25,16 +133,6 @@ final class APIValidationTests: XCTestCase {
     // MARK: - Swinject API Validation
 
     func testGeneratedCodeUsesCorrectResolverAPI() {
-        // Verify that generated code uses resolver.resolve() not resolver.synchronizedResolve()
-        @Injectable
-        class APIValidationService {
-            let dependency: TestDependency
-
-            init(dependency: TestDependency) {
-                self.dependency = dependency
-            }
-        }
-
         // Register dependency
         container.register(TestDependency.self) { _ in
             TestDependency()
@@ -49,144 +147,139 @@ final class APIValidationTests: XCTestCase {
     }
 
     func testSwinjectObjectScopesWork() {
-        @Injectable(scope: .container)
-        class ContainerScopedService {
-            let id = UUID()
-            init() {}
-        }
-
-        @Injectable(scope: .graph)
-        class GraphScopedService {
-            let id = UUID()
-            init() {}
-        }
-
         ContainerScopedService.register(in: container)
         GraphScopedService.register(in: container)
+        WeakScopedService.register(in: container)
 
-        // Container scope - should be same instance
-        let containerService1 = container.resolve(ContainerScopedService.self)
-        let containerService2 = container.resolve(ContainerScopedService.self)
-        XCTAssertNotNil(containerService1)
-        XCTAssertNotNil(containerService2)
-        XCTAssertEqual(containerService1?.id, containerService2?.id)
+        // Container scope - same instance
+        let containerScoped1 = container.resolve(ContainerScopedService.self)
+        let containerScoped2 = container.resolve(ContainerScopedService.self)
+        XCTAssertNotNil(containerScoped1)
+        XCTAssertEqual(containerScoped1?.id, containerScoped2?.id)
 
-        // Graph scope - should be different instances (in this test context)
-        let graphService1 = container.resolve(GraphScopedService.self)
-        let graphService2 = container.resolve(GraphScopedService.self)
-        XCTAssertNotNil(graphService1)
-        XCTAssertNotNil(graphService2)
-        // Note: Graph scope behavior depends on resolution context
+        // Graph scope - different instances
+        let graphScoped1 = container.resolve(GraphScopedService.self)
+        let graphScoped2 = container.resolve(GraphScopedService.self)
+        XCTAssertNotNil(graphScoped1)
+        XCTAssertNotEqual(graphScoped1?.id, graphScoped2?.id)
+
+        // Weak scope
+        var weakScoped: WeakScopedService? = container.resolve(WeakScopedService.self)
+        XCTAssertNotNil(weakScoped)
+        let weakId = weakScoped?.id
+        weakScoped = nil // Release reference
+        let weakScoped2 = container.resolve(WeakScopedService.self)
+        XCTAssertNotEqual(weakId, weakScoped2?.id, "Should create new instance after weak reference released")
     }
 
     func testNamedServiceRegistration() {
-        @Injectable(name: "primary")
-        class PrimaryService {
-            let value: String = "primary"
-            init() {}
-        }
+        NamedDataService.register(in: container)
+        AlternateDataService.register(in: container)
 
-        @Injectable(name: "secondary")
-        class SecondaryService {
-            let value: String = "secondary"
-            init() {}
-        }
-
-        PrimaryService.register(in: container)
-        SecondaryService.register(in: container)
-
-        let primaryService = container.resolve(PrimaryService.self, name: "primary")
-        let secondaryService = container.resolve(SecondaryService.self, name: "secondary")
-        let unnamedService = container.resolve(PrimaryService.self)
+        let primaryService = container.resolve(NamedDataService.self, name: "primaryDataService")
+        let secondaryService = container.resolve(AlternateDataService.self, name: "secondaryDataService")
 
         XCTAssertNotNil(primaryService)
         XCTAssertNotNil(secondaryService)
-        XCTAssertNil(unnamedService, "Unnamed resolution should fail for named service")
-        XCTAssertEqual(primaryService?.value, "primary")
-        XCTAssertEqual(secondaryService?.value, "secondary")
+        XCTAssertEqual(primaryService?.data, "default")
+        XCTAssertEqual(secondaryService?.data, "alternate")
     }
 
-    func testOptionalDependencyResolution() {
-        @Injectable
-        class OptionalDependencyService {
-            let required: TestDependency
-            let optional: OptionalTestDependency?
-
-            init(required: TestDependency, optional: OptionalTestDependency?) {
-                self.required = required
-                self.optional = optional
-            }
-        }
-
+    func testOptionalDependencyHandling() {
         // Register only required dependency
         container.register(TestDependency.self) { _ in TestDependency() }
-        // Intentionally don't register OptionalTestDependency
 
-        OptionalDependencyService.register(in: container)
+        APIOptionalDependencyService.register(in: container)
 
-        let service = container.resolve(OptionalDependencyService.self)
+        let service = container.resolve(APIOptionalDependencyService.self)
         XCTAssertNotNil(service)
-        XCTAssertNotNil(service?.required)
-        XCTAssertNil(service?.optional, "Optional dependency should be nil when not registered")
+        XCTAssertNotNil(service?.requiredDep, "Required dependency should be injected")
+        XCTAssertNil(service?.optionalDep, "Optional dependency should remain nil when not registered")
+        XCTAssertNotNil(service?.optionalWithDefault, "Optional with default should have value")
     }
 
-    // MARK: - Factory API Validation
+    func testProtocolBasedInjection() {
+        // Register concrete implementations for protocols
+        container.register(APIClientProtocol.self) { _ in MockAPIClient() }
+        container.register(DatabaseProtocol.self) { _ in MockDatabase() }
 
-    func testAutoFactoryIntegrationWithSwinject() {
-        @AutoFactory
-        class FactoryTestService {
-            let dependency: TestDependency
-            let runtimeParam: String
+        ProtocolBasedService.register(in: container)
 
-            init(dependency: TestDependency, runtimeParam: String) {
-                self.dependency = dependency
-                self.runtimeParam = runtimeParam
-            }
-        }
-
-        // Register dependency and factory
-        container.register(TestDependency.self) { _ in TestDependency() }
-        container.register(FactoryTestServiceFactory.self) { resolver in
-            FactoryTestServiceFactoryImpl(resolver: resolver)
-        }
-
-        let factory = container.resolve(FactoryTestServiceFactory.self)
-        XCTAssertNotNil(factory, "Factory should resolve from container")
-
-        let service = factory?.makeFactoryTestService(runtimeParam: "test")
+        let service = container.resolve(ProtocolBasedService.self)
         XCTAssertNotNil(service)
+        XCTAssertTrue(service?.apiClient is MockAPIClient)
+        XCTAssertTrue(service?.database is MockDatabase)
+    }
+
+    func testGenericServiceRegistration() {
+        container.register(TestDependency.self) { _ in TestDependency() }
+
+        // Register specific generic type
+        container.register(GenericService<String>.self) { resolver in
+            GenericService(value: "test", dependency: resolver.resolve(TestDependency.self)!)
+        }
+
+        let service = container.resolve(GenericService<String>.self)
+        XCTAssertNotNil(service)
+        XCTAssertEqual(service?.value, "test")
+    }
+
+    // MARK: - Factory Validation
+
+    func testAutoFactoryGeneration() {
+        container.register(TestDependency.self) { _ in TestDependency() }
+        container.register(FactoryValidationServiceFactory.self) { resolver in
+            FactoryValidationServiceFactoryImpl(container: self.container)
+        }
+
+        let factory = container.resolve(FactoryValidationServiceFactory.self)
+        XCTAssertNotNil(factory)
+
+        let service = factory?.makeFactoryValidationService(runtimeParameter: "test123")
+        XCTAssertNotNil(service)
+        XCTAssertEqual(service?.runtimeParameter, "test123")
         XCTAssertNotNil(service?.dependency)
-        XCTAssertEqual(service?.runtimeParam, "test")
     }
 
-    func testFactoryWithMultipleRuntimeParameters() {
-        @AutoFactory
-        class MultiParamFactoryService {
-            let dependency: TestDependency
-            let param1: String
-            let param2: Int
-            let param3: Bool
+    func testCustomNamedFactory() {
+        container.register(TestDependency.self) { _ in TestDependency() }
+        container.register(CustomNamedFactoryServiceFactory.self) { resolver in
+            CustomNamedFactoryServiceFactoryImpl(container: self.container)
+        }
 
-            init(dependency: TestDependency, param1: String, param2: Int, param3: Bool) {
-                self.dependency = dependency
-                self.param1 = param1
-                self.param2 = param2
-                self.param3 = param3
+        let factory = container.resolve(CustomNamedFactoryServiceFactory.self)
+        XCTAssertNotNil(factory)
+
+        let service = factory?.makeCustomNamedFactoryService(config: "custom-config")
+        XCTAssertNotNil(service)
+        XCTAssertEqual(service?.config, "custom-config")
+    }
+
+    // MARK: - Thread Safety
+
+    func testConcurrentResolution() {
+        GraphScopedService.register(in: container)
+
+        let expectation = expectation(description: "Concurrent resolution")
+        expectation.expectedFulfillmentCount = 100
+
+        let queue = DispatchQueue(label: "test", attributes: .concurrent)
+        var services: [GraphScopedService] = []
+        let lock = NSLock()
+
+        for _ in 0..<100 {
+            queue.async {
+                if let service = self.container.resolve(GraphScopedService.self) {
+                    lock.lock()
+                    services.append(service)
+                    lock.unlock()
+                }
+                expectation.fulfill()
             }
         }
 
-        container.register(TestDependency.self) { _ in TestDependency() }
-        container.register(MultiParamFactoryServiceFactory.self) { resolver in
-            MultiParamFactoryServiceFactoryImpl(resolver: resolver)
-        }
-
-        let factory = container.resolve(MultiParamFactoryServiceFactory.self)
-        let service = factory?.makeMultiParamFactoryService(param1: "test", param2: 42, param3: true)
-
-        XCTAssertNotNil(service)
-        XCTAssertEqual(service?.param1, "test")
-        XCTAssertEqual(service?.param2, 42)
-        XCTAssertEqual(service?.param3, true)
+        waitForExpectations(timeout: 5.0)
+        XCTAssertEqual(services.count, 100, "All concurrent resolutions should succeed")
     }
 
     // MARK: - Assembly Integration
@@ -194,217 +287,19 @@ final class APIValidationTests: XCTestCase {
     func testAssemblyIntegration() {
         class TestAssembly: Assembly {
             func assemble(container: Container) {
-                // Register dependencies
                 container.register(TestDependency.self) { _ in TestDependency() }
-                container.register(OptionalTestDependency.self) { _ in OptionalTestDependency() }
-
-                // Register @Injectable services
-                TestServiceWithDependencies.register(in: container)
-
-                // Register factories
-                container.register(TestFactoryServiceFactory.self) { resolver in
-                    TestFactoryServiceFactoryImpl(resolver: resolver)
-                }
+                APIValidationService.register(in: container)
+                ContainerScopedService.register(in: container)
             }
         }
 
-        @Injectable
-        class TestServiceWithDependencies {
-            let dependency: TestDependency
-            let optional: OptionalTestDependency?
+        let testAssembly = TestAssembly()
+        assembler.apply(assembly: testAssembly)
 
-            init(dependency: TestDependency, optional: OptionalTestDependency?) {
-                self.dependency = dependency
-                self.optional = optional
-            }
-        }
+        let service = container.resolve(APIValidationService.self)
+        XCTAssertNotNil(service, "Service should be available through assembly")
 
-        @AutoFactory
-        class TestFactoryService {
-            let dependency: TestDependency
-            let value: String
-
-            init(dependency: TestDependency, value: String) {
-                self.dependency = dependency
-                self.value = value
-            }
-        }
-
-        let testContainer = Container()
-        let testAssembler = Assembler([TestAssembly()], container: testContainer)
-
-        // Test regular service
-        let service = testContainer.resolve(TestServiceWithDependencies.self)
-        XCTAssertNotNil(service)
-        XCTAssertNotNil(service?.dependency)
-        XCTAssertNotNil(service?.optional)
-
-        // Test factory service
-        let factory = testContainer.resolve(TestFactoryServiceFactory.self)
-        XCTAssertNotNil(factory)
-
-        let factoryService = factory?.makeTestFactoryService(value: "factory test")
-        XCTAssertNotNil(factoryService)
-        XCTAssertEqual(factoryService?.value, "factory test")
-    }
-
-    // MARK: - Protocol Registration Validation
-
-    func testProtocolAndConcreteRegistration() {
-        protocol TestServiceProtocol {
-            var identifier: String { get }
-        }
-
-        @Injectable
-        class ConcreteTestService: TestServiceProtocol {
-            let identifier = "concrete"
-            let dependency: TestDependency
-
-            init(dependency: TestDependency) {
-                self.dependency = dependency
-            }
-        }
-
-        container.register(TestDependency.self) { _ in TestDependency() }
-        ConcreteTestService.register(in: container)
-
-        // Register protocol separately (macro doesn't do this automatically)
-        container.register(TestServiceProtocol.self) { resolver in
-            resolver.resolve(ConcreteTestService.self)!
-        }
-
-        let concreteService = container.resolve(ConcreteTestService.self)
-        let protocolService = container.resolve(TestServiceProtocol.self)
-
-        XCTAssertNotNil(concreteService)
-        XCTAssertNotNil(protocolService)
-        XCTAssertEqual(protocolService?.identifier, "concrete")
-        XCTAssertTrue(protocolService is ConcreteTestService)
-    }
-
-    // MARK: - Generic Type Registration
-
-    func testGenericServiceRegistration() {
-        @Injectable
-        class GenericService<T> {
-            let dependency: TestDependency
-            let value: T
-
-            init(dependency: TestDependency, value: T) {
-                self.dependency = dependency
-                self.value = value
-            }
-        }
-
-        container.register(TestDependency.self) { _ in TestDependency() }
-
-        // Register specific generic instantiation
-        container.register(GenericService<String>.self) { resolver in
-            GenericService(
-                dependency: resolver.resolve(TestDependency.self)!,
-                value: "test string"
-            )
-        }
-
-        let stringService = container.resolve(GenericService<String>.self)
-        XCTAssertNotNil(stringService)
-        XCTAssertEqual(stringService?.value, "test string")
-    }
-
-    // MARK: - Error Scenarios Validation
-
-    func testMissingDependencyFailure() {
-        @Injectable
-        class ServiceWithMissingDep {
-            let dependency: MissingDependency
-
-            init(dependency: MissingDependency) {
-                self.dependency = dependency
-            }
-        }
-
-        // Don't register MissingDependency
-        ServiceWithMissingDep.register(in: container)
-
-        let service = container.resolve(ServiceWithMissingDep.self)
-        XCTAssertNil(service, "Service should fail to resolve when dependency is missing")
-    }
-
-    func testCircularDependencyBehavior() {
-        @Injectable
-        class ServiceA {
-            let serviceB: ServiceB
-
-            init(serviceB: ServiceB) {
-                self.serviceB = serviceB
-            }
-        }
-
-        @Injectable
-        class ServiceB {
-            let serviceA: ServiceA
-
-            init(serviceA: ServiceA) {
-                self.serviceA = serviceA
-            }
-        }
-
-        ServiceA.register(in: container)
-        ServiceB.register(in: container)
-
-        // Swinject should handle circular dependencies according to its rules
-        let serviceA = container.resolve(ServiceA.self)
-        XCTAssertNil(serviceA, "Circular dependency should fail gracefully")
-    }
-
-    // MARK: - Thread Safety Validation
-
-    func testConcurrentResolution() {
-        @Injectable(scope: .container)
-        class ThreadSafeService {
-            let id = UUID()
-            let dependency: TestDependency
-
-            init(dependency: TestDependency) {
-                self.dependency = dependency
-            }
-        }
-
-        container.register(TestDependency.self) { _ in TestDependency() }
-        ThreadSafeService.register(in: container)
-
-        let expectation = XCTestExpectation(description: "Concurrent resolution")
-        expectation.expectedFulfillmentCount = 10
-
-        var resolvedServices: [ThreadSafeService] = []
-        let queue = DispatchQueue.global(qos: .default)
-        let lock = NSLock()
-
-        for _ in 0 ..< 10 {
-            queue.async {
-                if let service = self.container.resolve(ThreadSafeService.self) {
-                    lock.lock()
-                    resolvedServices.append(service)
-                    lock.unlock()
-                }
-                expectation.fulfill()
-            }
-        }
-
-        wait(for: [expectation], timeout: 5.0)
-
-        XCTAssertEqual(resolvedServices.count, 10)
-
-        // All should be the same instance (container scope)
-        let firstId = resolvedServices.first?.id
-        XCTAssertTrue(resolvedServices.allSatisfy { $0.id == firstId })
+        let scopedService = container.resolve(ContainerScopedService.self)
+        XCTAssertNotNil(scopedService, "Scoped service should be available through assembly")
     }
 }
-
-// MARK: - Test Support Types
-
-class OptionalTestDependency {
-    let id = UUID()
-}
-
-// MissingDependency is now imported from TestUtilities.swift

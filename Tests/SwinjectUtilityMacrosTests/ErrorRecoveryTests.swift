@@ -3,6 +3,7 @@
 
 import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
+@testable import SwinjectUtilityMacros
 @testable import SwinjectUtilityMacrosImplementation
 import XCTest
 
@@ -659,25 +660,9 @@ final class ErrorRecoveryTests: XCTestCase {
 
 // MARK: - Mock Implementations for Generated Code
 
-public struct CircuitBreakerCall {
-    public let wasSuccessful: Bool
-    public let wasBlocked: Bool
-    public let responseTime: TimeInterval
-    public let circuitState: CircuitBreakerState
-    public let error: Error?
+// CircuitBreakerCall is imported from SwinjectUtilityMacros
 
-    public init(wasSuccessful: Bool, wasBlocked: Bool, responseTime: TimeInterval, circuitState: CircuitBreakerState, error: Error? = nil) {
-        self.wasSuccessful = wasSuccessful
-        self.wasBlocked = wasBlocked
-        self.responseTime = responseTime
-        self.circuitState = circuitState
-        self.error = error
-    }
-}
-
-public enum CircuitBreakerState {
-    case closed, open, halfOpen
-}
+// CircuitBreakerState is imported from SwinjectUtilityMacros
 
 public enum CircuitBreakerError: Error {
     case circuitOpen(circuitName: String)
@@ -700,97 +685,16 @@ public class MockCircuitBreaker {
 
 // CircuitBreakerRegistry is now imported from TestUtilities.swift
 
-struct LazyPropertyInfo {
-    let propertyName: String
-    let propertyType: String
-    let containerName: String
-    let serviceName: String?
-    let isOptional: Bool
-    let state: LazyPropertyState
-    let initialResolutionTime: Date
-    let lastAccessTime: Date?
-    let resolutionCount: Int?
-    let resolutionError: Error?
-    let threadInfo: ThreadInfo
+// LazyPropertyInfo is imported from SwinjectUtilityMacros
+// LazyPropertyState is imported from SwinjectUtilityMacros
 
-    init(propertyName: String, propertyType: String, containerName: String, serviceName: String?, isOptional: Bool, state: LazyPropertyState, initialResolutionTime: Date, lastAccessTime: Date? = nil, resolutionCount: Int? = nil, resolutionError: Error? = nil, threadInfo: ThreadInfo = ThreadInfo()) {
-        self.propertyName = propertyName
-        self.propertyType = propertyType
-        self.containerName = containerName
-        self.serviceName = serviceName
-        self.isOptional = isOptional
-        self.state = state
-        self.initialResolutionTime = initialResolutionTime
-        self.lastAccessTime = lastAccessTime
-        self.resolutionCount = resolutionCount
-        self.resolutionError = resolutionError
-        self.threadInfo = threadInfo
-    }
-}
+// WeakPropertyInfo is imported from SwinjectUtilityMacros
 
-enum LazyPropertyState {
-    case pending, resolved, failed
-}
-
-struct WeakPropertyInfo {
-    let propertyName: String
-    let propertyType: String
-    let containerName: String
-    let serviceName: String?
-    let autoResolve: Bool
-    let state: WeakPropertyState
-    let initialResolutionTime: Date
-    let lastAccessTime: Date?
-    let resolutionCount: Int?
-    let resolutionError: Error?
-    let deallocationTime: Date?
-    let threadInfo: ThreadInfo
-
-    init(propertyName: String, propertyType: String, containerName: String, serviceName: String?, autoResolve: Bool, state: WeakPropertyState, initialResolutionTime: Date, lastAccessTime: Date? = nil, resolutionCount: Int? = nil, resolutionError: Error? = nil, deallocationTime: Date? = nil, threadInfo: ThreadInfo = ThreadInfo()) {
-        self.propertyName = propertyName
-        self.propertyType = propertyType
-        self.containerName = containerName
-        self.serviceName = serviceName
-        self.autoResolve = autoResolve
-        self.state = state
-        self.initialResolutionTime = initialResolutionTime
-        self.lastAccessTime = lastAccessTime
-        self.resolutionCount = resolutionCount
-        self.resolutionError = resolutionError
-        self.deallocationTime = deallocationTime
-        self.threadInfo = threadInfo
-    }
-}
-
-enum WeakPropertyState {
-    case pending, resolved, failed, deallocated
-}
-
-enum WeakInjectionError: Error {
-    case serviceNotRegistered(serviceName: String?, type: String)
-}
-
-struct ThreadInfo {
-    let threadId: String
-    let queueLabel: String?
-
-    init() {
-        self.threadId = Thread.current.description
-        self.queueLabel = OperationQueue.current?.name
-    }
-}
-
-class LazyInjectionMetrics {
-    static func recordAccess(_ info: LazyPropertyInfo) {
-        // Mock implementation for testing
-    }
-}
-
-class WeakInjectionMetrics {
-    static func recordAccess(_ info: WeakPropertyInfo) {
-        // Mock implementation for testing
-    }
-}
+// WeakPropertyState is imported from SwinjectUtilityMacros as WeakReferenceState
+// WeakInjectionError is imported from SwinjectUtilityMacros
+// ThreadInfo is imported from SwinjectUtilityMacros
+// LazyInjectionMetrics is imported from SwinjectUtilityMacros
+// WeakInjectionMetrics is imported from SwinjectUtilityMacros
 
 // CacheManager is now imported from TestUtilities.swift
 

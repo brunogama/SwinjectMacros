@@ -114,13 +114,13 @@ import Foundation
 ///     func processImage(_ image: UIImage, filters: [ImageFilter]) -> UIImage {
 ///         return ImageFilterEngine.apply(filters: filters, to: image)
 ///     }
-///     
+///
 ///     @PerformanceTracked(sampleRate: 0.1)  // Sample 10% of thumbnail generations
 ///     func generateThumbnail(_ image: UIImage, size: CGSize) -> UIImage {
 ///         return image.resized(to: size)
 ///     }
 /// }
-/// 
+///
 /// // Performance data is automatically collected and available
 /// let stats = PerformanceMonitor.getCategoryStats("ImageProcessing")
 /// print("Image processing average: \(stats.averageTime)ms")
@@ -142,37 +142,37 @@ public macro PerformanceTracked(
 public struct PerformanceMetrics {
     /// The name of the method being tracked
     public let methodName: String
-    
+
     /// The class or type name containing the method
     public let typeName: String
-    
+
     /// Category for grouping related performance metrics
     public let category: String
-    
+
     /// Precise execution time in milliseconds
     public let executionTime: Double
-    
+
     /// Memory allocated during method execution (bytes)
     public let memoryAllocated: Int64
-    
+
     /// Peak memory usage during execution (bytes)
     public let peakMemoryUsage: Int64
-    
+
     /// Timestamp when the method was called
     public let timestamp: Date
-    
+
     /// Thread information where method executed
     public let threadInfo: ThreadInfo
-    
+
     /// Method parameters (if includeParameters is enabled)
     public let parameters: [String: Any]?
-    
+
     /// Stack trace (if includeStackTrace is enabled for slow calls)
     public let stackTrace: [String]?
-    
+
     /// Unique identifier for this method execution
     public let executionId: UUID
-    
+
     public init(
         methodName: String,
         typeName: String,
@@ -195,7 +195,7 @@ public struct PerformanceMetrics {
         self.threadInfo = threadInfo
         self.parameters = parameters
         self.stackTrace = stackTrace
-        self.executionId = UUID()
+        executionId = UUID()
     }
 }
 
@@ -203,21 +203,21 @@ public struct PerformanceMetrics {
 public struct ThreadInfo {
     /// Thread identifier
     public let threadId: UInt64
-    
+
     /// Thread name (if available)
     public let threadName: String?
-    
+
     /// Whether this is the main thread
     public let isMainThread: Bool
-    
+
     /// Thread priority
     public let priority: Double
-    
+
     public init() {
-        self.threadId = UInt64(pthread_mach_thread_np(pthread_self()))
-        self.threadName = Thread.current.name
-        self.isMainThread = Thread.isMainThread
-        self.priority = Thread.current.threadPriority
+        threadId = UInt64(pthread_mach_thread_np(pthread_self()))
+        threadName = Thread.current.name
+        isMainThread = Thread.isMainThread
+        priority = Thread.current.threadPriority
     }
 }
 
@@ -225,40 +225,40 @@ public struct ThreadInfo {
 public struct PerformanceStats {
     /// Total number of calls tracked
     public let callCount: Int
-    
+
     /// Average execution time in milliseconds
     public let averageTime: Double
-    
+
     /// Minimum execution time recorded
     public let minimumTime: Double
-    
+
     /// Maximum execution time recorded
     public let maximumTime: Double
-    
+
     /// 50th percentile (median) execution time
     public let percentile50: Double
-    
+
     /// 95th percentile execution time
     public let percentile95: Double
-    
+
     /// 99th percentile execution time
     public let percentile99: Double
-    
+
     /// Standard deviation of execution times
     public let standardDeviation: Double
-    
+
     /// Average memory allocated per call (bytes)
     public let averageMemory: Int64
-    
+
     /// Peak memory usage recorded (bytes)
     public let peakMemory: Int64
-    
+
     /// Calls per second (recent average)
     public let callsPerSecond: Double
-    
+
     /// Time range covered by these statistics
     public let timeRange: DateInterval
-    
+
     public init(
         callCount: Int,
         averageTime: Double,
@@ -295,57 +295,57 @@ public class PerformanceMonitor {
     private static var metrics: [String: [PerformanceMetrics]] = [:]
     private static let metricsQueue = DispatchQueue(label: "performance.tracker", attributes: .concurrent)
     private static let maxMetricsPerMethod = 1000 // Circular buffer size
-    
+
     /// Records performance metrics for a method execution.
     public static func record(_ metrics: PerformanceMetrics) {
         let methodKey = "\(metrics.typeName).\(metrics.methodName)"
-        
+
         metricsQueue.async(flags: .barrier) {
             self.metrics[methodKey, default: []].append(metrics)
-            
+
             // Maintain circular buffer
-            if self.metrics[methodKey]!.count > maxMetricsPerMethod {
+            if self.metrics[methodKey]!.count > self.maxMetricsPerMethod {
                 self.metrics[methodKey]!.removeFirst()
             }
         }
     }
-    
+
     /// Gets performance statistics for a specific method.
     public static func getStats(for methodKey: String) -> PerformanceStats? {
-        return metricsQueue.sync {
+        metricsQueue.sync {
             guard let methodMetrics = metrics[methodKey], !methodMetrics.isEmpty else {
                 return nil
             }
-            
-            return calculateStats(from: methodMetrics)
+
+            return self.calculateStats(from: methodMetrics)
         }
     }
-    
+
     /// Gets aggregated performance statistics for a category.
     public static func getCategoryStats(_ category: String) -> PerformanceStats? {
-        return metricsQueue.sync {
-            let categoryMetrics = metrics.values.flatMap { $0 }.filter { $0.category == category }
+        metricsQueue.sync {
+            let categoryMetrics = self.metrics.values.flatMap { $0 }.filter { $0.category == category }
             guard !categoryMetrics.isEmpty else { return nil }
-            
-            return calculateStats(from: categoryMetrics)
+
+            return self.calculateStats(from: categoryMetrics)
         }
     }
-    
+
     /// Gets performance statistics for all methods.
     public static func getAllStats() -> [String: PerformanceStats] {
-        return metricsQueue.sync {
+        metricsQueue.sync {
             var result: [String: PerformanceStats] = [:]
-            
-            for (methodKey, methodMetrics) in metrics {
+
+            for (methodKey, methodMetrics) in self.metrics {
                 if !methodMetrics.isEmpty {
-                    result[methodKey] = calculateStats(from: methodMetrics)
+                    result[methodKey] = self.calculateStats(from: methodMetrics)
                 }
             }
-            
+
             return result
         }
     }
-    
+
     /// Prints a comprehensive performance report to the console.
     public static func printPerformanceReport() {
         let allStats = getAllStats()
@@ -353,14 +353,23 @@ public class PerformanceMonitor {
             print("📊 No performance data available")
             return
         }
-        
+
         print("\n📊 Performance Report")
         print("=" * 80)
-        print(String(format: "%-40s %8s %8s %8s %8s %8s", "Method", "Calls", "Avg(ms)", "P95(ms)", "P99(ms)", "Mem(KB)"))
+        print(String(
+            format: "%-40s %8s %8s %8s %8s %8s",
+            "Method",
+            "Calls",
+            "Avg(ms)",
+            "P95(ms)",
+            "P99(ms)",
+            "Mem(KB)"
+        ))
         print("-" * 80)
-        
+
         for (methodKey, stats) in allStats.sorted(by: { $0.value.averageTime > $1.value.averageTime }) {
-            print(String(format: "%-40s %8d %8.2f %8.2f %8.2f %8d",
+            print(String(
+                format: "%-40s %8d %8.2f %8.2f %8.2f %8d",
                 methodKey.suffix(40),
                 stats.callCount,
                 stats.averageTime,
@@ -369,15 +378,15 @@ public class PerformanceMonitor {
                 stats.averageMemory / 1024
             ))
         }
-        
+
         print("-" * 80)
         print("Legend: P95 = 95th percentile, P99 = 99th percentile, Mem = Average memory")
     }
-    
+
     /// Exports performance data to JSON format.
     public static func exportToJSON() -> Data? {
         let allStats = getAllStats()
-        
+
         do {
             return try JSONSerialization.data(withJSONObject: allStats.mapValues { stats in
                 [
@@ -397,60 +406,60 @@ public class PerformanceMonitor {
             return nil
         }
     }
-    
+
     /// Clears all collected performance data.
     public static func clearAllData() {
         metricsQueue.async(flags: .barrier) {
-            metrics.removeAll()
+            self.metrics.removeAll()
         }
     }
-    
+
     /// Gets the top N slowest methods.
     public static func getSlowestMethods(limit: Int = 10) -> [(String, PerformanceStats)] {
         let allStats = getAllStats()
         return Array(allStats.sorted { $0.value.averageTime > $1.value.averageTime }.prefix(limit))
     }
-    
+
     /// Gets methods that exceed the specified threshold.
     public static func getSlowMethods(threshold: Double) -> [(String, PerformanceStats)] {
         let allStats = getAllStats()
-        return allStats.compactMap { (key, stats) in
+        return allStats.compactMap { key, stats in
             stats.averageTime > threshold ? (key, stats) : nil
         }.sorted { $0.1.averageTime > $1.1.averageTime }
     }
-    
+
     // MARK: - Private Helper Methods
-    
+
     private static func calculateStats(from metrics: [PerformanceMetrics]) -> PerformanceStats {
         let executionTimes = metrics.map { $0.executionTime }
         let sortedTimes = executionTimes.sorted()
-        
+
         let callCount = metrics.count
         let averageTime = executionTimes.reduce(0, +) / Double(callCount)
         let minimumTime = sortedTimes.first ?? 0
         let maximumTime = sortedTimes.last ?? 0
-        
+
         // Calculate percentiles
         let percentile50 = percentile(sortedTimes, 0.50)
         let percentile95 = percentile(sortedTimes, 0.95)
         let percentile99 = percentile(sortedTimes, 0.99)
-        
+
         // Calculate standard deviation
         let variance = executionTimes.map { pow($0 - averageTime, 2) }.reduce(0, +) / Double(callCount)
         let standardDeviation = sqrt(variance)
-        
+
         // Memory statistics
         let averageMemory = metrics.map { $0.memoryAllocated }.reduce(0, +) / Int64(callCount)
         let peakMemory = metrics.map { $0.peakMemoryUsage }.max() ?? 0
-        
+
         // Calculate calls per second (last minute)
         let now = Date()
         let recentMetrics = metrics.filter { now.timeIntervalSince($0.timestamp) <= 60 }
         let callsPerSecond = Double(recentMetrics.count) / 60.0
-        
+
         // Time range
         let timeRange = DateInterval(start: metrics.first?.timestamp ?? now, end: metrics.last?.timestamp ?? now)
-        
+
         return PerformanceStats(
             callCount: callCount,
             averageTime: averageTime,
@@ -466,18 +475,18 @@ public class PerformanceMonitor {
             timeRange: timeRange
         )
     }
-    
+
     private static func percentile(_ sortedValues: [Double], _ percentile: Double) -> Double {
         guard !sortedValues.isEmpty else { return 0 }
-        
+
         let index = percentile * Double(sortedValues.count - 1)
         let lowerIndex = Int(floor(index))
         let upperIndex = Int(ceil(index))
-        
+
         if lowerIndex == upperIndex {
             return sortedValues[lowerIndex]
         }
-        
+
         let weight = index - Double(lowerIndex)
         return sortedValues[lowerIndex] * (1 - weight) + sortedValues[upperIndex] * weight
     }
@@ -491,40 +500,38 @@ public class MemoryMonitor {
     public static func getCurrentMemoryUsage() -> Int64 {
         var info = mach_task_basic_info()
         var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size) / 4
-        
+
         let kerr: kern_return_t = withUnsafeMutablePointer(to: &info) {
             $0.withMemoryRebound(to: integer_t.self, capacity: 1) {
                 task_info(mach_task_self_, task_flavor_t(MACH_TASK_BASIC_INFO), $0, &count)
             }
         }
-        
+
         if kerr == KERN_SUCCESS {
             return Int64(info.resident_size)
         } else {
             return 0
         }
     }
-    
+
     /// Tracks memory usage during a block execution.
-    public static func trackMemoryUsage<T>(during block: () throws -> T) rethrows -> (result: T, memoryUsed: Int64, peakMemory: Int64) {
+    public static func trackMemoryUsage<T>(during block: () throws -> T) rethrows
+        -> (result: T, memoryUsed: Int64, peakMemory: Int64)
+    {
         let initialMemory = getCurrentMemoryUsage()
         var peakMemory = initialMemory
-        
+
         // Note: In a real implementation, you might want to sample memory usage
         // during execution, but for simplicity we'll just measure before/after
         let result = try block()
-        
+
         let finalMemory = getCurrentMemoryUsage()
         peakMemory = max(peakMemory, finalMemory)
-        
+
         return (result: result, memoryUsed: max(0, finalMemory - initialMemory), peakMemory: peakMemory)
     }
 }
 
 // MARK: - String Extension for Pretty Printing
 
-private extension String {
-    static func * (left: String, right: Int) -> String {
-        return String(repeating: left, count: right)
-    }
-}
+// String * operator moved to StringExtensions.swift

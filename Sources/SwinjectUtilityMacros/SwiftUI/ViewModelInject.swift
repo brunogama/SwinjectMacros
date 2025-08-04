@@ -403,13 +403,13 @@ public enum ViewModelInjectError: Error, LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .containerNotFound:
-            return "DIContainer not found for ViewModel dependency injection"
+            "DIContainer not found for ViewModel dependency injection"
         case let .dependencyResolutionFailed(type, dependency):
-            return "Failed to resolve dependency '\(dependency)' for ViewModel '\(type)'"
+            "Failed to resolve dependency '\(dependency)' for ViewModel '\(type)'"
         case .invalidViewModelConfiguration:
-            return "Invalid ViewModel configuration for dependency injection"
+            "Invalid ViewModel configuration for dependency injection"
         case .initializerGenerationFailed:
-            return "Failed to generate dependency injection initializer for ViewModel"
+            "Failed to generate dependency injection initializer for ViewModel"
         }
     }
 }
@@ -432,7 +432,7 @@ extension View {
         _ viewModelType: VM.Type,
         container: DIContainer? = nil
     ) -> some View {
-        self.modifier(ViewModelInjectionModifier<VM>(
+        modifier(ViewModelInjectionModifier<VM>(
             viewModelType: viewModelType,
             container: container
         ))
@@ -458,7 +458,7 @@ public struct ViewModelInjectionModifier<VM: InjectableViewModel>: ViewModifier 
 // MARK: - Preview Support
 
 /// Utilities for creating ViewModels in SwiftUI previews
-public struct PreviewViewModel {
+public enum PreviewViewModel {
     /// Create a ViewModel with mock dependencies for previews
     @MainActor public static func mock<VM: InjectableViewModel>(
         _ viewModelType: VM.Type,

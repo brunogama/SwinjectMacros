@@ -17,16 +17,16 @@ import Swinject
 /// class AppContainer {
 ///     static func configure() -> Container {
 ///         let container = Container()
-///         
+///
 ///         // Register services
 ///         container.register(UserServiceProtocol.self) { _ in
 ///             UserService()
 ///         }
-///         
+///
 ///         container.register(APIClientProtocol.self) { _ in
 ///             APIClient()
 ///         }
-///         
+///
 ///         // Register dependent services
 ///         container.register(UserRepositoryProtocol.self) { resolver in
 ///             UserRepository(
@@ -34,11 +34,11 @@ import Swinject
 ///                 userService: resolver.resolve(UserServiceProtocol.self)!
 ///             )
 ///         }
-///         
+///
 ///         return container
 ///     }
 /// }
-/// 
+///
 /// // Compile-time validation ensures:
 /// // ✅ All dependencies are registered
 /// // ✅ No circular dependencies exist
@@ -56,31 +56,31 @@ import Swinject
 ///     checkCircularDependencies: true
 /// )
 /// class ProductionContainer {
-///     
+///
 ///     /// User management services
 ///     @DependencyGroup("UserServices")
 ///     static func configureUserServices(_ container: Container) {
 ///         container.register(UserServiceProtocol.self) { _ in
 ///             UserService()
 ///         }.inObjectScope(.container)
-///         
+///
 ///         container.register(UserRepositoryProtocol.self) { resolver in
 ///             UserRepository(userService: resolver.resolve(UserServiceProtocol.self)!)
 ///         }.inObjectScope(.transient)
 ///     }
-///     
+///
 ///     /// Network services
 ///     @DependencyGroup("NetworkServices")
 ///     static func configureNetworkServices(_ container: Container) {
 ///         container.register(APIClientProtocol.self) { _ in
 ///             APIClient(baseURL: Environment.apiBaseURL)
 ///         }.inObjectScope(.container)
-///         
+///
 ///         container.register(NetworkManagerProtocol.self) { resolver in
 ///             NetworkManager(apiClient: resolver.resolve(APIClientProtocol.self)!)
 ///         }
 ///     }
-///     
+///
 ///     static func configure() -> Container {
 ///         let container = Container()
 ///         configureUserServices(container)
@@ -98,25 +98,25 @@ import Swinject
 /// class ValidationDemoContainer {
 ///     static func configure() -> Container {
 ///         let container = Container()
-///         
+///
 ///         // ✅ This will pass validation
 ///         container.register(LoggerProtocol.self) { _ in
 ///             ConsoleLogger()
 ///         }
-///         
+///
 ///         container.register(UserService.self) { resolver in
 ///             UserService(logger: resolver.resolve(LoggerProtocol.self)!)
 ///         }
-///         
+///
 ///         // ❌ This will fail validation - DatabaseProtocol not registered
 ///         container.register(UserRepository.self) { resolver in
 ///             UserRepository(database: resolver.resolve(DatabaseProtocol.self)!)
 ///         }
-///         
+///
 ///         return container
 ///     }
 /// }
-/// 
+///
 /// // Compile-time error:
 /// // "Dependency 'DatabaseProtocol' required by 'UserRepository' is not registered"
 /// ```
@@ -127,20 +127,20 @@ import Swinject
 /// class CircularDependencyContainer {
 ///     static func configure() -> Container {
 ///         let container = Container()
-///         
+///
 ///         // ❌ This creates a circular dependency
 ///         container.register(ServiceA.self) { resolver in
 ///             ServiceA(serviceB: resolver.resolve(ServiceB.self)!)
 ///         }
-///         
+///
 ///         container.register(ServiceB.self) { resolver in
 ///             ServiceB(serviceA: resolver.resolve(ServiceA.self)!)
 ///         }
-///         
+///
 ///         return container
 ///     }
 /// }
-/// 
+///
 /// // Compile-time error:
 /// // "Circular dependency detected: ServiceA -> ServiceB -> ServiceA"
 /// ```
@@ -151,22 +151,22 @@ import Swinject
 /// class ScopeValidationContainer {
 ///     static func configure() -> Container {
 ///         let container = Container()
-///         
+///
 ///         // ✅ Singleton service
 ///         container.register(ConfigurationService.self) { _ in
 ///             ConfigurationService()
 ///         }.inObjectScope(.container)
-///         
+///
 ///         // ⚠️ Warning: Transient service depending on singleton
 ///         container.register(RequestHandler.self) { resolver in
 ///             RequestHandler(config: resolver.resolve(ConfigurationService.self)!)
 ///         }.inObjectScope(.transient) // This is fine - transient can depend on singleton
-///         
+///
 ///         // ❌ Error: Singleton depending on transient
 ///         container.register(GlobalState.self) { resolver in
 ///             GlobalState(handler: resolver.resolve(RequestHandler.self)!)
 ///         }.inObjectScope(.container) // This is problematic
-///         
+///
 ///         return container
 ///     }
 /// }
@@ -191,12 +191,12 @@ import Swinject
 ///         try validateUserRepositoryProtocol(container)
 ///         // ... other validations
 ///     }
-///     
+///
 ///     /// Get dependency graph visualization
 ///     static func getValidationDependencyGraph() -> ValidationDependencyGraph {
 ///         // Generated dependency graph representation
 ///     }
-///     
+///
 ///     /// Validate specific service registration
 ///     private static func validateUserServiceProtocol(_ container: Container) throws {
 ///         guard container.resolve(UserServiceProtocol.self) != nil else {
@@ -212,18 +212,18 @@ import Swinject
 /// class ContainerValidationTests: XCTestCase {
 ///     func testContainerConfiguration() {
 ///         let container = AppContainer.configure()
-///         
+///
 ///         // Generated validation method
 ///         XCTAssertNoThrow(try AppContainer.validateContainer(container))
-///         
+///
 ///         // Test specific service resolution
 ///         XCTAssertNotNil(container.resolve(UserServiceProtocol.self))
 ///         XCTAssertNotNil(container.resolve(APIClientProtocol.self))
 ///     }
-///     
+///
 ///     func testValidationDependencyGraph() {
 ///         let graph = AppContainer.getValidationDependencyGraph()
-///         
+///
 ///         XCTAssertTrue(graph.hasService("UserServiceProtocol"))
 ///         XCTAssertTrue(graph.hasService("APIClientProtocol"))
 ///         XCTAssertFalse(graph.hasCircularDependencies)
@@ -238,16 +238,16 @@ import Swinject
 /// class PerformanceAnalyzedContainer {
 ///     static func configure() -> Container {
 ///         let container = Container()
-///         
+///
 ///         // Heavy initialization - will be flagged for optimization
 ///         container.register(ExpensiveService.self) { _ in
 ///             ExpensiveService() // Takes 2 seconds to initialize
 ///         }.inObjectScope(.container)
-///         
+///
 ///         return container
 ///     }
 /// }
-/// 
+///
 /// // Generated performance report:
 /// // "ExpensiveService initialization takes 2.1s - consider lazy loading"
 /// ```
@@ -264,14 +264,14 @@ import Swinject
 ///         container.register(AuthServiceProtocol.self) { _ in
 ///             AuthService()
 ///         }
-///         
+///
 ///         /// Handles data persistence operations
 ///         container.register(DatabaseProtocol.self) { _ in
 ///             CoreDataDatabase()
 ///         }
 ///     }
 /// }
-/// 
+///
 /// // Generates:
 /// // - Service dependency documentation
 /// // - Architecture diagrams
@@ -322,7 +322,7 @@ public macro DependencyGroup(
 // MARK: - Service Group Annotation
 
 /// Annotates service registration methods for documentation and validation.
-@attached(peer, names: arbitrary)  
+@attached(peer, names: arbitrary)
 public macro ServiceGroup(
     _ name: String,
     description: String = ""
@@ -335,28 +335,28 @@ public struct ValidationDependencyGraph {
     public let services: Set<String>
     public let dependencies: [String: Set<String>]
     public let hasCircularDependencies: Bool
-    
+
     public init(services: Set<String>, dependencies: [String: Set<String>]) {
         self.services = services
         self.dependencies = dependencies
-        self.hasCircularDependencies = Self.detectCircularDependencies(dependencies)
+        hasCircularDependencies = Self.detectCircularDependencies(dependencies)
     }
-    
+
     /// Check if a service is registered in the graph
     public func hasService(_ serviceName: String) -> Bool {
-        return services.contains(serviceName)
+        services.contains(serviceName)
     }
-    
+
     /// Get dependencies for a specific service
     public func getDependencies(for service: String) -> Set<String> {
-        return dependencies[service] ?? []
+        dependencies[service] ?? []
     }
-    
+
     /// Detect circular dependencies in the graph
     private static func detectCircularDependencies(_ dependencies: [String: Set<String>]) -> Bool {
         var visited: Set<String> = []
         var recursionStack: Set<String> = []
-        
+
         for service in dependencies.keys {
             if !visited.contains(service) {
                 if hasCycle(service, dependencies, &visited, &recursionStack) {
@@ -364,10 +364,10 @@ public struct ValidationDependencyGraph {
                 }
             }
         }
-        
+
         return false
     }
-    
+
     private static func hasCycle(
         _ service: String,
         _ dependencies: [String: Set<String>],
@@ -376,7 +376,7 @@ public struct ValidationDependencyGraph {
     ) -> Bool {
         visited.insert(service)
         recursionStack.insert(service)
-        
+
         for dependency in dependencies[service] ?? [] {
             if !visited.contains(dependency) {
                 if hasCycle(dependency, dependencies, &visited, &recursionStack) {
@@ -386,7 +386,7 @@ public struct ValidationDependencyGraph {
                 return true
             }
         }
-        
+
         recursionStack.remove(service)
         return false
     }
@@ -399,19 +399,19 @@ public enum ContainerValidationError: Error, LocalizedError {
     case invalidScopeConfiguration(String)
     case missingDocumentation(String)
     case performanceIssue(String, suggestion: String)
-    
+
     public var errorDescription: String? {
         switch self {
         case .serviceNotRegistered(let service):
-            return "Service '\(service)' is not registered in the container"
+            "Service '\(service)' is not registered in the container"
         case .circularDependencyDetected(let cycle):
-            return "Circular dependency detected: \(cycle)"
+            "Circular dependency detected: \(cycle)"
         case .invalidScopeConfiguration(let issue):
-            return "Invalid scope configuration: \(issue)"
+            "Invalid scope configuration: \(issue)"
         case .missingDocumentation(let service):
-            return "Missing documentation for service '\(service)'"
+            "Missing documentation for service '\(service)'"
         case .performanceIssue(let issue, let suggestion):
-            return "Performance issue: \(issue). Suggestion: \(suggestion)"
+            "Performance issue: \(issue). Suggestion: \(suggestion)"
         }
     }
 }
@@ -420,24 +420,24 @@ public enum ContainerValidationError: Error, LocalizedError {
 
 /// Utilities for analyzing container configurations
 public enum ContainerAnalyzer {
-    
+
     /// Analyze a container and return validation results
     public static func analyze(_ container: Container) -> ContainerAnalysisResult {
         // Implementation would analyze the container
         // This is a placeholder for the actual analysis logic
-        return ContainerAnalysisResult(
+        ContainerAnalysisResult(
             registeredServices: [],
             missingDependencies: [],
             circularDependencies: [],
             performanceIssues: []
         )
     }
-    
+
     /// Generate a dependency graph from container configuration
     public static func generateValidationDependencyGraph(_ container: Container) -> ValidationDependencyGraph {
         // Implementation would generate the graph
         // This is a placeholder for the actual graph generation logic
-        return ValidationDependencyGraph(services: [], dependencies: [:])
+        ValidationDependencyGraph(services: [], dependencies: [:])
     }
 }
 
@@ -447,12 +447,12 @@ public struct ContainerAnalysisResult {
     public let missingDependencies: [String]
     public let circularDependencies: [String]
     public let performanceIssues: [String]
-    
+
     public var isValid: Bool {
-        return missingDependencies.isEmpty && circularDependencies.isEmpty
+        missingDependencies.isEmpty && circularDependencies.isEmpty
     }
-    
+
     public var hasPerformanceIssues: Bool {
-        return !performanceIssues.isEmpty
+        !performanceIssues.isEmpty
     }
 }

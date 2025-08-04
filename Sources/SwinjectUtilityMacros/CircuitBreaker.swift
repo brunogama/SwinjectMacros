@@ -118,7 +118,7 @@ import Foundation
 ///     func processPayment(_ payment: Payment) async throws -> PaymentResult {
 ///         return try await paymentGateway.process(payment)
 ///     }
-///     
+///
 ///     @CircuitBreaker(
 ///         failureThreshold: 10,
 ///         timeout: 30.0,
@@ -132,7 +132,7 @@ import Foundation
 ///         return try await userAPI.fetch(userId)
 ///     }
 /// }
-/// 
+///
 /// // Monitor circuit breaker health
 /// let stats = CircuitBreakerRegistry.getAllStats()
 /// for (name, stat) in stats {
@@ -160,9 +160,9 @@ public enum CircuitBreakerState: String, CaseIterable {
     case closed = "CLOSED"
     case open = "OPEN"
     case halfOpen = "HALF_OPEN"
-    
+
     public var description: String {
-        return rawValue
+        rawValue
     }
 }
 
@@ -170,43 +170,43 @@ public enum CircuitBreakerState: String, CaseIterable {
 public struct CircuitBreakerStats {
     /// Current state of the circuit breaker
     public let currentState: CircuitBreakerState
-    
+
     /// Total number of calls made through the circuit breaker
     public let totalCalls: Int
-    
+
     /// Number of successful calls
     public let successfulCalls: Int
-    
+
     /// Number of failed calls
     public let failedCalls: Int
-    
+
     /// Number of calls blocked by open circuit
     public let blockedCalls: Int
-    
+
     /// Current failure rate (0.0 to 1.0)
     public let failureRate: Double
-    
+
     /// Number of consecutive failures (in closed state)
     public let consecutiveFailures: Int
-    
+
     /// Number of consecutive successes (in half-open state)
     public let consecutiveSuccesses: Int
-    
+
     /// Time when circuit was last opened
     public let lastOpenedTime: Date?
-    
+
     /// Time when circuit was last closed
     public let lastClosedTime: Date?
-    
+
     /// Number of state transitions
     public let stateTransitions: Int
-    
+
     /// Average response time in milliseconds
     public let averageResponseTime: TimeInterval
-    
+
     /// Time range covered by these statistics
     public let timeRange: DateInterval
-    
+
     public init(
         currentState: CircuitBreakerState,
         totalCalls: Int,
@@ -242,25 +242,25 @@ public struct CircuitBreakerStats {
 public struct CircuitBreakerCall {
     /// Timestamp of the call
     public let timestamp: Date
-    
+
     /// Whether the call was successful
     public let wasSuccessful: Bool
-    
+
     /// Whether the call was blocked by the circuit breaker
     public let wasBlocked: Bool
-    
+
     /// Response time in milliseconds
     public let responseTime: TimeInterval
-    
+
     /// Circuit breaker state at the time of the call
     public let circuitState: CircuitBreakerState
-    
+
     /// Error that occurred (if any)
     public let error: Error?
-    
+
     /// Thread information
     public let threadInfo: ThreadInfo
-    
+
     public init(
         timestamp: Date = Date(),
         wasSuccessful: Bool,
@@ -288,7 +288,7 @@ public class CircuitBreakerRegistry {
     private static var callHistory: [String: [CircuitBreakerCall]] = [:]
     private static let registryQueue = DispatchQueue(label: "circuit.breaker.registry", attributes: .concurrent)
     private static let maxHistoryPerCircuit = 1000 // Circular buffer size
-    
+
     /// Gets or creates a circuit breaker instance for the given key
     public static func getCircuitBreaker(
         for key: String,
@@ -297,11 +297,11 @@ public class CircuitBreakerRegistry {
         successThreshold: Int,
         monitoringWindow: TimeInterval
     ) -> CircuitBreakerInstance {
-        return registryQueue.sync {
+        registryQueue.sync {
             if let existing = circuitBreakers[key] {
                 return existing
             }
-            
+
             let circuitBreaker = CircuitBreakerInstance(
                 key: key,
                 failureThreshold: failureThreshold,
@@ -309,69 +309,70 @@ public class CircuitBreakerRegistry {
                 successThreshold: successThreshold,
                 monitoringWindow: monitoringWindow
             )
-            
-            circuitBreakers[key] = circuitBreaker
+
+            self.circuitBreakers[key] = circuitBreaker
             return circuitBreaker
         }
     }
-    
+
     /// Records a circuit breaker call
     public static func recordCall(_ call: CircuitBreakerCall, for key: String) {
         registryQueue.async(flags: .barrier) {
-            callHistory[key, default: []].append(call)
-            
+            self.callHistory[key, default: []].append(call)
+
             // Maintain circular buffer
-            if callHistory[key]!.count > maxHistoryPerCircuit {
-                callHistory[key]!.removeFirst()
+            if self.callHistory[key]!.count > self.maxHistoryPerCircuit {
+                self.callHistory[key]!.removeFirst()
             }
         }
     }
-    
+
     /// Gets statistics for a specific circuit breaker
     public static func getStats(for key: String) -> CircuitBreakerStats? {
-        return registryQueue.sync {
+        registryQueue.sync {
             guard let circuitBreaker = circuitBreakers[key],
-                  let calls = callHistory[key] else {
+                  let calls = callHistory[key]
+            else {
                 return nil
             }
-            
-            return calculateStats(from: calls, circuitBreaker: circuitBreaker)
+
+            return self.calculateStats(from: calls, circuitBreaker: circuitBreaker)
         }
     }
-    
+
     /// Gets statistics for all circuit breakers
     public static func getAllStats() -> [String: CircuitBreakerStats] {
-        return registryQueue.sync {
+        registryQueue.sync {
             var result: [String: CircuitBreakerStats] = [:]
-            
-            for (key, circuitBreaker) in circuitBreakers {
+
+            for (key, circuitBreaker) in self.circuitBreakers {
                 if let calls = callHistory[key] {
-                    result[key] = calculateStats(from: calls, circuitBreaker: circuitBreaker)
+                    result[key] = self.calculateStats(from: calls, circuitBreaker: circuitBreaker)
                 }
             }
-            
+
             return result
         }
     }
-    
+
     /// Resets a specific circuit breaker
     public static func reset(for key: String) {
         registryQueue.async(flags: .barrier) {
-            circuitBreakers[key]?.reset()
-            callHistory[key] = []
+            self.circuitBreakers[key]?.reset()
+            self.callHistory[key] = []
         }
     }
-    
+
     /// Resets all circuit breakers
     public static func resetAll() {
         registryQueue.async(flags: .barrier) {
-            for circuitBreaker in circuitBreakers.values {
+            for circuitBreaker in self.circuitBreakers.values {
                 circuitBreaker.reset()
             }
-            callHistory.removeAll()
+            self.callHistory.removeAll()
         }
     }
-    
+
     /// Prints a comprehensive circuit breaker report
     public static func printReport() {
         let allStats = getAllStats()
@@ -379,15 +380,26 @@ public class CircuitBreakerRegistry {
             print("🔌 No circuit breaker data available")
             return
         }
-        
+
         print("\n🔌 Circuit Breaker Report")
         print("=" * 80)
-        print(String(format: "%-25s %-10s %8s %8s %8s %8s %8s", "Circuit", "State", "Calls", "Success%", "Blocked", "FailRate", "AvgTime"))
+        print(String(
+            format: "%-25s %-10s %8s %8s %8s %8s %8s",
+            "Circuit",
+            "State",
+            "Calls",
+            "Success%",
+            "Blocked",
+            "FailRate",
+            "AvgTime"
+        ))
         print("-" * 80)
-        
+
         for (key, stats) in allStats.sorted(by: { $0.value.failureRate > $1.value.failureRate }) {
-            let successRate = stats.totalCalls > 0 ? (Double(stats.successfulCalls) / Double(stats.totalCalls)) * 100 : 0
-            print(String(format: "%-25s %-10s %8d %8.1f %8d %8.1f %8.1f",
+            let successRate = stats
+                .totalCalls > 0 ? (Double(stats.successfulCalls) / Double(stats.totalCalls)) * 100 : 0
+            print(String(
+                format: "%-25s %-10s %8d %8.1f %8d %8.1f %8.1f",
                 key.suffix(25),
                 stats.currentState.description,
                 stats.totalCalls,
@@ -397,45 +409,48 @@ public class CircuitBreakerRegistry {
                 stats.averageResponseTime * 1000 // Convert to ms
             ))
         }
-        
+
         print("-" * 80)
         print("Legend: Success% = Success rate, FailRate = Failure rate, AvgTime = Average response time (ms)")
     }
-    
+
     /// Gets circuit breakers that are currently open
     public static func getOpenCircuits() -> [(String, CircuitBreakerStats)] {
         let allStats = getAllStats()
-        return allStats.compactMap { (key, stats) in
+        return allStats.compactMap { key, stats in
             stats.currentState == .open ? (key, stats) : nil
         }.sorted { $0.1.failureRate > $1.1.failureRate }
     }
-    
+
     /// Gets circuit breakers with high failure rates
     public static func getUnhealthyCircuits(threshold: Double = 0.5) -> [(String, CircuitBreakerStats)] {
         let allStats = getAllStats()
-        return allStats.compactMap { (key, stats) in
+        return allStats.compactMap { key, stats in
             stats.failureRate > threshold ? (key, stats) : nil
         }.sorted { $0.1.failureRate > $1.1.failureRate }
     }
-    
+
     // MARK: - Private Helper Methods
-    
-    private static func calculateStats(from calls: [CircuitBreakerCall], circuitBreaker: CircuitBreakerInstance) -> CircuitBreakerStats {
+
+    private static func calculateStats(
+        from calls: [CircuitBreakerCall],
+        circuitBreaker: CircuitBreakerInstance
+    ) -> CircuitBreakerStats {
         let totalCalls = calls.count
         let successfulCalls = calls.filter { $0.wasSuccessful && !$0.wasBlocked }.count
         let failedCalls = calls.filter { !$0.wasSuccessful && !$0.wasBlocked }.count
         let blockedCalls = calls.filter { $0.wasBlocked }.count
-        
+
         let failureRate = totalCalls > 0 ? Double(failedCalls) / Double(totalCalls) : 0.0
         let averageResponseTime = calls.isEmpty ? 0.0 : calls.map { $0.responseTime }.reduce(0, +) / Double(calls.count)
-        
+
         // Calculate time range
         let timestamps = calls.map { $0.timestamp }
         let timeRange = DateInterval(
             start: timestamps.min() ?? Date(),
             end: timestamps.max() ?? Date()
         )
-        
+
         return CircuitBreakerStats(
             currentState: circuitBreaker.currentState,
             totalCalls: totalCalls,
@@ -461,90 +476,97 @@ public class CircuitBreakerInstance {
     private let timeout: TimeInterval
     private let successThreshold: Int
     private let monitoringWindow: TimeInterval
-    
+
     private let lock = NSLock()
-    
+
     private var _currentState: CircuitBreakerState = .closed
-    private var _consecutiveFailures: Int = 0
-    private var _consecutiveSuccesses: Int = 0
+    private var _consecutiveFailures = 0
+    private var _consecutiveSuccesses = 0
     private var _lastFailureTime: Date?
     private var _lastOpenedTime: Date?
     private var _lastClosedTime: Date?
-    private var _stateTransitions: Int = 0
-    
+    private var _stateTransitions = 0
+
     // Public read-only properties
     public var currentState: CircuitBreakerState {
         lock.lock()
         defer { lock.unlock() }
         return _currentState
     }
-    
+
     public var consecutiveFailures: Int {
         lock.lock()
         defer { lock.unlock() }
         return _consecutiveFailures
     }
-    
+
     public var consecutiveSuccesses: Int {
         lock.lock()
         defer { lock.unlock() }
         return _consecutiveSuccesses
     }
-    
+
     public var lastOpenedTime: Date? {
         lock.lock()
         defer { lock.unlock() }
         return _lastOpenedTime
     }
-    
+
     public var lastClosedTime: Date? {
         lock.lock()
         defer { lock.unlock() }
         return _lastClosedTime
     }
-    
+
     public var stateTransitions: Int {
         lock.lock()
         defer { lock.unlock() }
         return _stateTransitions
     }
-    
-    public init(key: String, failureThreshold: Int, timeout: TimeInterval, successThreshold: Int, monitoringWindow: TimeInterval) {
+
+    public init(
+        key: String,
+        failureThreshold: Int,
+        timeout: TimeInterval,
+        successThreshold: Int,
+        monitoringWindow: TimeInterval
+    ) {
         self.key = key
         self.failureThreshold = failureThreshold
         self.timeout = timeout
         self.successThreshold = successThreshold
         self.monitoringWindow = monitoringWindow
     }
-    
+
     /// Checks if a call should be allowed through the circuit breaker
     public func shouldAllowCall() -> Bool {
         lock.lock()
         defer { lock.unlock() }
-        
+
         switch _currentState {
         case .closed:
             return true
-            
+
         case .open:
             // Check if we should transition to half-open
             if let lastFailure = _lastFailureTime,
-               Date().timeIntervalSince(lastFailure) >= timeout {
+               Date().timeIntervalSince(lastFailure) >= timeout
+            {
                 transitionToHalfOpen()
                 return true
             }
             return false
-            
+
         case .halfOpen:
             return true
         }
     }
-    
+
     /// Records the result of a call
     public func recordCall(wasSuccessful: Bool) {
         lock.lock()
         defer { lock.unlock() }
-        
+
         switch _currentState {
         case .closed:
             if wasSuccessful {
@@ -552,34 +574,34 @@ public class CircuitBreakerInstance {
             } else {
                 _consecutiveFailures += 1
                 _lastFailureTime = Date()
-                
+
                 if _consecutiveFailures >= failureThreshold {
                     transitionToOpen()
                 }
             }
-            
+
         case .halfOpen:
             if wasSuccessful {
                 _consecutiveSuccesses += 1
-                
+
                 if _consecutiveSuccesses >= successThreshold {
                     transitionToClosed()
                 }
             } else {
                 transitionToOpen()
             }
-            
+
         case .open:
             // No action needed in open state
             break
         }
     }
-    
+
     /// Resets the circuit breaker to closed state
     public func reset() {
         lock.lock()
         defer { lock.unlock() }
-        
+
         _currentState = .closed
         _consecutiveFailures = 0
         _consecutiveSuccesses = 0
@@ -588,22 +610,22 @@ public class CircuitBreakerInstance {
         _lastClosedTime = Date()
         _stateTransitions = 0
     }
-    
+
     // MARK: - Private State Transition Methods
-    
+
     private func transitionToOpen() {
         _currentState = .open
         _consecutiveSuccesses = 0
         _lastOpenedTime = Date()
         _stateTransitions += 1
     }
-    
+
     private func transitionToHalfOpen() {
         _currentState = .halfOpen
         _consecutiveSuccesses = 0
         _stateTransitions += 1
     }
-    
+
     private func transitionToClosed() {
         _currentState = .closed
         _consecutiveFailures = 0
@@ -620,7 +642,7 @@ public enum CircuitBreakerError: Error, LocalizedError {
     case circuitOpen(circuitName: String, lastFailureTime: Date?)
     case halfOpenTestFailed(circuitName: String)
     case noFallbackAvailable(circuitName: String)
-    
+
     public var errorDescription: String? {
         switch self {
         case .circuitOpen(let circuitName, let lastFailure):
@@ -636,8 +658,4 @@ public enum CircuitBreakerError: Error, LocalizedError {
 
 // MARK: - String Extension for Pretty Printing
 
-private extension String {
-    static func * (left: String, right: Int) -> String {
-        return String(repeating: left, count: right)
-    }
-}
+// String * operator moved to StringExtensions.swift

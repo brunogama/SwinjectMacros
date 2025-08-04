@@ -1,21 +1,21 @@
 // MemoryManagementTests.swift - Memory management and lifecycle edge case tests
 
-import XCTest
 import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
+import XCTest
 
 @testable import SwinjectUtilityMacrosImplementation
 
 final class MemoryManagementTests: XCTestCase {
-    
+
     // MARK: - Memory Cycle Detection Tests
-    
+
     func testWeakInjectWithPotentialCycle() {
         assertMacroExpansion("""
         class MemoryParent {
             @WeakInject var child: MemoryChild?
         }
-        
+
         class MemoryChild {
             @LazyInject var parent: MemoryParent
         }
@@ -25,11 +25,11 @@ final class MemoryManagementTests: XCTestCase {
             private weak var _childWeakBacking: MemoryChild?
             private var _childOnceToken: Bool = false
             private let _childOnceTokenLock = NSLock()
-            
+
             private func _childWeakAccessor() -> MemoryChild? {
                 func resolveWeakReference() {
                     let startTime = CFAbsoluteTimeGetCurrent()
-                    
+
                     // Register property for metrics tracking
                     let pendingInfo = WeakPropertyInfo(
                         propertyName: "child",
@@ -42,12 +42,12 @@ final class MemoryManagementTests: XCTestCase {
                         threadInfo: ThreadInfo()
                     )
                     WeakInjectionMetrics.recordAccess(pendingInfo)
-                    
+
                     do {
                         // Resolve dependency as weak reference
                         if let resolved = Container.shared.synchronizedResolve(MemoryChild.self) {
                             _childWeakBacking = resolved
-                            
+
                             // Record successful resolution
                             let resolvedInfo = WeakPropertyInfo(
                                 propertyName: "child",
@@ -65,7 +65,7 @@ final class MemoryManagementTests: XCTestCase {
                         } else {
                             // Service not found - record failure
                             let error = WeakInjectionError.serviceNotRegistered(serviceName: nil, type: "MemoryChild")
-                            
+
                             let failedInfo = WeakPropertyInfo(
                                 propertyName: "child",
                                 propertyType: "MemoryChild",
@@ -95,7 +95,7 @@ final class MemoryManagementTests: XCTestCase {
                         WeakInjectionMetrics.recordAccess(failedInfo)
                     }
                 }
-                
+
                 // Auto-resolve if reference is nil and auto-resolve is enabled
                 if _childWeakBacking == nil {
                     _childOnceTokenLock.lock()
@@ -107,7 +107,7 @@ final class MemoryManagementTests: XCTestCase {
                         _childOnceTokenLock.unlock()
                     }
                 }
-                
+
                 // Check if reference was deallocated and record deallocation
                 if _childWeakBacking == nil {
                     let deallocatedInfo = WeakPropertyInfo(
@@ -123,26 +123,26 @@ final class MemoryManagementTests: XCTestCase {
                     )
                     WeakInjectionMetrics.recordAccess(deallocatedInfo)
                 }
-                
+
                 return _childWeakBacking
             }
         }
-        
+
         class MemoryChild {
             @LazyInject var parent: MemoryParent
             private var _parentBacking: MemoryParent?
             private var _parentOnceToken: Bool = false
             private let _parentOnceTokenLock = NSLock()
-            
+
             private func _parentLazyAccessor() -> MemoryParent {
                 // Thread-safe lazy initialization
                 _parentOnceTokenLock.lock()
                 defer { _parentOnceTokenLock.unlock() }
-                
+
                 if !_parentOnceToken {
                     _parentOnceToken = true
                     let startTime = CFAbsoluteTimeGetCurrent()
-                    
+
                     // Register property for metrics tracking
                     let pendingInfo = LazyPropertyInfo(
                         propertyName: "parent",
@@ -155,12 +155,12 @@ final class MemoryManagementTests: XCTestCase {
                         threadInfo: ThreadInfo()
                     )
                     LazyInjectionMetrics.recordResolution(pendingInfo)
-                    
+
                     do {
                         // Resolve dependency
                         guard let resolved = Container.shared.synchronizedResolve(MemoryParent.self) else {
                             let error = LazyInjectionError.serviceNotRegistered(serviceName: nil, type: "MemoryParent")
-                            
+
                             // Record failed resolution
                             let failedInfo = LazyPropertyInfo(
                                 propertyName: "parent",
@@ -174,16 +174,16 @@ final class MemoryManagementTests: XCTestCase {
                                 threadInfo: ThreadInfo()
                             )
                             LazyInjectionMetrics.recordResolution(failedInfo)
-                            
+
                             fatalError("Required lazy property 'parent' of type 'MemoryParent' could not be resolved: \\(error.localizedDescription)")
                         }
-                        
+
                         _parentBacking = resolved
-                        
+
                         // Record successful resolution
                         let endTime = CFAbsoluteTimeGetCurrent()
                         let resolutionDuration = endTime - startTime
-                        
+
                         let resolvedInfo = LazyPropertyInfo(
                             propertyName: "parent",
                             propertyType: "MemoryParent",
@@ -196,12 +196,12 @@ final class MemoryManagementTests: XCTestCase {
                             threadInfo: ThreadInfo()
                         )
                         LazyInjectionMetrics.recordResolution(resolvedInfo)
-                        
+
                     } catch {
                         // Record failed resolution
                         let endTime = CFAbsoluteTimeGetCurrent()
                         let resolutionDuration = endTime - startTime
-                        
+
                         let failedInfo = LazyPropertyInfo(
                             propertyName: "parent",
                             propertyType: "MemoryParent",
@@ -215,13 +215,13 @@ final class MemoryManagementTests: XCTestCase {
                             threadInfo: ThreadInfo()
                         )
                         LazyInjectionMetrics.recordResolution(failedInfo)
-                        
+
                         if true {
                             fatalError("Failed to resolve required lazy property 'parent': \\(error.localizedDescription)")
                         }
                     }
                 }
-                
+
                 guard let resolvedValue = _parentBacking else {
                     let error = LazyInjectionError.requiredServiceUnavailable(propertyName: "parent", type: "MemoryParent")
                     fatalError("Lazy property 'parent' could not be resolved: \\(error.localizedDescription)")
@@ -231,12 +231,12 @@ final class MemoryManagementTests: XCTestCase {
         }
         """, macros: testMacros)
     }
-    
+
     func testDeinitWithLazyInject() {
         assertMacroExpansion("""
         class ServiceWithDeinit {
             @LazyInject var dependency: DependencyService
-            
+
             deinit {
                 print("ServiceWithDeinit is being deallocated")
                 // Note: Accessing lazy property during deinit could be problematic
@@ -245,7 +245,7 @@ final class MemoryManagementTests: XCTestCase {
         """, expandedSource: """
         class ServiceWithDeinit {
             @LazyInject var dependency: DependencyService
-            
+
             deinit {
                 print("ServiceWithDeinit is being deallocated")
                 // Note: Accessing lazy property during deinit could be problematic
@@ -253,16 +253,16 @@ final class MemoryManagementTests: XCTestCase {
             private var _dependencyBacking: DependencyService?
             private var _dependencyOnceToken: Bool = false
             private let _dependencyOnceTokenLock = NSLock()
-            
+
             private func _dependencyLazyAccessor() -> DependencyService {
                 // Thread-safe lazy initialization
                 _dependencyOnceTokenLock.lock()
                 defer { _dependencyOnceTokenLock.unlock() }
-                
+
                 if !_dependencyOnceToken {
                     _dependencyOnceToken = true
                     let startTime = CFAbsoluteTimeGetCurrent()
-                    
+
                     // Register property for metrics tracking
                     let pendingInfo = LazyPropertyInfo(
                         propertyName: "dependency",
@@ -275,12 +275,12 @@ final class MemoryManagementTests: XCTestCase {
                         threadInfo: ThreadInfo()
                     )
                     LazyInjectionMetrics.recordResolution(pendingInfo)
-                    
+
                     do {
                         // Resolve dependency
                         guard let resolved = Container.shared.synchronizedResolve(DependencyService.self) else {
                             let error = LazyInjectionError.serviceNotRegistered(serviceName: nil, type: "DependencyService")
-                            
+
                             // Record failed resolution
                             let failedInfo = LazyPropertyInfo(
                                 propertyName: "dependency",
@@ -294,16 +294,16 @@ final class MemoryManagementTests: XCTestCase {
                                 threadInfo: ThreadInfo()
                             )
                             LazyInjectionMetrics.recordResolution(failedInfo)
-                            
+
                             fatalError("Required lazy property 'dependency' of type 'DependencyService' could not be resolved: \\(error.localizedDescription)")
                         }
-                        
+
                         _dependencyBacking = resolved
-                        
+
                         // Record successful resolution
                         let endTime = CFAbsoluteTimeGetCurrent()
                         let resolutionDuration = endTime - startTime
-                        
+
                         let resolvedInfo = LazyPropertyInfo(
                             propertyName: "dependency",
                             propertyType: "DependencyService",
@@ -316,12 +316,12 @@ final class MemoryManagementTests: XCTestCase {
                             threadInfo: ThreadInfo()
                         )
                         LazyInjectionMetrics.recordResolution(resolvedInfo)
-                        
+
                     } catch {
                         // Record failed resolution
                         let endTime = CFAbsoluteTimeGetCurrent()
                         let resolutionDuration = endTime - startTime
-                        
+
                         let failedInfo = LazyPropertyInfo(
                             propertyName: "dependency",
                             propertyType: "DependencyService",
@@ -335,13 +335,13 @@ final class MemoryManagementTests: XCTestCase {
                             threadInfo: ThreadInfo()
                         )
                         LazyInjectionMetrics.recordResolution(failedInfo)
-                        
+
                         if true {
                             fatalError("Failed to resolve required lazy property 'dependency': \\(error.localizedDescription)")
                         }
                     }
                 }
-                
+
                 guard let resolvedValue = _dependencyBacking else {
                     let error = LazyInjectionError.requiredServiceUnavailable(propertyName: "dependency", type: "DependencyService")
                     fatalError("Lazy property 'dependency' could not be resolved: \\(error.localizedDescription)")
@@ -351,9 +351,9 @@ final class MemoryManagementTests: XCTestCase {
         }
         """, macros: testMacros)
     }
-    
+
     // MARK: - Test Utilities
-    
+
     private let testMacros: [String: Macro.Type] = [
         "LazyInject": LazyInjectMacro.self,
         "WeakInject": WeakInjectMacro.self

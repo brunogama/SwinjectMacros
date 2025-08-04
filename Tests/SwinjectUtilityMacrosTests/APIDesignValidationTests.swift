@@ -881,4 +881,4 @@ final class APIDesignValidationTests: XCTestCase {
 
 protocol Service1 {}
 protocol Service2 {}
-protocol RepositoryProtocol {}
+// RepositoryProtocol already declared in TestUtilities.swift

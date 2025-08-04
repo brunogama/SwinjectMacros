@@ -19,7 +19,7 @@ import Swinject
 ///         // Singleton-like behavior within container scope
 ///     }
 /// }
-/// 
+///
 /// @ScopedService(.transient)
 /// class RequestHandler {
 ///     init(logger: LoggerProtocol, validator: ValidatorProtocol) {
@@ -35,8 +35,8 @@ import Swinject
 /// class PrimaryDatabase: DatabaseProtocol {
 ///     init(connectionString: String) { }
 /// }
-/// 
-/// @ScopedService(.container, name: "secondary") 
+///
+/// @ScopedService(.container, name: "secondary")
 /// class SecondaryDatabase: DatabaseProtocol {
 ///     init(connectionString: String) { }
 /// }
@@ -97,7 +97,7 @@ public struct ScopedServiceConfiguration {
     public let isLazy: Bool
     public let isWeak: Bool
     public let preconditions: [String]
-    
+
     public init(
         scope: ObjectScope = .graph,
         name: String? = nil,
@@ -128,29 +128,29 @@ public protocol ScopedServiceLifecycle {
 
 // MARK: - Container Extensions for Scoped Services
 
-public extension Container {
-    
+extension Container {
+
     /// Register a service with explicit scope configuration
-    func registerScoped<Service>(
+    public func registerScoped<Service>(
         _ serviceType: Service.Type,
         configuration: ScopedServiceConfiguration,
         factory: @escaping (Resolver) -> Service
     ) {
         let registration = register(serviceType, name: configuration.name, factory: factory)
         registration.inObjectScope(configuration.scope.swinjectScope)
-        
+
         if configuration.isLazy {
             // Configure lazy initialization
         }
-        
+
         if configuration.isWeak {
             // Configure weak reference handling
         }
     }
-    
+
     /// Get scope configuration for a service type
-    func getScopeConfiguration<Service>(for serviceType: Service.Type) -> ScopedServiceConfiguration? {
+    public func getScopeConfiguration(for serviceType: (some Any).Type) -> ScopedServiceConfiguration? {
         // Runtime introspection of scope configuration
-        return nil // Placeholder - would need container introspection
+        nil // Placeholder - would need container introspection
     }
 }

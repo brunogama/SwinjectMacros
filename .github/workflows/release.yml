@@ -12,14 +12,14 @@ jobs:
   validate:
     name: Validate Release
     runs-on: macos-14
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Select Xcode version
       run: sudo xcode-select -s /Applications/Xcode_15.0.app/Contents/Developer
-      
+
     - name: Validate tag format
       run: |
         if [[ ! "${{ github.ref_name }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
@@ -27,7 +27,7 @@ jobs:
           echo "Expected format: v1.0.0 or v1.0.0-beta1"
           exit 1
         fi
-        
+
     - name: Extract version
       id: version
       run: |
@@ -35,12 +35,12 @@ jobs:
         VERSION_NUMBER="${VERSION#v}"
         echo "version_number=$VERSION_NUMBER" >> $GITHUB_OUTPUT
         echo "is_prerelease=$(echo $VERSION_NUMBER | grep -q '-'; echo $?)" >> $GITHUB_OUTPUT
-        
+
     - name: Build and test
       run: |
         swift build --configuration release
         swift test
-        
+
     - name: Validate version consistency
       run: |
         # Check that the version in SwinJectMacros.swift matches the tag
@@ -54,34 +54,34 @@ jobs:
     name: Test All Platforms
     runs-on: macos-14
     needs: validate
-    
+
     strategy:
       matrix:
         platform: [macOS, iOS, watchOS, tvOS]
-        
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Select Xcode version
       run: sudo xcode-select -s /Applications/Xcode_15.0.app/Contents/Developer
-      
+
     - name: Test macOS
       if: matrix.platform == 'macOS'
       run: |
         swift build --configuration release
         xcodebuild test -scheme SwinJectMacros -destination "platform=macOS"
-        
+
     - name: Test iOS
       if: matrix.platform == 'iOS'
       run: |
         xcodebuild build -scheme SwinJectMacros -destination "platform=iOS Simulator,name=iPhone 15"
-        
+
     - name: Test watchOS
       if: matrix.platform == 'watchOS'
       run: |
         xcodebuild build -scheme SwinJectMacros -destination "platform=watchOS Simulator,name=Apple Watch Series 9 (45mm)"
-        
+
     - name: Test tvOS
       if: matrix.platform == 'tvOS'
       run: |
@@ -91,14 +91,14 @@ jobs:
     name: Build Documentation
     runs-on: macos-14
     needs: validate
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Select Xcode version
       run: sudo xcode-select -s /Applications/Xcode_15.0.app/Contents/Developer
-      
+
     - name: Build documentation
       run: |
         swift package generate-documentation \
@@ -106,11 +106,11 @@ jobs:
           --output-path docs \
           --transform-for-static-hosting \
           --hosting-base-path SwinJectMacros
-          
+
     - name: Create documentation archive
       run: |
         tar -czf SwinJectMacros-docs-${{ github.ref_name }}.tar.gz docs/
-        
+
     - name: Upload documentation
       uses: actions/upload-artifact@v4
       with:
@@ -121,13 +121,13 @@ jobs:
     name: Create Release
     runs-on: macos-14
     needs: [validate, test-platforms, build-documentation]
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
         fetch-depth: 0  # Fetch full history for changelog
-        
+
     - name: Extract version info
       id: version
       run: |
@@ -136,20 +136,20 @@ jobs:
         IS_PRERELEASE=$(echo $VERSION_NUMBER | grep -q '-' && echo "true" || echo "false")
         echo "version_number=$VERSION_NUMBER" >> $GITHUB_OUTPUT
         echo "is_prerelease=$IS_PRERELEASE" >> $GITHUB_OUTPUT
-        
+
     - name: Generate changelog
       id: changelog
       run: |
         # Get the previous tag
         PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-        
+
         if [ -n "$PREVIOUS_TAG" ]; then
           echo "## Changes since $PREVIOUS_TAG" > CHANGELOG.md
           echo "" >> CHANGELOG.md
-          
+
           # Generate changelog from commits
           git log --pretty=format:"- %s (%h)" $PREVIOUS_TAG..HEAD >> CHANGELOG.md
-          
+
           echo "" >> CHANGELOG.md
           echo "## Full Changelog" >> CHANGELOG.md
           echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/$PREVIOUS_TAG...${{ github.ref_name }}" >> CHANGELOG.md
@@ -158,7 +158,7 @@ jobs:
           echo "" >> CHANGELOG.md
           echo "This is the first release of SwinJectMacros!" >> CHANGELOG.md
         fi
-        
+
         # Add release notes
         echo "" >> CHANGELOG.md
         echo "## Features" >> CHANGELOG.md
@@ -172,12 +172,12 @@ jobs:
         echo "- Swift 5.9+" >> CHANGELOG.md
         echo "- iOS 15.0+ / macOS 12.0+ / watchOS 8.0+ / tvOS 15.0+" >> CHANGELOG.md
         echo "- Xcode 15.0+" >> CHANGELOG.md
-        
+
     - name: Download documentation
       uses: actions/download-artifact@v4
       with:
         name: documentation
-        
+
     - name: Create Release
       uses: actions/create-release@v1
       id: create_release
@@ -189,7 +189,7 @@ jobs:
         body_path: CHANGELOG.md
         draft: false
         prerelease: ${{ steps.version.outputs.is_prerelease }}
-        
+
     - name: Upload Documentation Asset
       uses: actions/upload-release-asset@v1
       env:
@@ -205,14 +205,14 @@ jobs:
     runs-on: macos-14
     needs: create-release
     if: ${{ !contains(github.ref_name, '-') }}  # Only for stable releases
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Select Xcode version
       run: sudo xcode-select -s /Applications/Xcode_15.0.app/Contents/Developer
-      
+
     - name: Build documentation
       run: |
         swift package generate-documentation \
@@ -220,7 +220,7 @@ jobs:
           --output-path docs \
           --transform-for-static-hosting \
           --hosting-base-path SwinJectMacros
-          
+
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
       with:
@@ -233,7 +233,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: create-release
     if: always()
-    
+
     steps:
     - name: Extract version info
       id: version
@@ -243,14 +243,14 @@ jobs:
         IS_PRERELEASE=$(echo $VERSION_NUMBER | grep -q '-' && echo "true" || echo "false")
         echo "version_number=$VERSION_NUMBER" >> $GITHUB_OUTPUT
         echo "is_prerelease=$IS_PRERELEASE" >> $GITHUB_OUTPUT
-        
+
     - name: Notify success
       if: ${{ needs.create-release.result == 'success' }}
       run: |
         echo "🎉 Successfully released SwinJectMacros ${{ github.ref_name }}!"
         echo "📖 Documentation: https://${{ github.repository_owner }}.github.io/SwinJectMacros"
         echo "📦 Release: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
-        
+
     - name: Notify failure
       if: ${{ needs.create-release.result == 'failure' }}
       run: |

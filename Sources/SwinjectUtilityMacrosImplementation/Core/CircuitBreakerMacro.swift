@@ -1,39 +1,41 @@
 // CircuitBreakerMacro.swift - @CircuitBreaker macro implementation
 // Copyright © 2025 SwinjectUtilityMacros. All rights reserved.
 
+import Foundation
+import SwiftDiagnostics
 import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
-import SwiftDiagnostics
-import Foundation
 
 /// Implementation of the @CircuitBreaker macro for automatic circuit breaker pattern.
 public struct CircuitBreakerMacro: PeerMacro {
-    
+
     // MARK: - PeerMacro Implementation
-    
+
     public static func expansion(
         of node: AttributeSyntax,
         providingPeersOf declaration: some DeclSyntaxProtocol,
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
-        
+
         // Validate that this is applied to a function
         guard let functionDecl = declaration.as(FunctionDeclSyntax.self) else {
             let diagnostic = Diagnostic(
                 node: declaration.root,
-                message: CircuitBreakerMacroError(message: "@CircuitBreaker can only be applied to functions and methods")
+                message: CircuitBreakerMacroError(
+                    message: "@CircuitBreaker can only be applied to functions and methods"
+                )
             )
             context.diagnose(diagnostic)
             return []
         }
-        
+
         // Parse macro configuration
         let config = try parseCircuitBreakerConfig(from: node)
-        
+
         // Extract function information
         let functionInfo = extractFunctionInfo(from: functionDecl)
-        
+
         // Generate circuit breaker-enabled version of the function
         let circuitBreakerFunction = try generateCircuitBreakerFunction(
             original: functionDecl,
@@ -41,12 +43,12 @@ public struct CircuitBreakerMacro: PeerMacro {
             config: config,
             context: context
         )
-        
+
         return [circuitBreakerFunction]
     }
-    
+
     // MARK: - Configuration Parsing
-    
+
     private static func parseCircuitBreakerConfig(from node: AttributeSyntax) throws -> CircuitBreakerConfig {
         var failureThreshold = 5
         var timeout = 60.0
@@ -55,7 +57,7 @@ public struct CircuitBreakerMacro: PeerMacro {
         var fallbackValue: String? = nil
         let includeExceptions: [String] = []
         let excludeExceptions: [String] = []
-        
+
         // Parse attribute arguments
         if let arguments = node.arguments?.as(LabeledExprListSyntax.self) {
             for argument in arguments {
@@ -83,7 +85,8 @@ public struct CircuitBreakerMacro: PeerMacro {
                 case "fallbackValue":
                     // For simplicity, we'll handle basic string literals
                     if let stringLiteral = argument.expression.as(StringLiteralExprSyntax.self),
-                       let segment = stringLiteral.segments.first?.as(StringSegmentSyntax.self) {
+                       let segment = stringLiteral.segments.first?.as(StringSegmentSyntax.self)
+                    {
                         fallbackValue = segment.content.text
                     }
                 default:
@@ -91,7 +94,7 @@ public struct CircuitBreakerMacro: PeerMacro {
                 }
             }
         }
-        
+
         return CircuitBreakerConfig(
             failureThreshold: failureThreshold,
             timeout: timeout,
@@ -102,20 +105,20 @@ public struct CircuitBreakerMacro: PeerMacro {
             excludeExceptions: excludeExceptions
         )
     }
-    
+
     // MARK: - Function Information Extraction
-    
+
     private static func extractFunctionInfo(from functionDecl: FunctionDeclSyntax) -> CircuitBreakerFunctionInfo {
         let functionName = functionDecl.name.text
         let isAsync = functionDecl.signature.effectSpecifiers?.asyncSpecifier != nil
         let canThrow = functionDecl.signature.effectSpecifiers?.throwsSpecifier != nil
         let returnType = functionDecl.signature.returnClause?.type.trimmedDescription ?? "Void"
-        
+
         // Extract parameters
         let parameters = functionDecl.signature.parameterClause.parameters.map { param in
             let externalName = param.firstName.text
             let internalName = param.secondName?.text ?? param.firstName.text
-            
+
             return CircuitBreakerParameterInfo(
                 externalName: externalName,
                 internalName: internalName,
@@ -124,7 +127,7 @@ public struct CircuitBreakerMacro: PeerMacro {
                 defaultValue: param.defaultValue?.value.trimmedDescription
             )
         }
-        
+
         return CircuitBreakerFunctionInfo(
             name: functionName,
             parameters: parameters,
@@ -135,7 +138,7 @@ public struct CircuitBreakerMacro: PeerMacro {
             accessLevel: extractAccessLevel(from: functionDecl.modifiers)
         )
     }
-    
+
     private static func extractAccessLevel(from modifiers: DeclModifierListSyntax) -> String {
         for modifier in modifiers {
             switch modifier.name.text {
@@ -148,19 +151,19 @@ public struct CircuitBreakerMacro: PeerMacro {
         }
         return "internal" // Default access level
     }
-    
+
     // MARK: - Code Generation
-    
+
     private static func generateCircuitBreakerFunction(
         original: FunctionDeclSyntax,
         functionInfo: CircuitBreakerFunctionInfo,
         config: CircuitBreakerConfig,
         context: some MacroExpansionContext
     ) throws -> DeclSyntax {
-        
+
         let originalName = functionInfo.name
         let circuitBreakerName = "\(originalName)CircuitBreaker"
-        
+
         // Generate parameter list for function signature
         let parameterList = functionInfo.parameters.map { param in
             let fullParam = param.fullSignatureParameter
@@ -171,30 +174,30 @@ public struct CircuitBreakerMacro: PeerMacro {
                 return "\(fullParam): \(paramType)"
             }
         }.joined(separator: ", ")
-        
+
         // Generate parameter names for original function call
         let parameterNames = functionInfo.parameters.map { param in
             param.callParameter
         }.joined(separator: ", ")
-        
+
         // Build function signature
         var functionSignature = "public"
         if functionInfo.isStatic {
             functionSignature += " static"
         }
         functionSignature += " func \(circuitBreakerName)(\(parameterList))"
-        
+
         if functionInfo.isAsync {
             functionSignature += " async"
         }
-        
+
         // Always make circuit breaker functions throwing since they handle circuit breaker errors
         functionSignature += " throws"
-        
+
         if functionInfo.returnType != "Void" {
             functionSignature += " -> \(functionInfo.returnType)"
         }
-        
+
         // Generate the circuit breaker function body
         let functionBody = try createCircuitBreakerFunctionBody(
             signature: functionSignature,
@@ -203,12 +206,12 @@ public struct CircuitBreakerMacro: PeerMacro {
             config: config,
             functionInfo: functionInfo
         )
-        
+
         return DeclSyntax.fromString(functionBody)
     }
-    
+
     // MARK: - Helper Methods
-    
+
     private static func createCircuitBreakerFunctionBody(
         signature: String,
         originalName: String,
@@ -216,32 +219,32 @@ public struct CircuitBreakerMacro: PeerMacro {
         config: CircuitBreakerConfig,
         functionInfo: CircuitBreakerFunctionInfo
     ) throws -> String {
-        
+
         // Generate circuit breaker key
         let circuitKey = "\(String(describing: type(of: self))).\(originalName)"
-        
+
         // Generate method call
         let methodCall = if functionInfo.canThrow {
             "try \(functionInfo.isAsync ? "await " : "")\(originalName)(\(parameterNames))"
         } else {
             "\(functionInfo.isAsync ? "await " : "")\(originalName)(\(parameterNames))"
         }
-        
+
         // Generate fallback logic
         let fallbackLogic = generateFallbackLogic(config: config, functionInfo: functionInfo)
-        
+
         // Generate return statement
         let returnStatement = if functionInfo.returnType != "Void" {
             "return result"
         } else {
             ""
         }
-        
+
         // Generate the complete circuit breaker function body
         return """
         \(signature) {
             let circuitKey = "\(circuitKey)"
-            
+
             // Get or create circuit breaker instance
             let circuitBreaker = CircuitBreakerRegistry.getCircuitBreaker(
                 for: circuitKey,
@@ -250,7 +253,7 @@ public struct CircuitBreakerMacro: PeerMacro {
                 successThreshold: \(config.successThreshold),
                 monitoringWindow: \(config.monitoringWindow)
             )
-            
+
             // Check if call should be allowed
             guard circuitBreaker.shouldAllowCall() else {
                 // Circuit is open, record blocked call and handle fallback
@@ -261,23 +264,23 @@ public struct CircuitBreakerMacro: PeerMacro {
                     circuitState: circuitBreaker.currentState
                 )
                 CircuitBreakerRegistry.recordCall(blockedCall, for: circuitKey)
-                
+
                 \(fallbackLogic)
             }
-            
+
             // Execute the method with circuit breaker protection
             let startTime = CFAbsoluteTimeGetCurrent()
             var wasSuccessful = false
             var callError: Error?
-            
+
             do {
                 let result = \(methodCall)
                 wasSuccessful = true
-                
+
                 // Record successful call
                 let endTime = CFAbsoluteTimeGetCurrent()
                 let responseTime = (endTime - startTime) * 1000 // Convert to milliseconds
-                
+
                 let successfulCall = CircuitBreakerCall(
                     wasSuccessful: true,
                     wasBlocked: false,
@@ -285,19 +288,19 @@ public struct CircuitBreakerMacro: PeerMacro {
                     circuitState: circuitBreaker.currentState
                 )
                 CircuitBreakerRegistry.recordCall(successfulCall, for: circuitKey)
-                
+
                 // Update circuit breaker state
                 circuitBreaker.recordCall(wasSuccessful: true)
-                
+
                 \(returnStatement)
             } catch {
                 wasSuccessful = false
                 callError = error
-                
+
                 // Record failed call
                 let endTime = CFAbsoluteTimeGetCurrent()
                 let responseTime = (endTime - startTime) * 1000
-                
+
                 let failedCall = CircuitBreakerCall(
                     wasSuccessful: false,
                     wasBlocked: false,
@@ -306,23 +309,26 @@ public struct CircuitBreakerMacro: PeerMacro {
                     error: error
                 )
                 CircuitBreakerRegistry.recordCall(failedCall, for: circuitKey)
-                
+
                 // Update circuit breaker state
                 circuitBreaker.recordCall(wasSuccessful: false)
-                
+
                 // Re-throw the error
                 throw error
             }
         }
         """
     }
-    
-    private static func generateFallbackLogic(config: CircuitBreakerConfig, functionInfo: CircuitBreakerFunctionInfo) -> String {
+
+    private static func generateFallbackLogic(
+        config: CircuitBreakerConfig,
+        functionInfo: CircuitBreakerFunctionInfo
+    ) -> String {
         if let fallbackValue = config.fallbackValue {
             if functionInfo.returnType == "Void" {
-                return "return // Circuit is open, no operation performed"
+                "return // Circuit is open, no operation performed"
             } else {
-                return """
+                """
                 // Safe fallback value handling
                 if let fallback = "\(fallbackValue)" as? \(functionInfo.returnType) {
                     return fallback
@@ -332,7 +338,7 @@ public struct CircuitBreakerMacro: PeerMacro {
                 """
             }
         } else {
-            return "throw CircuitBreakerError.circuitOpen(circuitName: circuitKey, lastFailureTime: circuitBreaker.lastOpenedTime)"
+            "throw CircuitBreakerError.circuitOpen(circuitName: circuitKey, lastFailureTime: circuitBreaker.lastOpenedTime)"
         }
     }
 }
@@ -360,27 +366,27 @@ private struct CircuitBreakerFunctionInfo {
 }
 
 private struct CircuitBreakerParameterInfo {
-    let externalName: String  // The external parameter name (e.g., "from")
-    let internalName: String  // The internal parameter name (e.g., "url")
+    let externalName: String // The external parameter name (e.g., "from")
+    let internalName: String // The internal parameter name (e.g., "url")
     let type: String
     let isOptional: Bool
     let defaultValue: String?
-    
+
     // Helper to get the full parameter for function signature
     var fullSignatureParameter: String {
         if externalName == internalName || externalName == "_" {
-            return internalName
+            internalName
         } else {
-            return "\(externalName) \(internalName)"
+            "\(externalName) \(internalName)"
         }
     }
-    
+
     // Helper to get the parameter for calling the original function
     var callParameter: String {
         if externalName == "_" {
-            return internalName
+            internalName
         } else {
-            return "\(externalName): \(internalName)"
+            "\(externalName): \(internalName)"
         }
     }
 }

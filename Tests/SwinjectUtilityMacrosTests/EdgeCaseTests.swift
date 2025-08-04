@@ -739,7 +739,8 @@ final class EdgeCaseTests: XCTestCase {
     // MARK: - Memory and Performance Edge Cases
 
     func testLazyInjectWithLargeNumberOfDependencies() {
-        let dependencies = (1 ... 50).map { "@LazyInject var dependency\($0): Service\($0)Protocol" }.joined(separator: "\n    ")
+        let dependencies = (1...50).map { "@LazyInject var dependency\($0): Service\($0)Protocol" }
+            .joined(separator: "\n    ")
 
         let source = """
         class ServiceWithManyDependencies {
@@ -772,17 +773,17 @@ protocol Service2Protocol {}
 protocol Service50Protocol {}
 protocol UserServiceDelegate {}
 protocol UserRepositoryProtocol {}
-protocol APIClientProtocol {}
+// APIClientProtocol already declared in TestUtilities.swift
 protocol DatabaseConnection {}
 protocol CacheManagerProtocol {}
 protocol UserValidatorProtocol {}
-protocol LoggerProtocol {}
+// LoggerProtocol already declared in TestUtilities.swift
 protocol ParentViewControllerProtocol {}
 // ExpensiveResource is now imported from TestUtilities.swift
 
 class EdgeCaseRepository {}
 class UserRepository {}
-class UserService {}
+// UserService already declared in TestUtilities.swift
 class ConfigService {}
 class BadService {}
 

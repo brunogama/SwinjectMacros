@@ -1,46 +1,128 @@
-
-# SwiftFormat configuration aligned with Apple's Open Source Swift Style
-# https://github.com/apple/swift/blob/main/CONTRIBUTING.md#code-style
+# SwiftFormat configuration based on Apple Swift-NIO style
+# Reference: https://github.com/apple/swift-nio/blob/main/.swift-format
 
 --swiftversion 5.9
 
-# Core Apple Swift Style Rules
+# Core formatting settings matching Swift-NIO
 --indent 4
 --tabwidth 4
+--maxwidth 120
 --allman false
 --commas inline
---semicolons inline
+--semicolons never
 --linebreaks lf
---self insert
---header ignore
 --trimwhitespace always
+--header ignore
+
+# Line breaking and wrapping
 --wraparguments before-first
+--wrapparameters before-first
+--wrapcollections before-first
 --wrapelements before-first
 --closingparen balanced
---xcodeindentation true
---stripunusedargs closure-only
+--xcodeindentation false
+--wrapconditions preserve
+--wrapternary default
+
+# Self and init
+--self insert
+--selfrequired
+
+# Spacing
+--ranges no-space
+--operatorfunc spaced
+--nospaceoperators ...,..<
+
+# Organization
 --importgrouping alphabetized
+--organizetypes class,enum,struct,extension
+--extensionacl on-declarations
 
-# Disable braces rule to avoid conflicts with SwiftLint
---disable braces
+# Function and closure formatting
+--stripunusedargs closure-only
+--voidtype void
+--emptybraces no-space
+--trailingclosures
 
---rules                              \
-blankLinesAtEndOfScope,              \
-blankLinesBetweenScopes,             \
-consecutiveBlankLines,               \
-consecutiveSpaces,                   \
-duplicateImports,                    \
-elseOnSameLine,                      \
-emptyBraces,                         \
-hoistPatternLet,                     \
-indent,                              \
-modifierOrder,                       \
-numberFormatting,                    \
-redundantLet,                        \
-redundantReturn,                     \
-sortedImports,                       \
-spaceAroundOperators,               \
-spaceInsideBraces,                   \
-strongOutlets,                       \
-trailingCommas,                      \
+# Other Swift-NIO aligned settings
+--acronyms ID,URL,UUID
+--enumnamespaces structs-only
+--marktypes never
+--markextensions never
+--redundanttype inferred
+--typeblanklines remove
+
+# Enable rules matching Swift-NIO style
+--enable \
+blankLinesAtEndOfScope,\
+blankLinesBetweenScopes,\
+consecutiveBlankLines,\
+consecutiveSpaces,\
+duplicateImports,\
+elseOnSameLine,\
+emptyBraces,\
+linebreakAtEndOfFile,\
+modifierOrder,\
+redundantBreak,\
+redundantLet,\
+redundantNilInit,\
+redundantParens,\
+redundantPattern,\
+redundantReturn,\
+redundantVoidReturnType,\
+sortImports,\
+spaceAroundBraces,\
+spaceAroundBrackets,\
+spaceAroundComments,\
+spaceAroundGenerics,\
+spaceAroundOperators,\
+spaceAroundParens,\
+spaceInsideBraces,\
+spaceInsideBrackets,\
+spaceInsideComments,\
+spaceInsideGenerics,\
+spaceInsideParens,\
+trailingCommas,\
+trailingSpace,\
+typeSugar,\
+void,\
+wrapArguments,\
+wrapAttributes,\
 wrapMultilineStatementBraces
+
+# Disable rules that conflict with Swift-NIO style or cause issues
+--disable \
+andOperator,\
+anyObjectProtocol,\
+assertionFailures,\
+blankLinesAroundMark,\
+blankLinesAtStartOfScope,\
+blankLinesBetweenImports,\
+fileHeader,\
+hoistPatternLet,\
+indent,\
+isEmpty,\
+leadingDelimiters,\
+numberFormatting,\
+preferKeyPath,\
+redundantBackticks,\
+redundantClosure,\
+redundantExtensionACL,\
+redundantFileprivate,\
+redundantGet,\
+redundantInit,\
+redundantLetError,\
+redundantObjc,\
+redundantOptionalBinding,\
+redundantRawValues,\
+redundantStaticSelf,\
+sortDeclarations,\
+strongOutlets,\
+strongifiedSelf,\
+todos,\
+trailingClosures,\
+unusedArguments,\
+wrapConditionalBodies,\
+wrapEnumCases,\
+wrapSwitchCases,\
+yodaConditions

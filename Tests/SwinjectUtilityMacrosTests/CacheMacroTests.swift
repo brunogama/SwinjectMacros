@@ -8,13 +8,13 @@ import XCTest
 @testable import SwinjectUtilityMacrosImplementation
 
 final class CacheMacroTests: XCTestCase {
-    
+
     let testMacros: [String: Macro.Type] = [
-        "Cache": CacheMacro.self,
+        "Cache": CacheMacro.self
     ]
-    
+
     // MARK: - Basic Functionality Tests
-    
+
     func testBasicCacheExpansion() throws {
         assertMacroExpansion(
             """
@@ -27,10 +27,10 @@ final class CacheMacroTests: XCTestCase {
             func fetchUserData(userId: String) throws -> UserData {
                 return UserData(id: userId)
             }
-            
+
             public func fetchUserDataCached(userId: String) throws -> UserData {
                 let cacheKey = "fetchUserData:\\(userId)"
-                
+
                 // Get or create cache instance
                 let cache = CacheRegistry.getCache(
                     for: "fetchUserData",
@@ -38,16 +38,16 @@ final class CacheMacroTests: XCTestCase {
                     maxEntries: 1000,
                     evictionPolicy: .lru
                 )
-                
+
                 // Record cache operation start time
                 let startTime = CFAbsoluteTimeGetCurrent()
-                
+
                 // Check for cached result
                 if let cachedResult = cache.get(key: cacheKey, type: UserData.self) {
                     // Cache hit - record metrics and return cached result
                     let endTime = CFAbsoluteTimeGetCurrent()
                     let responseTime = (endTime - startTime) * 1000 // Convert to milliseconds
-                    
+
                     let hitOperation = CacheOperation(
                         wasHit: true,
                         key: cacheKey,
@@ -55,17 +55,17 @@ final class CacheMacroTests: XCTestCase {
                         valueSize: MemoryLayout.size(ofValue: cachedResult)
                     )
                     CacheRegistry.recordOperation(hitOperation, for: "fetchUserData")
-                    
+
                     return cachedResult
                 }
-                
+
                 // Cache miss - execute original method
                 let result = try fetchUserData(userId: userId)
-                
+
                 // Record cache miss metrics
                 let endTime = CFAbsoluteTimeGetCurrent()
                 let responseTime = (endTime - startTime) * 1000
-                
+
                 let missOperation = CacheOperation(
                     wasHit: false,
                     key: cacheKey,
@@ -73,17 +73,17 @@ final class CacheMacroTests: XCTestCase {
                     valueSize: MemoryLayout.size(ofValue: result)
                 )
                 CacheRegistry.recordOperation(missOperation, for: "fetchUserData")
-                
+
                 // Store result in cache
                 cache.set(key: cacheKey, value: result)
-                
+
                 return result
             }
             """,
             macros: testMacros
         )
     }
-    
+
     func testCacheWithCustomTTL() throws {
         assertMacroExpansion(
             """
@@ -96,10 +96,10 @@ final class CacheMacroTests: XCTestCase {
             func getConfiguration(configId: String) throws -> Config {
                 return Config(id: configId)
             }
-            
+
             public func getConfigurationCached(configId: String) throws -> Config {
                 let cacheKey = "getConfiguration:\\(configId)"
-                
+
                 // Get or create cache instance
                 let cache = CacheRegistry.getCache(
                     for: "getConfiguration",
@@ -107,16 +107,16 @@ final class CacheMacroTests: XCTestCase {
                     maxEntries: 500,
                     evictionPolicy: .lru
                 )
-                
+
                 // Record cache operation start time
                 let startTime = CFAbsoluteTimeGetCurrent()
-                
+
                 // Check for cached result
                 if let cachedResult = cache.get(key: cacheKey, type: Config.self) {
                     // Cache hit - record metrics and return cached result
                     let endTime = CFAbsoluteTimeGetCurrent()
                     let responseTime = (endTime - startTime) * 1000 // Convert to milliseconds
-                    
+
                     let hitOperation = CacheOperation(
                         wasHit: true,
                         key: cacheKey,
@@ -124,17 +124,17 @@ final class CacheMacroTests: XCTestCase {
                         valueSize: MemoryLayout.size(ofValue: cachedResult)
                     )
                     CacheRegistry.recordOperation(hitOperation, for: "getConfiguration")
-                    
+
                     return cachedResult
                 }
-                
+
                 // Cache miss - execute original method
                 let result = try getConfiguration(configId: configId)
-                
+
                 // Record cache miss metrics
                 let endTime = CFAbsoluteTimeGetCurrent()
                 let responseTime = (endTime - startTime) * 1000
-                
+
                 let missOperation = CacheOperation(
                     wasHit: false,
                     key: cacheKey,
@@ -142,17 +142,17 @@ final class CacheMacroTests: XCTestCase {
                     valueSize: MemoryLayout.size(ofValue: result)
                 )
                 CacheRegistry.recordOperation(missOperation, for: "getConfiguration")
-                
+
                 // Store result in cache
                 cache.set(key: cacheKey, value: result)
-                
+
                 return result
             }
             """,
             macros: testMacros
         )
     }
-    
+
     func testCacheWithEvictionPolicy() throws {
         assertMacroExpansion(
             """
@@ -165,10 +165,10 @@ final class CacheMacroTests: XCTestCase {
             func searchProducts(query: String) throws -> [Product] {
                 return []
             }
-            
+
             public func searchProductsCached(query: String) throws -> [Product] {
                 let cacheKey = "searchProducts:\\(query)"
-                
+
                 // Get or create cache instance
                 let cache = CacheRegistry.getCache(
                     for: "searchProducts",
@@ -176,16 +176,16 @@ final class CacheMacroTests: XCTestCase {
                     maxEntries: 2000,
                     evictionPolicy: .lfu
                 )
-                
+
                 // Record cache operation start time
                 let startTime = CFAbsoluteTimeGetCurrent()
-                
+
                 // Check for cached result
                 if let cachedResult = cache.get(key: cacheKey, type: [Product].self) {
                     // Cache hit - record metrics and return cached result
                     let endTime = CFAbsoluteTimeGetCurrent()
                     let responseTime = (endTime - startTime) * 1000 // Convert to milliseconds
-                    
+
                     let hitOperation = CacheOperation(
                         wasHit: true,
                         key: cacheKey,
@@ -193,17 +193,17 @@ final class CacheMacroTests: XCTestCase {
                         valueSize: MemoryLayout.size(ofValue: cachedResult)
                     )
                     CacheRegistry.recordOperation(hitOperation, for: "searchProducts")
-                    
+
                     return cachedResult
                 }
-                
+
                 // Cache miss - execute original method
                 let result = try searchProducts(query: query)
-                
+
                 // Record cache miss metrics
                 let endTime = CFAbsoluteTimeGetCurrent()
                 let responseTime = (endTime - startTime) * 1000
-                
+
                 let missOperation = CacheOperation(
                     wasHit: false,
                     key: cacheKey,
@@ -211,19 +211,19 @@ final class CacheMacroTests: XCTestCase {
                     valueSize: MemoryLayout.size(ofValue: result)
                 )
                 CacheRegistry.recordOperation(missOperation, for: "searchProducts")
-                
+
                 // Store result in cache
                 cache.set(key: cacheKey, value: result)
-                
+
                 return result
             }
             """,
             macros: testMacros
         )
     }
-    
+
     // MARK: - Async Function Tests
-    
+
     func testAsyncCache() throws {
         assertMacroExpansion(
             """
@@ -236,10 +236,10 @@ final class CacheMacroTests: XCTestCase {
             func fetchDataAsync(from url: URL) async throws -> Data {
                 return Data()
             }
-            
+
             public func fetchDataAsyncCached(from url: URL) async throws -> Data {
                 let cacheKey = "fetchDataAsync:\\(url)"
-                
+
                 // Get or create cache instance
                 let cache = CacheRegistry.getCache(
                     for: "fetchDataAsync",
@@ -247,16 +247,16 @@ final class CacheMacroTests: XCTestCase {
                     maxEntries: 1000,
                     evictionPolicy: .lru
                 )
-                
+
                 // Record cache operation start time
                 let startTime = CFAbsoluteTimeGetCurrent()
-                
+
                 // Check for cached result
                 if let cachedResult = cache.get(key: cacheKey, type: Data.self) {
                     // Cache hit - record metrics and return cached result
                     let endTime = CFAbsoluteTimeGetCurrent()
                     let responseTime = (endTime - startTime) * 1000 // Convert to milliseconds
-                    
+
                     let hitOperation = CacheOperation(
                         wasHit: true,
                         key: cacheKey,
@@ -264,17 +264,17 @@ final class CacheMacroTests: XCTestCase {
                         valueSize: MemoryLayout.size(ofValue: cachedResult)
                     )
                     CacheRegistry.recordOperation(hitOperation, for: "fetchDataAsync")
-                    
+
                     return cachedResult
                 }
-                
+
                 // Cache miss - execute original method
                 let result = try await fetchDataAsync(from: url)
-                
+
                 // Record cache miss metrics
                 let endTime = CFAbsoluteTimeGetCurrent()
                 let responseTime = (endTime - startTime) * 1000
-                
+
                 let missOperation = CacheOperation(
                     wasHit: false,
                     key: cacheKey,
@@ -282,19 +282,19 @@ final class CacheMacroTests: XCTestCase {
                     valueSize: MemoryLayout.size(ofValue: result)
                 )
                 CacheRegistry.recordOperation(missOperation, for: "fetchDataAsync")
-                
+
                 // Store result in cache
                 cache.set(key: cacheKey, value: result)
-                
+
                 return result
             }
             """,
             macros: testMacros
         )
     }
-    
+
     // MARK: - Static Method Tests
-    
+
     func testStaticMethodCache() throws {
         assertMacroExpansion(
             """
@@ -307,10 +307,10 @@ final class CacheMacroTests: XCTestCase {
             static func computeValue(input: Int) -> Int {
                 return input * 2
             }
-            
+
             public static func computeValueCached(input: Int) -> Int {
                 let cacheKey = "computeValue:\\(input)"
-                
+
                 // Get or create cache instance
                 let cache = CacheRegistry.getCache(
                     for: "computeValue",
@@ -318,16 +318,16 @@ final class CacheMacroTests: XCTestCase {
                     maxEntries: 1000,
                     evictionPolicy: .lru
                 )
-                
+
                 // Record cache operation start time
                 let startTime = CFAbsoluteTimeGetCurrent()
-                
+
                 // Check for cached result
                 if let cachedResult = cache.get(key: cacheKey, type: Int.self) {
                     // Cache hit - record metrics and return cached result
                     let endTime = CFAbsoluteTimeGetCurrent()
                     let responseTime = (endTime - startTime) * 1000 // Convert to milliseconds
-                    
+
                     let hitOperation = CacheOperation(
                         wasHit: true,
                         key: cacheKey,
@@ -335,17 +335,17 @@ final class CacheMacroTests: XCTestCase {
                         valueSize: MemoryLayout.size(ofValue: cachedResult)
                     )
                     CacheRegistry.recordOperation(hitOperation, for: "computeValue")
-                    
+
                     return cachedResult
                 }
-                
+
                 // Cache miss - execute original method
                 let result = computeValue(input: input)
-                
+
                 // Record cache miss metrics
                 let endTime = CFAbsoluteTimeGetCurrent()
                 let responseTime = (endTime - startTime) * 1000
-                
+
                 let missOperation = CacheOperation(
                     wasHit: false,
                     key: cacheKey,
@@ -353,19 +353,19 @@ final class CacheMacroTests: XCTestCase {
                     valueSize: MemoryLayout.size(ofValue: result)
                 )
                 CacheRegistry.recordOperation(missOperation, for: "computeValue")
-                
+
                 // Store result in cache
                 cache.set(key: cacheKey, value: result)
-                
+
                 return result
             }
             """,
             macros: testMacros
         )
     }
-    
+
     // MARK: - Non-Throwing Method Tests
-    
+
     func testNonThrowingMethodCache() throws {
         assertMacroExpansion(
             """
@@ -378,10 +378,10 @@ final class CacheMacroTests: XCTestCase {
             func processData(data: String) -> ProcessedData {
                 return ProcessedData(data)
             }
-            
+
             public func processDataCached(data: String) -> ProcessedData {
                 let cacheKey = "processData:\\(data)"
-                
+
                 // Get or create cache instance
                 let cache = CacheRegistry.getCache(
                     for: "processData",
@@ -389,16 +389,16 @@ final class CacheMacroTests: XCTestCase {
                     maxEntries: 1000,
                     evictionPolicy: .lru
                 )
-                
+
                 // Record cache operation start time
                 let startTime = CFAbsoluteTimeGetCurrent()
-                
+
                 // Check for cached result
                 if let cachedResult = cache.get(key: cacheKey, type: ProcessedData.self) {
                     // Cache hit - record metrics and return cached result
                     let endTime = CFAbsoluteTimeGetCurrent()
                     let responseTime = (endTime - startTime) * 1000 // Convert to milliseconds
-                    
+
                     let hitOperation = CacheOperation(
                         wasHit: true,
                         key: cacheKey,
@@ -406,17 +406,17 @@ final class CacheMacroTests: XCTestCase {
                         valueSize: MemoryLayout.size(ofValue: cachedResult)
                     )
                     CacheRegistry.recordOperation(hitOperation, for: "processData")
-                    
+
                     return cachedResult
                 }
-                
+
                 // Cache miss - execute original method
                 let result = processData(data: data)
-                
+
                 // Record cache miss metrics
                 let endTime = CFAbsoluteTimeGetCurrent()
                 let responseTime = (endTime - startTime) * 1000
-                
+
                 let missOperation = CacheOperation(
                     wasHit: false,
                     key: cacheKey,
@@ -424,19 +424,19 @@ final class CacheMacroTests: XCTestCase {
                     valueSize: MemoryLayout.size(ofValue: result)
                 )
                 CacheRegistry.recordOperation(missOperation, for: "processData")
-                
+
                 // Store result in cache
                 cache.set(key: cacheKey, value: result)
-                
+
                 return result
             }
             """,
             macros: testMacros
         )
     }
-    
+
     // MARK: - Void Return Type Tests
-    
+
     func testVoidReturnTypeCache() throws {
         assertMacroExpansion(
             """
@@ -449,10 +449,10 @@ final class CacheMacroTests: XCTestCase {
             func performAction() {
                 // Action implementation
             }
-            
+
             public func performActionCached() {
                 let cacheKey = "performAction"
-                
+
                 // Get or create cache instance
                 let cache = CacheRegistry.getCache(
                     for: "performAction",
@@ -460,16 +460,16 @@ final class CacheMacroTests: XCTestCase {
                     maxEntries: 1000,
                     evictionPolicy: .lru
                 )
-                
+
                 // Record cache operation start time
                 let startTime = CFAbsoluteTimeGetCurrent()
-                
+
                 // Check for cached result
                 if let cachedResult = cache.get(key: cacheKey, type: Void.self) {
                     // Cache hit - record metrics and return cached result
                     let endTime = CFAbsoluteTimeGetCurrent()
                     let responseTime = (endTime - startTime) * 1000 // Convert to milliseconds
-                    
+
                     let hitOperation = CacheOperation(
                         wasHit: true,
                         key: cacheKey,
@@ -477,17 +477,17 @@ final class CacheMacroTests: XCTestCase {
                         valueSize: MemoryLayout.size(ofValue: cachedResult)
                     )
                     CacheRegistry.recordOperation(hitOperation, for: "performAction")
-                    
+
                     return cachedResult
                 }
-                
+
                 // Cache miss - execute original method
                 let result = performAction()
-                
+
                 // Record cache miss metrics
                 let endTime = CFAbsoluteTimeGetCurrent()
                 let responseTime = (endTime - startTime) * 1000
-                
+
                 let missOperation = CacheOperation(
                     wasHit: false,
                     key: cacheKey,
@@ -495,18 +495,18 @@ final class CacheMacroTests: XCTestCase {
                     valueSize: MemoryLayout.size(ofValue: result)
                 )
                 CacheRegistry.recordOperation(missOperation, for: "performAction")
-                
+
                 // Store result in cache
                 cache.set(key: cacheKey, value: result)
-                
+
             }
             """,
             macros: testMacros
         )
     }
-    
+
     // MARK: - Error Cases
-    
+
     func testCacheOnNonFunction() throws {
         assertMacroExpansion(
             """
@@ -526,9 +526,9 @@ final class CacheMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     // MARK: - Complex Parameter Tests
-    
+
     func testCacheWithComplexParameters() throws {
         assertMacroExpansion(
             """
@@ -541,10 +541,10 @@ final class CacheMacroTests: XCTestCase {
             func queryDatabase(table: String, filters: [String: Any] = [:], limit: Int = 100) async throws -> [Row] {
                 return []
             }
-            
+
             public func queryDatabaseCached(table: String, filters: [String: Any] = [:], limit: Int = 100) async throws -> [Row] {
                 let cacheKey = "queryDatabase:\\(table):\\(filters):\\(limit)"
-                
+
                 // Get or create cache instance
                 let cache = CacheRegistry.getCache(
                     for: "queryDatabase",
@@ -552,16 +552,16 @@ final class CacheMacroTests: XCTestCase {
                     maxEntries: 250,
                     evictionPolicy: .lru
                 )
-                
+
                 // Record cache operation start time
                 let startTime = CFAbsoluteTimeGetCurrent()
-                
+
                 // Check for cached result
                 if let cachedResult = cache.get(key: cacheKey, type: [Row].self) {
                     // Cache hit - record metrics and return cached result
                     let endTime = CFAbsoluteTimeGetCurrent()
                     let responseTime = (endTime - startTime) * 1000 // Convert to milliseconds
-                    
+
                     let hitOperation = CacheOperation(
                         wasHit: true,
                         key: cacheKey,
@@ -569,17 +569,17 @@ final class CacheMacroTests: XCTestCase {
                         valueSize: MemoryLayout.size(ofValue: cachedResult)
                     )
                     CacheRegistry.recordOperation(hitOperation, for: "queryDatabase")
-                    
+
                     return cachedResult
                 }
-                
+
                 // Cache miss - execute original method
                 let result = try await queryDatabase(table: table, filters: filters, limit: limit)
-                
+
                 // Record cache miss metrics
                 let endTime = CFAbsoluteTimeGetCurrent()
                 let responseTime = (endTime - startTime) * 1000
-                
+
                 let missOperation = CacheOperation(
                     wasHit: false,
                     key: cacheKey,
@@ -587,17 +587,17 @@ final class CacheMacroTests: XCTestCase {
                     valueSize: MemoryLayout.size(ofValue: result)
                 )
                 CacheRegistry.recordOperation(missOperation, for: "queryDatabase")
-                
+
                 // Store result in cache
                 cache.set(key: cacheKey, value: result)
-                
+
                 return result
             }
             """,
             macros: testMacros
         )
     }
-    
+
     func testCacheWithMultipleEvictionPolicies() throws {
         assertMacroExpansion(
             """
@@ -610,10 +610,10 @@ final class CacheMacroTests: XCTestCase {
             func calculateExpensiveValue(seed: Double) -> Double {
                 return seed * 3.14159
             }
-            
+
             public func calculateExpensiveValueCached(seed: Double) -> Double {
                 let cacheKey = "calculateExpensiveValue:\\(seed)"
-                
+
                 // Get or create cache instance
                 let cache = CacheRegistry.getCache(
                     for: "calculateExpensiveValue",
@@ -621,16 +621,16 @@ final class CacheMacroTests: XCTestCase {
                     maxEntries: 1000,
                     evictionPolicy: .fifo
                 )
-                
+
                 // Record cache operation start time
                 let startTime = CFAbsoluteTimeGetCurrent()
-                
+
                 // Check for cached result
                 if let cachedResult = cache.get(key: cacheKey, type: Double.self) {
                     // Cache hit - record metrics and return cached result
                     let endTime = CFAbsoluteTimeGetCurrent()
                     let responseTime = (endTime - startTime) * 1000 // Convert to milliseconds
-                    
+
                     let hitOperation = CacheOperation(
                         wasHit: true,
                         key: cacheKey,
@@ -638,17 +638,17 @@ final class CacheMacroTests: XCTestCase {
                         valueSize: MemoryLayout.size(ofValue: cachedResult)
                     )
                     CacheRegistry.recordOperation(hitOperation, for: "calculateExpensiveValue")
-                    
+
                     return cachedResult
                 }
-                
+
                 // Cache miss - execute original method
                 let result = calculateExpensiveValue(seed: seed)
-                
+
                 // Record cache miss metrics
                 let endTime = CFAbsoluteTimeGetCurrent()
                 let responseTime = (endTime - startTime) * 1000
-                
+
                 let missOperation = CacheOperation(
                     wasHit: false,
                     key: cacheKey,
@@ -656,10 +656,10 @@ final class CacheMacroTests: XCTestCase {
                     valueSize: MemoryLayout.size(ofValue: result)
                 )
                 CacheRegistry.recordOperation(missOperation, for: "calculateExpensiveValue")
-                
+
                 // Store result in cache
                 cache.set(key: cacheKey, value: result)
-                
+
                 return result
             }
             """,

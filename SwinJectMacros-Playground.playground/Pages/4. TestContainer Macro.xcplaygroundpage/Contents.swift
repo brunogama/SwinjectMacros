@@ -10,13 +10,13 @@ import Swinject
 import XCTest
 
 //: ## Why @TestContainer?
-//: 
+//:
 //: **Problem**: Setting up dependency injection for tests involves:
 //: - Creating mock objects for every dependency
 //: - Registering all mocks in test containers
 //: - Maintaining test setup as dependencies change
 //: - Ensuring proper test isolation
-//: 
+//:
 //: **Solution**: `@TestContainer` analyzes your test class properties and generates
 //: automatic container setup with mock registration helpers.
 
@@ -29,7 +29,7 @@ protocol APIClient {
 
 protocol DatabaseService {
     func query<T>(_ query: String) -> [T]
-    func save<T>(_ entity: T)
+    func save(_ entity: some Any)
     func delete(id: String)
 }
 
@@ -49,7 +49,7 @@ class MockAPIClient: APIClient {
     var saveUserCalled = false
     var fetchUserResult: User?
     var fetchUserError: Error?
-    
+
     func fetchUser(id: String) async throws -> User {
         fetchUserCalled = true
         if let error = fetchUserError {
@@ -57,7 +57,7 @@ class MockAPIClient: APIClient {
         }
         return fetchUserResult ?? User(id: id, name: "Mock User", email: "mock@example.com")
     }
-    
+
     func saveUser(_ user: User) async throws {
         saveUserCalled = true
     }
@@ -68,16 +68,16 @@ class MockDatabaseService: DatabaseService {
     var saveCalled = false
     var deleteCalled = false
     var queryResults: [Any] = []
-    
+
     func query<T>(_ query: String) -> [T] {
         queryCalled = true
         return queryResults as? [T] ?? []
     }
-    
-    func save<T>(_ entity: T) {
+
+    func save(_ entity: some Any) {
         saveCalled = true
     }
-    
+
     func delete(id: String) {
         deleteCalled = true
     }
@@ -87,15 +87,15 @@ class MockLoggerService: LoggerService {
     var logMessages: [String] = []
     var errorMessages: [String] = []
     var debugMessages: [String] = []
-    
+
     func log(_ message: String) {
         logMessages.append(message)
     }
-    
+
     func error(_ message: String) {
         errorMessages.append(message)
     }
-    
+
     func debug(_ message: String) {
         debugMessages.append(message)
     }
@@ -105,7 +105,7 @@ class MockEmailService: EmailService {
     var sendEmailCalled = false
     var sentEmails: [(to: String, subject: String, body: String)] = []
     var sendEmailError: Error?
-    
+
     func sendEmail(to: String, subject: String, body: String) async throws {
         sendEmailCalled = true
         if let error = sendEmailError {
@@ -121,36 +121,36 @@ class UserService {
     private let database: DatabaseService
     private let logger: LoggerService
     private let emailService: EmailService
-    
+
     init(apiClient: APIClient, database: DatabaseService, logger: LoggerService, emailService: EmailService) {
         self.apiClient = apiClient
         self.database = database
         self.logger = logger
         self.emailService = emailService
     }
-    
+
     func createUser(name: String, email: String) async throws -> User {
         logger.log("Creating user: \(name)")
-        
+
         let user = User(id: UUID().uuidString, name: name, email: email)
         try await apiClient.saveUser(user)
         database.save(user)
-        
+
         try await emailService.sendEmail(
             to: email,
             subject: "Welcome!",
             body: "Welcome to our service, \(name)!"
         )
-        
+
         logger.log("User created successfully")
         return user
     }
-    
+
     func getUser(id: String) async throws -> User {
         logger.log("Fetching user: \(id)")
         return try await apiClient.fetchUser(id: id)
     }
-    
+
     func deleteUser(id: String) {
         logger.log("Deleting user: \(id)")
         database.delete(id: id)
@@ -169,28 +169,28 @@ struct User {
 // @TestContainer
 class UserServiceTests: XCTestCase {
     var container: Container!
-    
+
     // These properties are detected as services needing mocks
     var apiClient: APIClient!
     var database: DatabaseService!
     var logger: LoggerService!
     var emailService: EmailService!
-    
+
     // Service under test
     var userService: UserService!
-    
+
     override func setUp() {
         super.setUp()
-        
+
         // Generated method creates container with all mocks
         container = setupTestContainer()
-        
+
         // Resolve mocked dependencies
         apiClient = container.resolve(APIClient.self)!
         database = container.resolve(DatabaseService.self)!
         logger = container.resolve(LoggerService.self)!
         emailService = container.resolve(EmailService.self)!
-        
+
         // Create service under test with mocked dependencies
         userService = UserService(
             apiClient: apiClient,
@@ -199,37 +199,37 @@ class UserServiceTests: XCTestCase {
             emailService: emailService
         )
     }
-    
+
     // What the macro generates:
     func setupTestContainer() -> Container {
         let container = Container()
-        
+
         // Register mocks for all detected service properties
         registerAPIClient(in: container, mock: MockAPIClient())
         registerDatabaseService(in: container, mock: MockDatabaseService())
         registerLoggerService(in: container, mock: MockLoggerService())
         registerEmailService(in: container, mock: MockEmailService())
-        
+
         return container
     }
-    
+
     // Generated registration methods
     func registerAPIClient(in container: Container, mock: APIClient) {
         container.register(APIClient.self) { _ in mock }.inObjectScope(.graph)
     }
-    
+
     func registerDatabaseService(in container: Container, mock: DatabaseService) {
         container.register(DatabaseService.self) { _ in mock }.inObjectScope(.graph)
     }
-    
+
     func registerLoggerService(in container: Container, mock: LoggerService) {
         container.register(LoggerService.self) { _ in mock }.inObjectScope(.graph)
     }
-    
+
     func registerEmailService(in container: Container, mock: EmailService) {
         container.register(EmailService.self) { _ in mock }.inObjectScope(.graph)
     }
-    
+
     // Your test methods
     func testCreateUser() async throws {
         // Given
@@ -237,14 +237,14 @@ class UserServiceTests: XCTestCase {
         let mockDB = database as! MockDatabaseService
         let mockLogger = logger as! MockLoggerService
         let mockEmail = emailService as! MockEmailService
-        
+
         // When
         let user = try await userService.createUser(name: "John Doe", email: "john@example.com")
-        
+
         // Then
         XCTAssertEqual(user.name, "John Doe")
         XCTAssertEqual(user.email, "john@example.com")
-        
+
         // Verify mock interactions
         XCTAssertTrue(mockAPI.saveUserCalled)
         XCTAssertTrue(mockDB.saveCalled)
@@ -252,19 +252,19 @@ class UserServiceTests: XCTestCase {
         XCTAssertEqual(mockLogger.logMessages.count, 2)
         XCTAssertEqual(mockEmail.sentEmails.first?.subject, "Welcome!")
     }
-    
+
     func testGetUser() async throws {
         // Given
         let mockAPI = apiClient as! MockAPIClient
         mockAPI.fetchUserResult = User(id: "123", name: "Jane Doe", email: "jane@example.com")
-        
+
         // When
         let user = try await userService.getUser(id: "123")
-        
+
         // Then
         XCTAssertEqual(user.name, "Jane Doe")
         XCTAssertTrue(mockAPI.fetchUserCalled)
-        
+
         let mockLogger = logger as! MockLoggerService
         XCTAssertEqual(mockLogger.logMessages.first, "Fetching user: 123")
     }
@@ -278,29 +278,29 @@ class UserServiceStubTests: XCTestCase {
     var container: Container!
     var apiClient: APIClient!
     var database: DatabaseService!
-    
+
     override func setUp() {
         super.setUp()
         container = setupTestContainer()
         apiClient = container.resolve(APIClient.self)!
         database = container.resolve(DatabaseService.self)!
     }
-    
+
     // Generated with custom prefix
     func setupTestContainer() -> Container {
         let container = Container()
-        
+
         // Uses "Stub" prefix instead of "Mock"
         registerAPIClient(in: container, mock: StubAPIClient())
         registerDatabaseService(in: container, mock: StubDatabaseService())
-        
+
         return container
     }
-    
+
     func registerAPIClient(in container: Container, mock: APIClient) {
         container.register(APIClient.self) { _ in mock }.inObjectScope(.graph)
     }
-    
+
     func registerDatabaseService(in container: Container, mock: DatabaseService) {
         container.register(DatabaseService.self) { _ in mock }.inObjectScope(.graph)
     }
@@ -309,17 +309,17 @@ class UserServiceStubTests: XCTestCase {
 // Mock implementations with "Stub" prefix
 class StubAPIClient: APIClient {
     func fetchUser(id: String) async throws -> User {
-        return User(id: id, name: "Stub User", email: "stub@example.com")
+        User(id: id, name: "Stub User", email: "stub@example.com")
     }
-    
+
     func saveUser(_ user: User) async throws {
         // Stub implementation
     }
 }
 
 class StubDatabaseService: DatabaseService {
-    func query<T>(_ query: String) -> [T] { return [] }
-    func save<T>(_ entity: T) {}
+    func query<T>(_ query: String) -> [T] { [] }
+    func save(_ entity: some Any) {}
     func delete(id: String) {}
 }
 
@@ -331,34 +331,34 @@ class UserServiceManualTests: XCTestCase {
     var container: Container!
     var apiClient: APIClient!
     var database: DatabaseService!
-    
+
     override func setUp() {
         super.setUp()
         container = setupTestContainer()
-        
+
         // Provide your own mock implementations
         let customAPIClient = CustomMockAPIClient()
         registerAPIClient(in: container, mock: customAPIClient)
-        
+
         let recordingDatabase = RecordingMockDatabase()
         registerDatabaseService(in: container, mock: recordingDatabase)
-        
+
         apiClient = container.resolve(APIClient.self)!
         database = container.resolve(DatabaseService.self)!
     }
-    
+
     // Generated setup method (no automatic mock creation)
     func setupTestContainer() -> Container {
         let container = Container()
         // No automatic mock registration - you control everything
         return container
     }
-    
+
     // Generated registration helpers (you provide the mocks)
     func registerAPIClient(in container: Container, mock: APIClient) {
         container.register(APIClient.self) { _ in mock }.inObjectScope(.graph)
     }
-    
+
     func registerDatabaseService(in container: Container, mock: DatabaseService) {
         container.register(DatabaseService.self) { _ in mock }.inObjectScope(.graph)
     }
@@ -368,12 +368,12 @@ class UserServiceManualTests: XCTestCase {
 class CustomMockAPIClient: APIClient {
     var fetchCallCount = 0
     var saveCallCount = 0
-    
+
     func fetchUser(id: String) async throws -> User {
         fetchCallCount += 1
         return User(id: id, name: "Custom Mock User", email: "custom@example.com")
     }
-    
+
     func saveUser(_ user: User) async throws {
         saveCallCount += 1
     }
@@ -381,16 +381,16 @@ class CustomMockAPIClient: APIClient {
 
 class RecordingMockDatabase: DatabaseService {
     var allOperations: [String] = []
-    
+
     func query<T>(_ query: String) -> [T] {
         allOperations.append("QUERY: \(query)")
         return []
     }
-    
+
     func save<T>(_ entity: T) {
         allOperations.append("SAVE: \(T.self)")
     }
-    
+
     func delete(id: String) {
         allOperations.append("DELETE: \(id)")
     }
@@ -403,28 +403,28 @@ class RecordingMockDatabase: DatabaseService {
 class UserServiceSingletonTests: XCTestCase {
     var container: Container!
     var database: DatabaseService!
-    
+
     override func setUp() {
         super.setUp()
         container = setupTestContainer()
         database = container.resolve(DatabaseService.self)!
     }
-    
+
     // Generated with custom scope
     func setupTestContainer() -> Container {
         let container = Container()
         registerDatabaseService(in: container, mock: MockDatabaseService())
         return container
     }
-    
+
     func registerDatabaseService(in container: Container, mock: DatabaseService) {
         container.register(DatabaseService.self) { _ in mock }.inObjectScope(.container) // Singleton
     }
-    
+
     func testSingletonBehavior() {
         let db1 = container.resolve(DatabaseService.self)!
         let db2 = container.resolve(DatabaseService.self)!
-        
+
         // Same instance due to .container scope
         XCTAssertTrue(db1 === db2 as AnyObject)
     }
@@ -442,7 +442,7 @@ Task {
     do {
         try await userTests.testCreateUser()
         print("✅ testCreateUser passed")
-        
+
         try await userTests.testGetUser()
         print("✅ testGetUser passed")
     } catch {
@@ -456,7 +456,7 @@ manualTests.setUp()
 
 let customAPI = manualTests.apiClient as! CustomMockAPIClient
 Task {
-    let _ = try await customAPI.fetchUser(id: "test")
+    _ = try await customAPI.fetchUser(id: "test")
     print("Custom API fetch call count: \(customAPI.fetchCallCount)")
 }
 
@@ -466,7 +466,7 @@ recordingDB.delete(id: "123")
 print("Database operations: \(recordingDB.allOperations)")
 
 //: ## Key Benefits of @TestContainer
-//: 
+//:
 //: 1. **Automatic Setup**: No manual mock registration boilerplate
 //: 2. **Property Detection**: Automatically identifies service properties
 //: 3. **Mock Generation**: Creates appropriate mock class instances
@@ -475,9 +475,9 @@ print("Database operations: \(recordingDB.allOperations)")
 //: 6. **Test Isolation**: Each test gets fresh container and mocks
 
 //: ## Service Property Detection Rules
-//: 
+//:
 //: The macro identifies properties that need mocks using these patterns:
-//: 
+//:
 //: | Property Pattern | Detected as Service | Mock Generated |
 //: |---|---|---|
 //: | `*Service`, `*Repository`, `*Client` | ✅ | `Mock*Service` |
@@ -486,7 +486,7 @@ print("Database operations: \(recordingDB.allOperations)")
 //: | Value types (`String`, `Int`) | ❌ | No mock needed |
 
 //: ## Integration with XCTest
-//: 
+//:
 //: The generated test container methods integrate seamlessly with XCTest:
 //: - Call `setupTestContainer()` in `setUp()` method
 //: - Use generated registration helpers for custom mocks

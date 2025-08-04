@@ -9,7 +9,7 @@ import Foundation
 import Swinject
 
 //: ## Combining Multiple Macros
-//: 
+//:
 //: Real-world services often benefit from multiple macro combinations:
 
 // MARK: - Domain Models
@@ -57,12 +57,12 @@ protocol UserRepository {
 class DatabaseUserRepository: UserRepository {
     private let connectionPool: DatabaseConnectionPool
     private let logger: LoggerService
-    
+
     init(connectionPool: DatabaseConnectionPool, logger: LoggerService) {
         self.connectionPool = connectionPool
         self.logger = logger
     }
-    
+
     func findUser(id: String) async throws -> User? {
         logger.log("Finding user: \(id)")
         // Database implementation
@@ -73,12 +73,12 @@ class DatabaseUserRepository: UserRepository {
             preferences: UserPreferences(theme: "dark", notifications: true, language: "en")
         )
     }
-    
+
     func saveUser(_ user: User) async throws {
         logger.log("Saving user: \(user.id)")
         // Database save implementation
     }
-    
+
     func deleteUser(id: String) async throws {
         logger.log("Deleting user: \(id)")
         // Database delete implementation
@@ -95,12 +95,12 @@ protocol OrderRepository {
 class DatabaseOrderRepository: OrderRepository {
     private let connectionPool: DatabaseConnectionPool
     private let logger: LoggerService
-    
+
     init(connectionPool: DatabaseConnectionPool, logger: LoggerService) {
         self.connectionPool = connectionPool
         self.logger = logger
     }
-    
+
     func findOrder(id: String) async throws -> Order? {
         logger.log("Finding order: \(id)")
         return Order(
@@ -111,11 +111,11 @@ class DatabaseOrderRepository: OrderRepository {
             status: .processing
         )
     }
-    
+
     func saveOrder(_ order: Order) async throws {
         logger.log("Saving order: \(order.id)")
     }
-    
+
     func findOrdersByUser(userId: String) async throws -> [Order] {
         logger.log("Finding orders for user: \(userId)")
         return []
@@ -135,15 +135,15 @@ class ConsoleLoggerService: LoggerService {
     init() {
         print("📝 ConsoleLoggerService initialized")
     }
-    
+
     func log(_ message: String) {
         print("📝 LOG: \(message)")
     }
-    
+
     func error(_ message: String) {
         print("❌ ERROR: \(message)")
     }
-    
+
     func debug(_ message: String) {
         print("🐛 DEBUG: \(message)")
     }
@@ -152,14 +152,14 @@ class ConsoleLoggerService: LoggerService {
 // @Injectable(scope: .container)
 class DatabaseConnectionPool {
     private let maxConnections: Int
-    
+
     init() {
-        self.maxConnections = 10
+        maxConnections = 10
         print("🗄️ DatabaseConnectionPool initialized with \(maxConnections) connections")
     }
-    
+
     func getConnection() -> String {
-        return "connection-\(UUID().uuidString.prefix(8))"
+        "connection-\(UUID().uuidString.prefix(8))"
     }
 }
 
@@ -170,11 +170,11 @@ protocol EmailService {
 // @Injectable(scope: .container)
 class SMTPEmailService: EmailService {
     private let logger: LoggerService
-    
+
     init(logger: LoggerService) {
         self.logger = logger
     }
-    
+
     func sendEmail(to: String, subject: String, body: String) async throws {
         logger.log("Sending email to \(to): \(subject)")
         // SMTP implementation
@@ -192,54 +192,54 @@ class UserService {
     private let userRepository: UserRepository
     private let logger: LoggerService
     private let emailService: EmailService
-    
+
     init(userRepository: UserRepository, logger: LoggerService, emailService: EmailService) {
         self.userRepository = userRepository
         self.logger = logger
         self.emailService = emailService
     }
-    
+
     func getUser(id: String) async throws -> User? {
         logger.log("UserService: Getting user \(id)")
         return try await userRepository.findUser(id: id)
     }
-    
+
     func createUser(name: String, email: String) async throws -> User {
         logger.log("UserService: Creating user \(name)")
-        
+
         let user = User(
             id: UUID().uuidString,
             name: name,
             email: email,
             preferences: UserPreferences(theme: "light", notifications: true, language: "en")
         )
-        
+
         try await userRepository.saveUser(user)
-        
+
         // Send welcome email
         try await emailService.sendEmail(
             to: email,
             subject: "Welcome!",
             body: "Welcome to our service, \(name)!"
         )
-        
+
         return user
     }
-    
+
     func updateUserPreferences(userId: String, preferences: UserPreferences) async throws {
         logger.log("UserService: Updating preferences for user \(userId)")
-        
+
         guard var user = try await userRepository.findUser(id: userId) else {
             throw ServiceError.userNotFound
         }
-        
+
         user = User(
             id: user.id,
             name: user.name,
             email: user.email,
             preferences: preferences
         )
-        
+
         try await userRepository.saveUser(user)
     }
 }
@@ -248,12 +248,12 @@ enum ServiceError: Error, LocalizedError {
     case userNotFound
     case invalidInput
     case operationFailed
-    
+
     var errorDescription: String? {
         switch self {
-        case .userNotFound: return "User not found"
-        case .invalidInput: return "Invalid input provided"
-        case .operationFailed: return "Operation failed"
+        case .userNotFound: "User not found"
+        case .invalidInput: "Invalid input provided"
+        case .operationFailed: "Operation failed"
         }
     }
 }
@@ -267,17 +267,17 @@ class OrderProcessingService {
     private let userRepository: UserRepository
     private let emailService: EmailService
     private let logger: LoggerService
-    
+
     // Runtime parameters
     private let orderId: String
     private let processingOptions: ProcessingOptions
-    
+
     struct ProcessingOptions {
         let sendNotifications: Bool
         let validateInventory: Bool
         let calculateTax: Bool
     }
-    
+
     init(
         orderRepository: OrderRepository,
         userRepository: UserRepository,
@@ -292,25 +292,25 @@ class OrderProcessingService {
         self.logger = logger
         self.orderId = orderId
         self.processingOptions = processingOptions
-        
+
         logger.log("OrderProcessingService created for order: \(orderId)")
     }
-    
+
     func processOrder() async throws -> Order {
         logger.log("Processing order: \(orderId)")
-        
+
         guard let order = try await orderRepository.findOrder(id: orderId) else {
             throw ServiceError.userNotFound
         }
-        
+
         if processingOptions.validateInventory {
             try await validateInventory(for: order)
         }
-        
+
         if processingOptions.calculateTax {
             let _ = calculateTax(for: order)
         }
-        
+
         let processedOrder = Order(
             id: order.id,
             userId: order.userId,
@@ -318,33 +318,33 @@ class OrderProcessingService {
             total: order.total,
             status: .processing
         )
-        
+
         try await orderRepository.saveOrder(processedOrder)
-        
+
         if processingOptions.sendNotifications {
             try await sendProcessingNotification(for: processedOrder)
         }
-        
+
         return processedOrder
     }
-    
+
     private func validateInventory(for order: Order) async throws {
         logger.log("Validating inventory for order: \(order.id)")
         // Inventory validation logic
     }
-    
+
     private func calculateTax(for order: Order) -> Decimal {
         logger.log("Calculating tax for order: \(order.id)")
         return order.total * 0.08 // 8% tax
     }
-    
+
     private func sendProcessingNotification(for order: Order) async throws {
         logger.log("Sending processing notification for order: \(order.id)")
-        
+
         guard let user = try await userRepository.findUser(id: order.userId) else {
             return
         }
-        
+
         try await emailService.sendEmail(
             to: user.email,
             subject: "Order Processing Started",
@@ -363,16 +363,16 @@ protocol OrderProcessingServiceFactory {
 
 class OrderProcessingServiceFactoryImpl: OrderProcessingServiceFactory {
     private let resolver: Resolver
-    
+
     init(resolver: Resolver) {
         self.resolver = resolver
     }
-    
+
     func makeOrderProcessingService(
         orderId: String,
         processingOptions: OrderProcessingService.ProcessingOptions
     ) -> OrderProcessingService {
-        return OrderProcessingService(
+        OrderProcessingService(
             orderRepository: resolver.synchronizedResolve(OrderRepository.self)!,
             userRepository: resolver.synchronizedResolve(UserRepository.self)!,
             emailService: resolver.synchronizedResolve(EmailService.self)!,
@@ -396,7 +396,7 @@ class DomainAssembly: Assembly {
                 emailService: resolver.resolve(EmailService.self)!
             )
         }
-        
+
         // Register factories
         container.register(OrderProcessingServiceFactory.self) { resolver in
             OrderProcessingServiceFactoryImpl(resolver: resolver)
@@ -411,15 +411,15 @@ class InfrastructureAssembly: Assembly {
         container.register(LoggerService.self) { _ in
             ConsoleLoggerService()
         }.inObjectScope(.container)
-        
+
         container.register(DatabaseConnectionPool.self) { _ in
             DatabaseConnectionPool()
         }.inObjectScope(.container)
-        
+
         container.register(EmailService.self) { resolver in
             SMTPEmailService(logger: resolver.resolve(LoggerService.self)!)
         }.inObjectScope(.container)
-        
+
         // Register repositories
         container.register(UserRepository.self) { resolver in
             DatabaseUserRepository(
@@ -427,7 +427,7 @@ class InfrastructureAssembly: Assembly {
                 logger: resolver.resolve(LoggerService.self)!
             )
         }.inObjectScope(.container)
-        
+
         container.register(OrderRepository.self) { resolver in
             DatabaseOrderRepository(
                 connectionPool: resolver.resolve(DatabaseConnectionPool.self)!,
@@ -442,48 +442,48 @@ class InfrastructureAssembly: Assembly {
 // @TestContainer
 class UserServiceIntegrationTests {
     var container: Container!
-    
+
     // Dependencies to mock
     var userRepository: UserRepository!
     var logger: LoggerService!
     var emailService: EmailService!
-    
+
     // Service under test
     var userService: UserService!
-    
+
     func setUp() {
         container = setupTestContainer()
-        
+
         userRepository = container.resolve(UserRepository.self)!
         logger = container.resolve(LoggerService.self)!
         emailService = container.resolve(EmailService.self)!
-        
+
         userService = UserService(
             userRepository: userRepository,
             logger: logger,
             emailService: emailService
         )
     }
-    
+
     // Generated by @TestContainer macro
     func setupTestContainer() -> Container {
         let container = Container()
-        
+
         registerUserRepository(in: container, mock: MockUserRepository())
         registerLoggerService(in: container, mock: MockLoggerService())
         registerEmailService(in: container, mock: MockEmailService())
-        
+
         return container
     }
-    
+
     func registerUserRepository(in container: Container, mock: UserRepository) {
         container.register(UserRepository.self) { _ in mock }.inObjectScope(.graph)
     }
-    
+
     func registerLoggerService(in container: Container, mock: LoggerService) {
         container.register(LoggerService.self) { _ in mock }.inObjectScope(.graph)
     }
-    
+
     func registerEmailService(in container: Container, mock: EmailService) {
         container.register(EmailService.self) { _ in mock }.inObjectScope(.graph)
     }
@@ -495,18 +495,18 @@ class MockUserRepository: UserRepository {
     var findUserError: Error?
     var saveUserCalled = false
     var deleteUserCalled = false
-    
+
     func findUser(id: String) async throws -> User? {
         if let error = findUserError {
             throw error
         }
         return findUserResult
     }
-    
+
     func saveUser(_ user: User) async throws {
         saveUserCalled = true
     }
-    
+
     func deleteUser(id: String) async throws {
         deleteUserCalled = true
     }
@@ -516,15 +516,15 @@ class MockLoggerService: LoggerService {
     var logMessages: [String] = []
     var errorMessages: [String] = []
     var debugMessages: [String] = []
-    
+
     func log(_ message: String) {
         logMessages.append(message)
     }
-    
+
     func error(_ message: String) {
         errorMessages.append(message)
     }
-    
+
     func debug(_ message: String) {
         debugMessages.append(message)
     }
@@ -534,7 +534,7 @@ class MockEmailService: EmailService {
     var sendEmailCalled = false
     var sentEmails: [(to: String, subject: String, body: String)] = []
     var sendEmailError: Error?
-    
+
     func sendEmail(to: String, subject: String, body: String) async throws {
         sendEmailCalled = true
         if let error = sendEmailError {
@@ -548,11 +548,11 @@ class MockEmailService: EmailService {
 
 class ConfigurableAssembly: Assembly {
     private let config: AppConfiguration
-    
+
     init(config: AppConfiguration) {
         self.config = config
     }
-    
+
     func assemble(container: Container) {
         // Configure logger based on environment
         if config.environment == .development {
@@ -564,7 +564,7 @@ class ConfigurableAssembly: Assembly {
                 ConsoleLoggerService() // Standard logging for production
             }.inObjectScope(.container)
         }
-        
+
         // Configure email service based on environment
         if config.environment == .testing {
             container.register(EmailService.self) { resolver in
@@ -582,17 +582,17 @@ struct AppConfiguration {
     enum Environment {
         case development, testing, staging, production
     }
-    
+
     let environment: Environment
     let databaseURL: String
     let emailProvider: String
-    
+
     static let development = AppConfiguration(
         environment: .development,
         databaseURL: "sqlite://dev.db",
         emailProvider: "console"
     )
-    
+
     static let production = AppConfiguration(
         environment: .production,
         databaseURL: "postgresql://prod.db",
@@ -604,17 +604,17 @@ class VerboseLoggerService: LoggerService {
     init() {
         print("📝 VerboseLoggerService initialized for development")
     }
-    
+
     func log(_ message: String) {
         let timestamp = DateFormatter.iso8601.string(from: Date())
         print("📝 [\(timestamp)] LOG: \(message)")
     }
-    
+
     func error(_ message: String) {
         let timestamp = DateFormatter.iso8601.string(from: Date())
         print("❌ [\(timestamp)] ERROR: \(message)")
     }
-    
+
     func debug(_ message: String) {
         let timestamp = DateFormatter.iso8601.string(from: Date())
         print("🐛 [\(timestamp)] DEBUG: \(message)")
@@ -653,16 +653,16 @@ Task {
         // Create a new user
         let newUser = try await userService.createUser(name: "Alice Johnson", email: "alice@example.com")
         print("Created user: \(newUser.name)")
-        
+
         // Get the user
         let retrievedUser = try await userService.getUser(id: newUser.id)
         print("Retrieved user: \(retrievedUser?.name ?? "none")")
-        
+
         // Update preferences
         let newPreferences = UserPreferences(theme: "dark", notifications: false, language: "es")
         try await userService.updateUserPreferences(userId: newUser.id, preferences: newPreferences)
         print("Updated user preferences")
-        
+
     } catch {
         print("User service error: \(error)")
     }
@@ -706,7 +706,7 @@ Task {
     do {
         let testUser = try await testSuite.userService.getUser(id: "test-123")
         print("Test user retrieved: \(testUser?.name ?? "none")")
-        
+
         let mockLogger = testSuite.logger as! MockLoggerService
         print("Logger captured \(mockLogger.logMessages.count) messages")
     } catch {
@@ -715,7 +715,7 @@ Task {
 }
 
 //: ## Best Practices for Advanced Patterns
-//: 
+//:
 //: 1. **Layer Separation**: Keep domain logic separate from infrastructure concerns
 //: 2. **Factory Usage**: Use factories for services requiring runtime parameters
 //: 3. **Scope Management**: Choose appropriate scopes for different service types
@@ -724,7 +724,7 @@ Task {
 //: 6. **AOP Integration**: Combine AOP macros thoughtfully for cross-cutting concerns
 
 //: ## Common Patterns
-//: 
+//:
 //: - **Repository Pattern**: Data access abstraction with @Injectable
 //: - **Factory Pattern**: Dynamic service creation with @AutoFactory
 //: - **Observer Pattern**: Event-driven architectures with proper DI

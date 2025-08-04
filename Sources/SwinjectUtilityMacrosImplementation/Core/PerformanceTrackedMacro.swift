@@ -1,38 +1,40 @@
 // PerformanceTrackedMacro.swift - @PerformanceTracked macro implementation
 // Copyright © 2025 SwinjectUtilityMacros. All rights reserved.
 
+import SwiftDiagnostics
 import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
-import SwiftDiagnostics
 
 /// Implementation of the @PerformanceTracked macro for automatic performance monitoring.
 public struct PerformanceTrackedMacro: PeerMacro {
-    
+
     // MARK: - PeerMacro Implementation
-    
+
     public static func expansion(
         of node: AttributeSyntax,
         providingPeersOf declaration: some DeclSyntaxProtocol,
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
-        
+
         // Validate that this is applied to a function
         guard let functionDecl = declaration.as(FunctionDeclSyntax.self) else {
             let diagnostic = Diagnostic(
                 node: declaration.root,
-                message: PerformanceTrackedMacroError(message: "@PerformanceTracked can only be applied to functions and methods")
+                message: PerformanceTrackedMacroError(
+                    message: "@PerformanceTracked can only be applied to functions and methods"
+                )
             )
             context.diagnose(diagnostic)
             return []
         }
-        
+
         // Parse macro configuration
         let config = try parsePerformanceTrackedConfig(from: node)
-        
+
         // Extract function information
         let functionInfo = extractFunctionInfo(from: functionDecl)
-        
+
         // Generate performance-tracked version of the function
         let performanceTrackedFunction = try generatePerformanceTrackedFunction(
             original: functionDecl,
@@ -40,20 +42,20 @@ public struct PerformanceTrackedMacro: PeerMacro {
             config: config,
             context: context
         )
-        
+
         return [performanceTrackedFunction]
     }
-    
+
     // MARK: - Configuration Parsing
-    
+
     private static func parsePerformanceTrackedConfig(from node: AttributeSyntax) throws -> PerformanceTrackedConfig {
-        var threshold: Double = 1000.0
-        var sampleRate: Double = 1.0
-        var memoryTracking: Bool = false
-        var includeStackTrace: Bool = false
-        var includeParameters: Bool = false
+        var threshold = 1000.0
+        var sampleRate = 1.0
+        var memoryTracking = false
+        var includeStackTrace = false
+        var includeParameters = false
         var category: String? = nil
-        
+
         // Parse attribute arguments
         if let arguments = node.arguments?.as(LabeledExprListSyntax.self) {
             for argument in arguments {
@@ -82,7 +84,8 @@ public struct PerformanceTrackedMacro: PeerMacro {
                     }
                 case "category":
                     if let stringLiteral = argument.expression.as(StringLiteralExprSyntax.self),
-                       let segment = stringLiteral.segments.first?.as(StringSegmentSyntax.self) {
+                       let segment = stringLiteral.segments.first?.as(StringSegmentSyntax.self)
+                    {
                         category = segment.content.text
                     }
                 default:
@@ -90,7 +93,7 @@ public struct PerformanceTrackedMacro: PeerMacro {
                 }
             }
         }
-        
+
         return PerformanceTrackedConfig(
             threshold: threshold,
             sampleRate: sampleRate,
@@ -100,20 +103,20 @@ public struct PerformanceTrackedMacro: PeerMacro {
             category: category
         )
     }
-    
+
     // MARK: - Function Information Extraction
-    
+
     private static func extractFunctionInfo(from functionDecl: FunctionDeclSyntax) -> PerformanceTrackedFunctionInfo {
         let functionName = functionDecl.name.text
         let isAsync = functionDecl.signature.effectSpecifiers?.asyncSpecifier != nil
         let canThrow = functionDecl.signature.effectSpecifiers?.throwsSpecifier != nil
         let returnType = functionDecl.signature.returnClause?.type.trimmedDescription ?? "Void"
-        
+
         // Extract parameters
         let parameters = functionDecl.signature.parameterClause.parameters.map { param in
             let externalName = param.firstName.text
             let internalName = param.secondName?.text ?? param.firstName.text
-            
+
             return PerformanceTrackedParameterInfo(
                 externalName: externalName,
                 internalName: internalName,
@@ -122,7 +125,7 @@ public struct PerformanceTrackedMacro: PeerMacro {
                 defaultValue: param.defaultValue?.value.trimmedDescription
             )
         }
-        
+
         return PerformanceTrackedFunctionInfo(
             name: functionName,
             parameters: parameters,
@@ -133,7 +136,7 @@ public struct PerformanceTrackedMacro: PeerMacro {
             accessLevel: extractAccessLevel(from: functionDecl.modifiers)
         )
     }
-    
+
     private static func extractAccessLevel(from modifiers: DeclModifierListSyntax) -> String {
         for modifier in modifiers {
             switch modifier.name.text {
@@ -146,19 +149,19 @@ public struct PerformanceTrackedMacro: PeerMacro {
         }
         return "internal" // Default access level
     }
-    
+
     // MARK: - Code Generation
-    
+
     private static func generatePerformanceTrackedFunction(
         original: FunctionDeclSyntax,
         functionInfo: PerformanceTrackedFunctionInfo,
         config: PerformanceTrackedConfig,
         context: some MacroExpansionContext
     ) throws -> DeclSyntax {
-        
+
         let originalName = functionInfo.name
         let performanceTrackedName = "\(originalName)PerformanceTracked"
-        
+
         // Generate parameter list for function signature
         let parameterList = functionInfo.parameters.map { param in
             let fullParam = param.fullSignatureParameter
@@ -169,39 +172,38 @@ public struct PerformanceTrackedMacro: PeerMacro {
                 return "\(fullParam): \(paramType)"
             }
         }.joined(separator: ", ")
-        
+
         // Generate parameter names for original function call
         let parameterNames = functionInfo.parameters.map { param in
             param.callParameter
         }.joined(separator: ", ")
-        
-        
+
         // Build function signature
         var functionSignature = "public"
         if functionInfo.isStatic {
             functionSignature += " static"
         }
         functionSignature += " func \(performanceTrackedName)(\(parameterList))"
-        
+
         if functionInfo.isAsync {
             functionSignature += " async"
         }
-        
+
         if functionInfo.canThrow {
             functionSignature += " throws"
         }
-        
+
         if functionInfo.returnType != "Void" {
             functionSignature += " -> \(functionInfo.returnType)"
         }
-        
+
         // Generate return statement
         let returnStatement = if functionInfo.returnType != "Void" {
             "return result"
         } else {
             ""
         }
-        
+
         // Create properly formatted function body
         let functionBody = try createFormattedFunctionBody(
             signature: functionSignature,
@@ -211,12 +213,12 @@ public struct PerformanceTrackedMacro: PeerMacro {
             config: config,
             functionInfo: functionInfo
         )
-        
+
         return DeclSyntax.fromString(functionBody)
     }
-    
+
     // MARK: - Helper Methods
-    
+
     private static func createFormattedFunctionBody(
         signature: String,
         originalName: String,
@@ -225,20 +227,22 @@ public struct PerformanceTrackedMacro: PeerMacro {
         config: PerformanceTrackedConfig,
         functionInfo: PerformanceTrackedFunctionInfo
     ) throws -> String {
-        
+
         // Generate sampling check if needed
         let samplingCheck = if config.sampleRate < 1.0 {
             """
                 // Sample rate check - only track \(config.sampleRate * 100)% of calls
                 guard Double.random(in: 0...1) <= \(config.sampleRate) else {
                     // Execute without performance tracking
-                    \(functionInfo.canThrow ? "return try " : "return ")\(functionInfo.isAsync ? "await " : "")\(originalName)(\(parameterNames))
+                    \(functionInfo.canThrow ? "return try " : "return ")\(functionInfo
+                .isAsync ? "await " : ""
+            )\(originalName)(\(parameterNames))
                 }
             """
         } else {
             ""
         }
-        
+
         // Generate memory tracking setup
         let memorySetup = if config.memoryTracking {
             """
@@ -251,25 +255,29 @@ public struct PerformanceTrackedMacro: PeerMacro {
             let peakMemory: Int64 = 0
             """
         }
-        
+
         // Generate method execution
         let methodExecution = if config.memoryTracking {
             """
-            let memoryResult = MemoryMonitor.trackMemoryUsage {
-                \(functionInfo.canThrow ? "try " : "")\(functionInfo.isAsync ? "await " : "")\(originalName)(\(parameterNames))
-            }
-            let result = memoryResult.result
-            let memoryUsed = memoryResult.memoryUsed
-            let finalPeakMemory = memoryResult.peakMemory
+                let memoryResult = MemoryMonitor.trackMemoryUsage {
+                    \(functionInfo.canThrow ? "try " : "")\(functionInfo
+                    .isAsync ? "await " : ""
+            )\(originalName)(\(parameterNames))
+                }
+                let result = memoryResult.result
+                let memoryUsed = memoryResult.memoryUsed
+                let finalPeakMemory = memoryResult.peakMemory
             """
         } else {
             """
-            let result = \(functionInfo.canThrow ? "try " : "")\(functionInfo.isAsync ? "await " : "")\(originalName)(\(parameterNames))
+            let result = \(functionInfo.canThrow ? "try " : "")\(functionInfo
+                .isAsync ? "await " : ""
+            )\(originalName)(\(parameterNames))
             let memoryUsed: Int64 = 0
             let finalPeakMemory: Int64 = 0
             """
         }
-        
+
         // Generate stack trace collection
         let stackTraceCollection = if config.includeStackTrace {
             """
@@ -282,7 +290,7 @@ public struct PerformanceTrackedMacro: PeerMacro {
         } else {
             "let stackTrace: [String]? = nil"
         }
-        
+
         // Generate parameters collection
         let parametersCollection: String
         if config.includeParameters {
@@ -293,47 +301,50 @@ public struct PerformanceTrackedMacro: PeerMacro {
         } else {
             parametersCollection = "let parameters: [String: Any]? = nil"
         }
-        
+
         // Generate category determination
         let categoryDetermination = if let category = config.category {
             "let category = \"\(category)\""
         } else {
             "let category = String(describing: type(of: self))"
         }
-        
+
         // Generate threshold logging
         let thresholdLogging = """
-        if executionTime > \(config.threshold) {
-                    print("⚠️ SLOW METHOD: \\(typeName).\\(methodName) took \\(String(format: \"%.2f\", executionTime))ms (threshold: \(config.threshold)ms)")
-                }
-        """
-        
+            if executionTime > \(config.threshold) {
+                print("⚠️ SLOW METHOD: \\(typeName).\\(methodName) took \\(String(format: \"%.2f\", executionTime))ms (threshold: \(
+                config
+                        .threshold
+            )ms)")
+            }
+            """
+
         // Build the complete function body
         return """
-        \(signature) {\(samplingCheck.isEmpty ? "" : "\n\(samplingCheck)\n")
+            \(signature) {\(samplingCheck.isEmpty ? "" : "\n\(samplingCheck)\n")
             // Performance tracking setup
             let startTime = CFAbsoluteTimeGetCurrent()
             let threadInfo = ThreadInfo()
             \(memorySetup)
-            
+
             let methodName = "\(originalName)"
             let typeName = String(describing: type(of: self))
             \(categoryDetermination)
-            
+
             do {
                 // Execute original method with memory tracking
                 \(methodExecution)
-                
+
                 // Calculate performance metrics
                 let endTime = CFAbsoluteTimeGetCurrent()
                 let executionTime = (endTime - startTime) * 1000 // Convert to milliseconds
-                
+
                 // Generate stack trace if needed for slow calls
                 \(stackTraceCollection)
-                
+
                 // Collect parameters if enabled
                 \(parametersCollection)
-                
+
                 // Create performance metrics
                 let metrics = PerformanceMetrics(
                     methodName: methodName,
@@ -347,19 +358,19 @@ public struct PerformanceTrackedMacro: PeerMacro {
                     parameters: parameters,
                     stackTrace: stackTrace
                 )
-                
+
                 // Record performance data
                 PerformanceMonitor.record(metrics)
-                
+
                 // Log slow methods
                 \(thresholdLogging)
-                
+
                 \(returnStatement)
             } catch {
                 // Record performance data even for failed calls
                 let endTime = CFAbsoluteTimeGetCurrent()
                 let executionTime = (endTime - startTime) * 1000
-                
+
                 let metrics = PerformanceMetrics(
                     methodName: methodName,
                     typeName: typeName,
@@ -372,9 +383,9 @@ public struct PerformanceTrackedMacro: PeerMacro {
                     parameters: \(config.includeParameters ? "parameters" : "nil"),
                     stackTrace: nil
                 )
-                
+
                 PerformanceMonitor.record(metrics)
-                
+
                 print("❌ METHOD FAILED: \\(typeName).\\(methodName) failed after \\(String(format: \"%.2f\", executionTime))ms with error: \\(error)")
                 throw error
             }
@@ -405,27 +416,27 @@ private struct PerformanceTrackedFunctionInfo {
 }
 
 private struct PerformanceTrackedParameterInfo {
-    let externalName: String  // The external parameter name (e.g., "from")
-    let internalName: String  // The internal parameter name (e.g., "url")
+    let externalName: String // The external parameter name (e.g., "from")
+    let internalName: String // The internal parameter name (e.g., "url")
     let type: String
     let isOptional: Bool
     let defaultValue: String?
-    
+
     // Helper to get the full parameter for function signature
     var fullSignatureParameter: String {
         if externalName == internalName || externalName == "_" {
-            return internalName
+            internalName
         } else {
-            return "\(externalName) \(internalName)"
+            "\(externalName) \(internalName)"
         }
     }
-    
+
     // Helper to get the parameter for calling the original function
     var callParameter: String {
         if externalName == "_" {
-            return internalName
+            internalName
         } else {
-            return "\(externalName): \(internalName)"
+            "\(externalName): \(internalName)"
         }
     }
 }

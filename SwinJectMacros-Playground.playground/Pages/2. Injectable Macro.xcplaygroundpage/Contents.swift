@@ -11,7 +11,7 @@ import Swinject
 // In a real project: import SwinjectUtilityMacros
 
 //: ## How @Injectable Works
-//: 
+//:
 //: The macro performs compile-time analysis:
 //: 1. **AST Parsing**: Examines initializer parameters using SwiftSyntax
 //: 2. **Dependency Classification**: Identifies service dependencies vs configuration
@@ -32,11 +32,11 @@ class LoggerService: Injectable {
     init() {
         print("📝 LoggerService initialized")
     }
-    
+
     func log(_ message: String) {
         print("📝 LOG: \(message)")
     }
-    
+
     // What the macro generates:
     static func register(in container: Container) {
         container.register(LoggerService.self) { resolver in
@@ -51,17 +51,17 @@ class LoggerService: Injectable {
 // @Injectable
 class APIClient: Injectable {
     private let logger: LoggerService
-    
+
     init(logger: LoggerService) {
         self.logger = logger
         logger.log("APIClient initialized")
     }
-    
+
     func fetchData<T>(from endpoint: String) -> T? {
         logger.log("Fetching data from: \(endpoint)")
         return nil
     }
-    
+
     // What the macro generates:
     static func register(in container: Container) {
         container.register(APIClient.self) { resolver in
@@ -79,21 +79,21 @@ class APIClient: Injectable {
 class UserService: Injectable {
     private let apiClient: APIClient
     private let logger: LoggerService
-    
+
     init(apiClient: APIClient, logger: LoggerService) {
         self.apiClient = apiClient
         self.logger = logger
         logger.log("UserService initialized")
     }
-    
+
     func getUser(id: String) -> User? {
         logger.log("Getting user: \(id)")
         let userData: User? = apiClient.fetchData(from: "users/\(id)")
-        
+
         // Mock user for demo
         return User(id: id, name: "John Doe", email: "john@example.com")
     }
-    
+
     // What the macro generates:
     static func register(in container: Container) {
         container.register(UserService.self) { resolver in
@@ -111,16 +111,16 @@ class UserService: Injectable {
 // @Injectable(scope: .container)
 class DatabaseService: Injectable {
     private let connectionString: String
-    
+
     init() {
-        self.connectionString = "mock://database"
+        connectionString = "mock://database"
         print("🗄️ DatabaseService initialized (expensive operation)")
     }
-    
-    func save<T>(_ entity: T) {
+
+    func save(_ entity: some Any) {
         print("🗄️ Saving entity to database")
     }
-    
+
     // What the macro generates:
     static func register(in container: Container) {
         container.register(DatabaseService.self) { resolver in
@@ -136,18 +136,18 @@ class DatabaseService: Injectable {
 class AnalyticsService: Injectable {
     private let logger: LoggerService?
     private let database: DatabaseService
-    
+
     init(logger: LoggerService?, database: DatabaseService) {
         self.logger = logger
         self.database = database
         logger?.log("AnalyticsService initialized")
     }
-    
+
     func track(event: String) {
         logger?.log("Tracking event: \(event)")
         database.save(event)
     }
-    
+
     // What the macro generates:
     static func register(in container: Container) {
         container.register(AnalyticsService.self) { resolver in
@@ -167,11 +167,11 @@ class PrimaryEmailService: Injectable {
     init() {
         print("📧 Primary EmailService initialized")
     }
-    
+
     func sendEmail(to: String, subject: String) {
         print("📧 Sending email to \(to): \(subject)")
     }
-    
+
     // What the macro generates:
     static func register(in container: Container) {
         container.register(EmailService.self, name: "primary") { resolver in
@@ -186,11 +186,11 @@ class BackupEmailService: Injectable {
     init() {
         print("📧 Backup EmailService initialized")
     }
-    
+
     func sendEmail(to: String, subject: String) {
         print("📧 [BACKUP] Sending email to \(to): \(subject)")
     }
-    
+
     // What the macro generates:
     static func register(in container: Container) {
         container.register(EmailService.self, name: "backup") { resolver in
@@ -253,7 +253,7 @@ primaryEmail.sendEmail(to: "user@example.com", subject: "Welcome!")
 backupEmail.sendEmail(to: "user@example.com", subject: "Backup notification")
 
 //: ## Key Benefits of @Injectable
-//: 
+//:
 //: 1. **Zero Boilerplate**: No manual registration code needed
 //: 2. **Type Safety**: Compile-time verification of dependencies
 //: 3. **Automatic Updates**: Adding/removing dependencies updates registration automatically
@@ -262,9 +262,9 @@ backupEmail.sendEmail(to: "user@example.com", subject: "Backup notification")
 //: 6. **Named Services**: Support for multiple implementations
 
 //: ## Dependency Classification Rules
-//: 
+//:
 //: The macro uses these heuristics to classify parameters:
-//: 
+//:
 //: | Parameter Pattern | Classification | Resolution |
 //: |---|---|---|
 //: | `*Service`, `*Repository`, `*Client` | Service Dependency | `resolver.resolve(Type.self)!` |

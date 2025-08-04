@@ -17,7 +17,7 @@ import Swinject
 ///     @OptionalInject var pushService: PushServiceProtocol?
 ///     @OptionalInject var emailService: EmailServiceProtocol?
 ///     @OptionalInject var smsService: SMSServiceProtocol?
-///     
+///
 ///     func sendNotification(_ message: String, to user: User) {
 ///         // Try multiple notification channels, gracefully falling back
 ///         if let push = pushService, user.allowsPush {
@@ -40,11 +40,11 @@ import Swinject
 /// class AnalyticsService {
 ///     @OptionalInject(default: ConsoleLogger()) var logger: LoggerProtocol
 ///     @OptionalInject(fallback: "createDefaultMetrics") var metrics: MetricsCollectorProtocol
-///     
+///
 ///     private func createDefaultMetrics() -> MetricsCollectorProtocol {
 ///         return NoOpMetricsCollector()
 ///     }
-///     
+///
 ///     func trackEvent(_ event: String) {
 ///         logger.info("Analytics event: \(event)")
 ///         metrics.track(event)
@@ -59,11 +59,11 @@ import Swinject
 ///     @OptionalInject("primary") var primaryDB: DatabaseProtocol?
 ///     @OptionalInject("secondary") var secondaryDB: DatabaseProtocol?
 ///     @OptionalInject("cache") var cacheDB: DatabaseProtocol?
-///     
+///
 ///     func getData(key: String) -> Data? {
 ///         // Try primary, fall back to secondary, then cache
-///         return primaryDB?.get(key) ?? 
-///                secondaryDB?.get(key) ?? 
+///         return primaryDB?.get(key) ??
+///                secondaryDB?.get(key) ??
 ///                cacheDB?.get(key)
 ///     }
 /// }
@@ -92,7 +92,7 @@ import Swinject
 ///         fallback: "createBasicImplementation",
 ///         lazy: false
 ///     ) var feature: FeatureProtocol
-///     
+///
 ///     private func createBasicImplementation() -> FeatureProtocol {
 ///         return BasicFeatureImplementation()
 ///     }
@@ -114,17 +114,17 @@ public enum OptionalResolutionResult<T> {
     case resolved(T)
     case fallback(T)
     case unavailable
-    
+
     /// Get the resolved value, if any
     public var value: T? {
         switch self {
         case .resolved(let value), .fallback(let value):
-            return value
+            value
         case .unavailable:
-            return nil
+            nil
         }
     }
-    
+
     /// Check if the dependency was successfully resolved (not fallback)
     public var wasResolved: Bool {
         if case .resolved = self { return true }
@@ -139,7 +139,7 @@ public struct OptionalInjectConfiguration {
     public let hasFallback: Bool
     public let isLazy: Bool
     public let resolverName: String
-    
+
     public init(
         name: String? = nil,
         hasDefault: Bool = false,
@@ -163,25 +163,25 @@ public protocol OptionalInjectFallbackProvider {
 
 // MARK: - Container Extensions for Optional Injection
 
-public extension Container {
-    
+extension Container {
+
     /// Attempt to resolve a service optionally
-    func resolveOptional<Service>(_ serviceType: Service.Type, name: String? = nil) -> Service? {
-        return resolve(serviceType, name: name)
+    public func resolveOptional<Service>(_ serviceType: Service.Type, name: String? = nil) -> Service? {
+        resolve(serviceType, name: name)
     }
-    
+
     /// Resolve with fallback provider
-    func resolveWithFallback<Service>(
-        _ serviceType: Service.Type, 
+    public func resolveWithFallback<Service>(
+        _ serviceType: Service.Type,
         name: String? = nil,
         fallback: () -> Service
     ) -> Service {
-        return resolve(serviceType, name: name) ?? fallback()
+        resolve(serviceType, name: name) ?? fallback()
     }
-    
+
     /// Check if a service is available without resolving it
-    func isServiceAvailable<Service>(_ serviceType: Service.Type, name: String? = nil) -> Bool {
+    public func isServiceAvailable(_ serviceType: (some Any).Type, name: String? = nil) -> Bool {
         // This would require container introspection
-        return resolve(serviceType, name: name) != nil
+        resolve(serviceType, name: name) != nil
     }
 }

@@ -1267,9 +1267,7 @@ protocol UIUpdaterProtocol {
     func updateUI(with data: Data) async
 }
 
-protocol DatabaseProtocol {
-    func connect() async throws
-}
+// DatabaseProtocol already declared in TestUtilities.swift
 
 protocol AsyncRepositoryProtocol {
     func fetchRawData(for input: String) async throws -> RawData
@@ -1344,8 +1342,13 @@ struct CacheAccess {
 // Mock registries and managers (would be implemented elsewhere)
 // Note: Using shared types from TestUtilities.swift
 
-struct CacheRegistry {
-    static func getCache(for key: String, maxSize: Int, ttl: TimeInterval, evictionPolicy: CacheEvictionPolicy) -> AsyncTestMockCache {
+enum CacheRegistry {
+    static func getCache(
+        for key: String,
+        maxSize: Int,
+        ttl: TimeInterval,
+        evictionPolicy: CacheEvictionPolicy
+    ) -> AsyncTestMockCache {
         AsyncTestMockCache()
     }
 

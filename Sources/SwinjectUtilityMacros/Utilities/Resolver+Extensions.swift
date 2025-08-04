@@ -2,7 +2,7 @@ import Foundation
 import Swinject
 
 /// Extensions to Swinject's Resolver for thread-safe operations
-public extension Resolver {
+extension Resolver {
 
     /// Returns a thread-safe resolver instance.
     ///
@@ -30,7 +30,7 @@ public extension Resolver {
     /// - For single-threaded scenarios, use the original resolver directly
     ///
     /// - Returns: A thread-safe Resolver instance
-    var synchronizedResolver: Resolver {
+    public var synchronizedResolver: Resolver {
         // Always return a synchronized version to ensure thread safety
         // This is the safest approach since Container.synchronize() is idempotent
         if let container = self as? Container {
@@ -53,7 +53,7 @@ public extension Resolver {
     ///
     /// - Parameter serviceType: The service type to resolve
     /// - Returns: The resolved service instance, or nil if not registered
-    func synchronizedResolve<Service>(_ serviceType: Service.Type) -> Service? {
+    public func synchronizedResolve<Service>(_ serviceType: Service.Type) -> Service? {
         synchronizedResolver.resolve(serviceType)
     }
 
@@ -63,7 +63,7 @@ public extension Resolver {
     ///   - serviceType: The service type to resolve
     ///   - name: The registration name
     /// - Returns: The resolved service instance, or nil if not registered
-    func synchronizedResolve<Service>(_ serviceType: Service.Type, name: String?) -> Service? {
+    public func synchronizedResolve<Service>(_ serviceType: Service.Type, name: String?) -> Service? {
         synchronizedResolver.resolve(serviceType, name: name)
     }
 
@@ -73,7 +73,7 @@ public extension Resolver {
     ///   - serviceType: The service type to resolve
     ///   - argument: The argument to pass to the factory
     /// - Returns: The resolved service instance, or nil if not registered
-    func synchronizedResolve<Service, Arg1>(_ serviceType: Service.Type, argument: Arg1) -> Service? {
+    public func synchronizedResolve<Service>(_ serviceType: Service.Type, argument: some Any) -> Service? {
         synchronizedResolver.resolve(serviceType, argument: argument)
     }
 
@@ -84,13 +84,17 @@ public extension Resolver {
     ///   - name: The registration name
     ///   - argument: The argument to pass to the factory
     /// - Returns: The resolved service instance, or nil if not registered
-    func synchronizedResolve<Service, Arg1>(_ serviceType: Service.Type, name: String?, argument: Arg1) -> Service? {
+    public func synchronizedResolve<Service>(
+        _ serviceType: Service.Type,
+        name: String?,
+        argument: some Any
+    ) -> Service? {
         synchronizedResolver.resolve(serviceType, name: name, argument: argument)
     }
 }
 
 /// Additional utilities for Container management
-public extension Container {
+extension Container {
 
     /// Creates a thread-safe container with proper initialization
     ///
@@ -109,7 +113,7 @@ public extension Container {
     /// ```
     ///
     /// - Returns: A thread-safe Resolver instance
-    static func createSynchronized() -> Resolver {
+    public static func createSynchronized() -> Resolver {
         Container().synchronize()
     }
 
@@ -125,7 +129,7 @@ public extension Container {
     ///
     /// - Parameter resolver: The resolver to check
     /// - Returns: Always returns true since we can't reliably detect synchronization state
-    static func isSynchronized(_ resolver: Resolver) -> Bool {
+    public static func isSynchronized(_ resolver: Resolver) -> Bool {
         // Since Container.synchronize() returns a new Container with synchronized=true
         // and there's no public API to check this flag, we'll assume any resolver
         // could potentially be synchronized. The safest approach is to always

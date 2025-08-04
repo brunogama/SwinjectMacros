@@ -2,8 +2,8 @@
 // Copyright © 2025 SwinJectMacros Demo. All rights reserved.
 
 import Foundation
-import SwinjectUtilityMacros
 import Swinject
+import SwinjectUtilityMacros
 
 // MARK: - Authentication Protocol
 
@@ -31,21 +31,21 @@ protocol AuthenticationServiceProtocol {
     backoffStrategy: .exponential
 )
 class AuthenticationService: AuthenticationServiceProtocol {
-    
+
     // Dependencies
     private let network: NetworkServiceProtocol
     private let database: DatabaseServiceProtocol
     private let logger: LoggerServiceProtocol
-    
+
     // Authentication state
     private var currentToken: String?
     private var currentUser: User?
     private let authQueue = DispatchQueue(label: "auth.queue", attributes: .concurrent)
-    
+
     var isAuthenticated: Bool {
-        return currentToken != nil && currentUser != nil
+        currentToken != nil && currentUser != nil
     }
-    
+
     init(
         network: NetworkServiceProtocol,
         database: DatabaseServiceProtocol,
@@ -54,72 +54,72 @@ class AuthenticationService: AuthenticationServiceProtocol {
         self.network = network
         self.database = database
         self.logger = logger
-        
+
         logger.info("🔐 AuthenticationService initialized with caching and retry")
         loadStoredCredentials()
     }
-    
+
     // MARK: - AuthenticationServiceProtocol Implementation
-    
+
     func login(email: String, password: String) async throws -> AuthResult {
         logger.info("🔑 Attempting login for user: \(email)")
-        
+
         // Validate input
         guard !email.isEmpty, !password.isEmpty else {
             throw AuthError.invalidCredentials
         }
-        
+
         guard isValidEmail(email) else {
             throw AuthError.invalidEmailFormat
         }
-        
+
         // Prepare login request
         let loginRequest = LoginRequest(email: email, password: password)
-        
+
         do {
             // Make network request (with retry macro applied)
             let response: LoginResponse = try await network.fetchData(
                 from: "auth/login",
                 type: LoginResponse.self
             )
-            
+
             // Store authentication data
             currentToken = response.token
             currentUser = response.user
-            
+
             // Cache user data (with cache macro applied)
             try await database.save(response.user, to: "current_user")
-            
+
             let authResult = AuthResult(
                 user: response.user,
                 token: response.token,
                 expiresAt: response.expiresAt
             )
-            
+
             logger.info("✅ Login successful for user: \(email)")
             return authResult
-            
+
         } catch {
             logger.error("❌ Login failed for user: \(email) - \(error)")
-            
+
             // Try offline authentication for demo
             if let demoUser = try await attemptDemoLogin(email: email, password: password) {
                 logger.info("🔓 Demo login successful")
                 return demoUser
             }
-            
+
             throw AuthError.loginFailed(error)
         }
     }
-    
+
     func logout() async throws {
         logger.info("🚪 Logging out current user")
-        
+
         guard isAuthenticated else {
             logger.warning("⚠️ No user currently authenticated")
             return
         }
-        
+
         do {
             // Notify server of logout
             _ = try await network.postData(
@@ -129,49 +129,49 @@ class AuthenticationService: AuthenticationServiceProtocol {
         } catch {
             logger.warning("⚠️ Server logout failed, proceeding with local logout: \(error)")
         }
-        
+
         // Clear local authentication state
         await clearAuthenticationState()
-        
+
         logger.info("✅ Logout completed")
     }
-    
+
     func refreshToken() async throws -> String {
         logger.info("🔄 Refreshing authentication token")
-        
+
         guard let currentToken = currentToken else {
             throw AuthError.notAuthenticated
         }
-        
+
         let refreshRequest = RefreshTokenRequest(token: currentToken)
-        
+
         do {
             let response: RefreshTokenResponse = try await network.fetchData(
                 from: "auth/refresh",
                 type: RefreshTokenResponse.self
             )
-            
+
             self.currentToken = response.newToken
-            
+
             logger.info("✅ Token refreshed successfully")
             return response.newToken
-            
+
         } catch {
             logger.error("❌ Token refresh failed: \(error)")
-            
+
             // Clear authentication state on refresh failure
             await clearAuthenticationState()
             throw AuthError.tokenRefreshFailed(error)
         }
     }
-    
+
     func getCurrentUser() async throws -> User? {
         logger.info("👤 Getting current user")
-        
+
         if let user = currentUser {
             return user
         }
-        
+
         // Try to load from cache/database
         if let cachedUser: User = try await database.fetch(
             from: "current_user",
@@ -182,44 +182,44 @@ class AuthenticationService: AuthenticationServiceProtocol {
             logger.info("✅ Loaded user from cache")
             return cachedUser
         }
-        
+
         logger.info("📭 No current user found")
         return nil
     }
-    
+
     func validateSession() async throws -> Bool {
         logger.info("🔍 Validating current session")
-        
+
         guard let token = currentToken else {
             logger.info("❌ No token available for validation")
             return false
         }
-        
+
         do {
             let validationRequest = ValidateSessionRequest(token: token)
             let isValid: Bool = try await network.fetchData(
                 from: "auth/validate",
                 type: Bool.self
             )
-            
+
             if !isValid {
                 await clearAuthenticationState()
                 logger.warning("⚠️ Session validation failed - clearing state")
             } else {
                 logger.info("✅ Session is valid")
             }
-            
+
             return isValid
-            
+
         } catch {
             logger.error("❌ Session validation error: \(error)")
             await clearAuthenticationState()
             return false
         }
     }
-    
+
     // MARK: - Helper Methods
-    
+
     private func loadStoredCredentials() {
         Task {
             do {
@@ -228,19 +228,19 @@ class AuthenticationService: AuthenticationServiceProtocol {
                     id: "current",
                     type: User.self
                 ) {
-                    currentUser = user
-                    logger.info("🔄 Restored user session from storage")
+                    self.currentUser = user
+                    self.logger.info("🔄 Restored user session from storage")
                 }
             } catch {
-                logger.info("ℹ️ No stored credentials found")
+                self.logger.info("ℹ️ No stored credentials found")
             }
         }
     }
-    
+
     private func clearAuthenticationState() async {
         currentToken = nil
         currentUser = nil
-        
+
         // Clear cached data
         do {
             _ = try await database.delete(from: "current_user", id: "current")
@@ -248,30 +248,30 @@ class AuthenticationService: AuthenticationServiceProtocol {
             logger.warning("⚠️ Failed to clear cached user data: \(error)")
         }
     }
-    
+
     private func attemptDemoLogin(email: String, password: String) async throws -> AuthResult? {
         // Demo login for testing purposes
         guard email == "demo@example.com" && password == "password123" else {
             return nil
         }
-        
+
         let demoUser = User(
             name: "Demo User",
             email: email
         )
-        
+
         let demoToken = "demo_token_\(UUID().uuidString)"
-        
+
         currentUser = demoUser
         currentToken = demoToken
-        
+
         return AuthResult(
             user: demoUser,
             token: demoToken,
             expiresAt: Date().addingTimeInterval(3600) // 1 hour
         )
     }
-    
+
     private func isValidEmail(_ email: String) -> Bool {
         let emailRegex = #"^[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$"#
         return email.range(of: emailRegex, options: .regularExpression) != nil
@@ -288,23 +288,23 @@ enum AuthError: Error, LocalizedError {
     case tokenRefreshFailed(Error)
     case sessionExpired
     case networkError(Error)
-    
+
     var errorDescription: String? {
         switch self {
         case .invalidCredentials:
-            return "Invalid email or password"
+            "Invalid email or password"
         case .invalidEmailFormat:
-            return "Invalid email format"
+            "Invalid email format"
         case .loginFailed(let error):
-            return "Login failed: \(error.localizedDescription)"
+            "Login failed: \(error.localizedDescription)"
         case .notAuthenticated:
-            return "User is not authenticated"
+            "User is not authenticated"
         case .tokenRefreshFailed(let error):
-            return "Token refresh failed: \(error.localizedDescription)"
+            "Token refresh failed: \(error.localizedDescription)"
         case .sessionExpired:
-            return "Session has expired"
+            "Session has expired"
         case .networkError(let error):
-            return "Network error: \(error.localizedDescription)"
+            "Network error: \(error.localizedDescription)"
         }
     }
 }
@@ -343,12 +343,12 @@ struct AuthResult {
     let user: User
     let token: String
     let expiresAt: Date
-    
+
     var isExpired: Bool {
-        return Date() > expiresAt
+        Date() > expiresAt
     }
-    
+
     var timeUntilExpiry: TimeInterval {
-        return expiresAt.timeIntervalSinceNow
+        expiresAt.timeIntervalSinceNow
     }
 }

@@ -25,6 +25,7 @@ public protocol Injectable {
 **Generated Implementation**: The `@Injectable` macro generates the `register(in:)` method implementation.
 
 **Usage**:
+
 ```swift
 @Injectable
 class UserService: Injectable {
@@ -65,6 +66,7 @@ public protocol Interceptor {
 **Purpose**: Enables wrapping method execution with cross-cutting concerns.
 
 **Implementation Pattern**:
+
 ```swift
 struct LoggingInterceptor: Interceptor {
     func intercept<T>(_ execution: () throws -> T) rethrows -> T {
@@ -105,15 +107,18 @@ public macro Injectable(
 ```
 
 **Parameters**:
+
 - `scope`: Object lifecycle scope (`.graph`, `.container`, `.transient`, `.weak`)
 - `name`: Optional named registration for multiple implementations
 
 **Generated Code**:
+
 - Static `register(in:)` method
 - `Injectable` protocol conformance
 - Automatic dependency resolution
 
 **Usage Examples**:
+
 ```swift
 // Basic usage
 @Injectable
@@ -148,16 +153,19 @@ public macro AutoFactory(
 ```
 
 **Parameters**:
+
 - `async`: Whether the factory method should be async
 - `throws`: Whether the factory method can throw
 - `name`: Custom factory protocol name
 
 **Generated Code**:
+
 - Factory protocol with `make<ServiceName>()` method
 - Factory implementation class
 - Automatic dependency injection for service dependencies
 
 **Usage Examples**:
+
 ```swift
 // Basic factory
 @AutoFactory
@@ -193,16 +201,19 @@ public macro TestContainer(
 ```
 
 **Parameters**:
+
 - `mockPrefix`: Prefix for generated mock class names
 - `scope`: Default scope for mock registrations
 - `autoMock`: Whether to automatically create mock instances
 
 **Generated Code**:
+
 - `setupTestContainer()` method
 - Mock registration methods for each service property
 - Automatic mock instance creation
 
 **Usage Examples**:
+
 ```swift
 // Basic test container
 @TestContainer
@@ -221,7 +232,7 @@ class UserServiceTests: XCTestCase {
 @TestContainer(autoMock: false)
 class UserServiceTests: XCTestCase {
     var apiClient: APIClient!
-    
+
     func setUp() {
         container = setupTestContainer()
         registerAPIClient(mock: CustomMockAPIClient())
@@ -247,6 +258,7 @@ public enum ObjectScope {
 **Swinject Integration**: Automatically converts to `Swinject.ObjectScope`.
 
 **Usage Guidelines**:
+
 - `.graph`: Default for most services
 - `.container`: Expensive resources (database connections, network clients)
 - `.transient`: Stateless services
@@ -269,6 +281,7 @@ public struct DependencyInfo {
 **Purpose**: Used internally by macros for dependency analysis and code generation.
 
 **Properties**:
+
 - `name`: Parameter name in initializer
 - `type`: Swift type name
 - `isOptional`: Whether dependency is optional
@@ -287,11 +300,13 @@ extension Container {
 ```
 
 **registerGeneratedServices()**:
+
 - Registers all services marked with `@Injectable`
 - Called automatically by build plugins
 - Ensures correct dependency order
 
 **testContainer()**:
+
 - Creates container with mock implementations
 - Used by `@TestContainer` macro
 - Provides isolated testing environment
@@ -306,7 +321,7 @@ extension Container {
         name: String? = nil,
         factory: @escaping (Resolver) -> Service
     )
-    
+
     public func registerService<Service>(
         _ serviceType: Service.Type,
         scope: ObjectScope = .graph,
@@ -320,6 +335,7 @@ extension Container {
 **Purpose**: Convenience methods for manual service registration with consistent API.
 
 **Features**:
+
 - Automatic scope conversion
 - Optional named registration
 - Completion handler support for circular dependencies
@@ -339,12 +355,13 @@ public protocol AutoRegisterAssembly: Assembly {
 **Purpose**: Provides hook for custom setup after automatic registration.
 
 **Usage**:
+
 ```swift
 class AppAssembly: AutoRegisterAssembly {
     func assemble(container: Container) {
         container.registerGeneratedServices()
     }
-    
+
     func didCompleteAutoRegistration(in container: Container) {
         // Custom setup after auto-registration
         container.register(SpecialService.self) { _ in
@@ -370,6 +387,7 @@ public enum SwinJectError: Error, LocalizedError {
 ```
 
 **Error Cases**:
+
 - `dependencyNotFound`: Service not registered in container
 - `circularDependency`: Circular dependency detected
 - `invalidConfiguration`: Invalid macro configuration
@@ -419,6 +437,7 @@ class AnalyticsService {
 Replace manual registration with macros:
 
 **Before**:
+
 ```swift
 container.register(UserService.self) { resolver in
     UserService(
@@ -429,6 +448,7 @@ container.register(UserService.self) { resolver in
 ```
 
 **After**:
+
 ```swift
 @Injectable
 class UserService {
@@ -465,26 +485,33 @@ When upgrading between major versions, refer to the changelog for breaking chang
 ### Common Issues
 
 **Circular Dependencies**:
+
 ```
 error: Circular dependency detected: UserService -> OrderService -> UserService
 ```
+
 Solution: Break cycle with protocols or lazy injection.
 
 **Missing Registrations**:
+
 ```
 error: Dependency not found: APIClient
 ```
+
 Solution: Ensure all dependencies are registered or marked with `@Injectable`.
 
 **Runtime Parameters in @Injectable**:
+
 ```
 warning: Runtime parameter 'userId' detected in @Injectable service
 ```
+
 Solution: Use `@AutoFactory` for services with runtime parameters.
 
 ### Debug Support
 
 Enable verbose macro expansion:
+
 ```bash
 swift build -Xswiftc -Xfrontend -Xswiftc -debug-generic-signatures
 ```
@@ -492,6 +519,7 @@ swift build -Xswiftc -Xfrontend -Xswiftc -debug-generic-signatures
 ### Logging
 
 Built-in logging for debugging:
+
 ```swift
 #if DEBUG
 SwinJectLogger.debug("Registering service: \(serviceName)")
@@ -501,10 +529,10 @@ SwinJectLogger.debug("Registering service: \(serviceName)")
 ## Best Practices
 
 1. **Use appropriate scopes**: `.graph` for business logic, `.container` for resources
-2. **Prefer protocols**: Register protocol types rather than concrete implementations
-3. **Test with mocks**: Use `@TestContainer` for comprehensive test coverage
-4. **Document dependencies**: Clear parameter names help with automatic classification
-5. **Avoid circular dependencies**: Design clean dependency graphs
+1. **Prefer protocols**: Register protocol types rather than concrete implementations
+1. **Test with mocks**: Use `@TestContainer` for comprehensive test coverage
+1. **Document dependencies**: Clear parameter names help with automatic classification
+1. **Avoid circular dependencies**: Design clean dependency graphs
 
 ## Version Compatibility
 

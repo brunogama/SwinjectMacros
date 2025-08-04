@@ -1,8 +1,8 @@
 // swift-tools-version: 5.9
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
-import PackageDescription
 import CompilerPluginSupport
+import PackageDescription
 
 let package = Package(
     name: "SwinjectUtilityMacros",
@@ -20,7 +20,7 @@ let package = Package(
         ),
         // Build plugin for service discovery
         .plugin(
-            name: "SwinjectUtilityBuildPlugin", 
+            name: "SwinjectUtilityBuildPlugin",
             targets: ["SwinjectUtilityBuildPlugin"]
         )
     ],
@@ -46,7 +46,7 @@ let package = Package(
             ],
             path: "Sources/SwinjectUtilityMacros"
         ),
-        
+
         // MARK: - Macro Implementation Target
         .macro(
             name: "SwinjectUtilityMacrosImplementation",
@@ -58,7 +58,7 @@ let package = Package(
             ],
             path: "Sources/SwinjectUtilityMacrosImplementation"
         ),
-        
+
         // MARK: - Build Plugin Target
         .plugin(
             name: "SwinjectUtilityBuildPlugin",
@@ -68,7 +68,7 @@ let package = Package(
             ],
             path: "Plugins/SwinjectUtilityBuildPlugin"
         ),
-        
+
         // MARK: - Build Tool Target
         .executableTarget(
             name: "ServiceDiscoveryTool",
@@ -78,7 +78,7 @@ let package = Package(
             ],
             path: "Sources/ServiceDiscoveryTool"
         ),
-        
+
         // MARK: - Test Targets
         .testTarget(
             name: "SwinjectUtilityMacrosTests",
@@ -90,7 +90,7 @@ let package = Package(
             ],
             path: "Tests/SwinjectUtilityMacrosTests"
         ),
-        
+
         .testTarget(
             name: "IntegrationTests",
             dependencies: [
