@@ -138,7 +138,7 @@ import Foundation
 ///     func fetchData(from url: URL) async throws -> Data {
 ///         return try await URLSession.shared.data(from: url).0
 ///     }
-///     
+///
 ///     @Retry(
 ///         maxAttempts: 3,
 ///         backoffStrategy: .linear(baseDelay: 1.0, increment: 0.5),
@@ -176,43 +176,43 @@ public macro Retry(
 public enum BackoffStrategy {
     /// Exponential backoff: delay = baseDelay * (multiplier ^ attempt)
     case exponential(baseDelay: TimeInterval, multiplier: Double)
-    
+
     /// Linear backoff: delay = baseDelay + (increment * attempt)
     case linear(baseDelay: TimeInterval, increment: TimeInterval)
-    
+
     /// Fixed delay between all attempts
     case fixed(delay: TimeInterval)
-    
+
     /// Custom backoff strategy with user-defined function
     case custom((Int) -> TimeInterval)
-    
+
     /// Calculate delay for a given attempt number
     public func calculateDelay(for attempt: Int, maxDelay: TimeInterval, jitter: Bool) -> TimeInterval {
         let baseDelay: TimeInterval
-        
+
         switch self {
-        case .exponential(let base, let multiplier):
+        case let .exponential(base, multiplier):
             baseDelay = base * pow(multiplier, Double(attempt - 1))
-            
-        case .linear(let base, let increment):
+
+        case let .linear(base, increment):
             baseDelay = base + (increment * Double(attempt - 1))
-            
-        case .fixed(let delay):
+
+        case let .fixed(delay):
             baseDelay = delay
-            
-        case .custom(let calculator):
+
+        case let .custom(calculator):
             baseDelay = calculator(attempt)
         }
-        
+
         var finalDelay = min(baseDelay, maxDelay)
-        
+
         // Add jitter if enabled (±25% of delay)
         if jitter {
             let jitterRange = finalDelay * 0.25
-            let randomJitter = Double.random(in: -jitterRange...jitterRange)
+            let randomJitter = Double.random(in: -jitterRange ... jitterRange)
             finalDelay = max(0, finalDelay + randomJitter)
         }
-        
+
         return finalDelay
     }
 }
@@ -221,37 +221,37 @@ public enum BackoffStrategy {
 public struct RetryMetrics {
     /// Method name being tracked
     public let methodName: String
-    
+
     /// Total number of method calls
     public let totalCalls: Int
-    
+
     /// Number of calls that succeeded without retry
     public let immediateSuccesses: Int
-    
+
     /// Number of calls that succeeded after retries
     public let eventualSuccesses: Int
-    
+
     /// Number of calls that failed after all retries
     public let totalFailures: Int
-    
+
     /// Total number of retry attempts across all calls
     public let totalRetries: Int
-    
+
     /// Average number of attempts per call
     public let averageAttempts: Double
-    
+
     /// Success rate (0.0 to 1.0)
     public let successRate: Double
-    
+
     /// Average delay time per retry (milliseconds)
     public let averageRetryDelay: TimeInterval
-    
+
     /// Most common error types that trigger retries
     public let commonErrors: [String: Int]
-    
+
     /// Time range covered by these metrics
     public let timeRange: DateInterval
-    
+
     public init(
         methodName: String,
         totalCalls: Int,
@@ -283,19 +283,19 @@ public struct RetryMetrics {
 public struct RetryAttempt {
     /// Attempt number (1-based)
     public let attemptNumber: Int
-    
+
     /// Error that triggered this retry
     public let error: Error
-    
+
     /// Delay before this attempt (seconds)
     public let delay: TimeInterval
-    
+
     /// Timestamp of this attempt
     public let timestamp: Date
-    
+
     /// Thread information
     public let threadInfo: ThreadInfo
-    
+
     public init(
         attemptNumber: Int,
         error: Error,
@@ -319,7 +319,7 @@ public class RetryMetricsManager {
     private static var callResults: [String: [CallResult]] = [:]
     private static let metricsQueue = DispatchQueue(label: "retry.metrics", attributes: .concurrent)
     private static let maxHistoryPerMethod = 1000 // Circular buffer size
-    
+
     private struct CallResult {
         let succeeded: Bool
         let attemptCount: Int
@@ -327,19 +327,19 @@ public class RetryMetricsManager {
         let timestamp: Date
         let finalError: String?
     }
-    
+
     /// Records a retry attempt
     public static func recordAttempt(_ attempt: RetryAttempt, for methodKey: String) {
         metricsQueue.async(flags: .barrier) {
             attemptHistory[methodKey, default: []].append(attempt)
-            
+
             // Maintain circular buffer
             if attemptHistory[methodKey]!.count > maxHistoryPerMethod {
                 attemptHistory[methodKey]!.removeFirst()
             }
         }
     }
-    
+
     /// Records the final result of a method call
     public static func recordResult(
         for methodKey: String,
@@ -356,48 +356,48 @@ public class RetryMetricsManager {
                 timestamp: Date(),
                 finalError: finalError?.localizedDescription
             )
-            
+
             callResults[methodKey, default: []].append(result)
-            
+
             // Maintain circular buffer
             if callResults[methodKey]!.count > maxHistoryPerMethod {
                 callResults[methodKey]!.removeFirst()
             }
         }
     }
-    
+
     /// Gets retry metrics for a specific method
     public static func getMetrics(for methodKey: String) -> RetryMetrics? {
-        return metricsQueue.sync {
+        metricsQueue.sync {
             guard let results = callResults[methodKey], !results.isEmpty else {
                 return nil
             }
-            
+
             let attempts = attemptHistory[methodKey] ?? []
-            
+
             let totalCalls = results.count
             let immediateSuccesses = results.filter { $0.succeeded && $0.attemptCount == 1 }.count
             let eventualSuccesses = results.filter { $0.succeeded && $0.attemptCount > 1 }.count
             let totalFailures = results.filter { !$0.succeeded }.count
             let totalRetries = results.map { $0.attemptCount - 1 }.reduce(0, +)
-            
+
             let averageAttempts = Double(results.map { $0.attemptCount }.reduce(0, +)) / Double(totalCalls)
             let successRate = Double(immediateSuccesses + eventualSuccesses) / Double(totalCalls)
             let averageRetryDelay = attempts.isEmpty ? 0.0 : attempts.map { $0.delay }.reduce(0, +) / Double(attempts.count)
-            
+
             // Calculate common errors
             let errorCounts = attempts.reduce(into: [String: Int]()) { counts, attempt in
                 let errorType = String(describing: type(of: attempt.error))
                 counts[errorType, default: 0] += 1
             }
-            
+
             // Calculate time range
             let timestamps = results.map { $0.timestamp }
             let timeRange = DateInterval(
                 start: timestamps.min() ?? Date(),
                 end: timestamps.max() ?? Date()
             )
-            
+
             return RetryMetrics(
                 methodName: methodKey,
                 totalCalls: totalCalls,
@@ -413,50 +413,50 @@ public class RetryMetricsManager {
             )
         }
     }
-    
+
     /// Gets metrics for all tracked methods
     public static func getAllMetrics() -> [String: RetryMetrics] {
-        return metricsQueue.sync {
+        metricsQueue.sync {
             var result: [String: RetryMetrics] = [:]
-            
+
             for methodKey in callResults.keys {
                 if let metrics = getMetrics(for: methodKey) {
                     result[methodKey] = metrics
                 }
             }
-            
+
             return result
         }
     }
-    
+
     /// Prints a comprehensive retry report
     public static func printRetryReport() {
         let allMetrics = getAllMetrics()
         guard !allMetrics.isEmpty else {
-            print("📊 No retry data available")
+            DebugLogger.info("📊 No retry data available")
             return
         }
-        
-        print("\n🔄 Retry Report")
-        print("=" * 80)
-        print(String(format: "%-30s %8s %8s %8s %8s %8s", "Method", "Calls", "Success%", "AvgAttempts", "Retries", "AvgDelay"))
-        print("-" * 80)
-        
+
+        DebugLogger.info("\n🔄 Retry Report")
+        DebugLogger.info(String(repeating: "=", count: 80))
+        DebugLogger.info(String(format: "%-30s %8s %8s %8s %8s %8s", "Method", "Calls", "Success%", "AvgAttempts", "Retries", "AvgDelay"))
+        DebugLogger.info(String(repeating: "-", count: 80))
+
         for (methodKey, metrics) in allMetrics.sorted(by: { $0.value.totalRetries > $1.value.totalRetries }) {
-            print(String(format: "%-30s %8d %8.1f %8.1f %8d %8.1f",
-                methodKey.suffix(30),
-                metrics.totalCalls,
-                metrics.successRate * 100,
-                metrics.averageAttempts,
-                metrics.totalRetries,
-                metrics.averageRetryDelay * 1000 // Convert to ms
-            ))
+            DebugLogger.info(String(format: "%-30s %8d %8.1f %8.1f %8d %8.1f",
+                                    String(methodKey.suffix(30)),
+                                    metrics.totalCalls,
+                                    metrics.successRate * 100,
+                                    metrics.averageAttempts,
+                                    metrics.totalRetries,
+                                    metrics.averageRetryDelay * 1000 // Convert to ms
+                ))
         }
-        
-        print("-" * 80)
-        print("Legend: Success% = Success rate, AvgAttempts = Average attempts per call, AvgDelay = Average retry delay (ms)")
+
+        DebugLogger.info(String(repeating: "-", count: 80))
+        DebugLogger.info("Legend: Success% = Success rate, AvgAttempts = Average attempts per call, AvgDelay = Average retry delay (ms)")
     }
-    
+
     /// Clears all retry metrics
     public static func reset() {
         metricsQueue.async(flags: .barrier) {
@@ -464,7 +464,7 @@ public class RetryMetricsManager {
             callResults.removeAll()
         }
     }
-    
+
     /// Gets methods with high failure rates
     public static func getProblematicMethods(threshold: Double = 0.5) -> [(String, RetryMetrics)] {
         let allMetrics = getAllMetrics()
@@ -481,14 +481,14 @@ public enum RetryError: Error, LocalizedError {
     case maxAttemptsExceeded(attempts: Int)
     case timeoutExceeded(timeout: TimeInterval)
     case customConditionFailed(reason: String)
-    
+
     public var errorDescription: String? {
         switch self {
-        case .maxAttemptsExceeded(let attempts):
+        case let .maxAttemptsExceeded(attempts):
             return "Maximum retry attempts exceeded (\(attempts) attempts)"
-        case .timeoutExceeded(let timeout):
+        case let .timeoutExceeded(timeout):
             return "Retry timeout exceeded (\(timeout) seconds)"
-        case .customConditionFailed(let reason):
+        case let .customConditionFailed(reason):
             return "Custom retry condition failed: \(reason)"
         }
     }
@@ -498,6 +498,6 @@ public enum RetryError: Error, LocalizedError {
 
 private extension String {
     static func * (left: String, right: Int) -> String {
-        return String(repeating: left, count: right)
+        String(repeating: left, count: right)
     }
 }

@@ -1,23 +1,23 @@
 // SwiftUIIntegrationTests.swift - Tests for SwiftUI integration macros
 
-import XCTest
 import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
 import SwiftUI
 import Swinject
+import XCTest
 
 @testable import SwinjectUtilityMacros
 @testable import SwinjectUtilityMacrosImplementation
 
 final class SwiftUIIntegrationTests: XCTestCase {
-    
+
     // MARK: - @EnvironmentInject Tests
-    
+
     func testEnvironmentInjectBasicExpansion() {
         assertMacroExpansion("""
         struct ContentView: View {
             @EnvironmentInject var userService: SwiftUIUserServiceProtocol
-            
+
             var body: some View {
                 Text("Hello")
             }
@@ -28,7 +28,7 @@ final class SwiftUIIntegrationTests: XCTestCase {
                 get {
                     // Environment-based dependency injection
                     let startTime = CFAbsoluteTimeGetCurrent()
-                    
+
                     // Access DI container from SwiftUI Environment
                     guard let resolved = Environment(\\.diContainer).wrappedValue.resolve(SwiftUIUserServiceProtocol.self) else {
                         let error = EnvironmentInjectError.requiredServiceMissing(type: "SwiftUIUserServiceProtocol")
@@ -37,14 +37,14 @@ final class SwiftUIIntegrationTests: XCTestCase {
                     return resolved
                 }
             }
-            
+
             var body: some View {
                 Text("Hello")
             }
         }
         """, macros: testMacros)
     }
-    
+
     func testEnvironmentInjectWithNamedService() {
         assertMacroExpansion("""
         struct NetworkingView: View {
@@ -56,7 +56,7 @@ final class SwiftUIIntegrationTests: XCTestCase {
                 get {
                     // Environment-based dependency injection
                     let startTime = CFAbsoluteTimeGetCurrent()
-                    
+
                     // Access DI container from SwiftUI Environment
                     guard let resolved = Environment(\\.diContainer).wrappedValue.resolve(SwiftUIAPIClientProtocol.self, name: "primary") else {
                         let error = EnvironmentInjectError.requiredServiceMissing(type: "SwiftUIAPIClientProtocol")
@@ -68,7 +68,7 @@ final class SwiftUIIntegrationTests: XCTestCase {
         }
         """, macros: testMacros)
     }
-    
+
     func testEnvironmentInjectWithOptionalService() {
         assertMacroExpansion("""
         struct SettingsView: View {
@@ -80,7 +80,7 @@ final class SwiftUIIntegrationTests: XCTestCase {
                 get {
                     // Environment-based dependency injection
                     let startTime = CFAbsoluteTimeGetCurrent()
-                    
+
                     // Access DI container from SwiftUI Environment
                     return Environment(\\.diContainer).wrappedValue.resolve(SwiftUIAnalyticsProtocol.self)
                 }
@@ -88,7 +88,7 @@ final class SwiftUIIntegrationTests: XCTestCase {
         }
         """, macros: testMacros)
     }
-    
+
     func testEnvironmentInjectErrorCases() {
         // Test non-variable property
         assertMacroExpansion("""
@@ -108,24 +108,24 @@ final class SwiftUIIntegrationTests: XCTestCase {
         """, diagnostics: [
             DiagnosticSpec(message: """
             @EnvironmentInject can only be applied to variable properties.
-            
+
             ✅ Correct usage:
             struct ContentView: View {
                 @EnvironmentInject var userService: SwiftUIUserServiceProtocol
                 @EnvironmentInject var analytics: SwiftUIAnalyticsProtocol
             }
-            
+
             ❌ Invalid usage:
             @EnvironmentInject
             func getService() -> UserService { ... } // Functions not supported
-            
+
             @EnvironmentInject
             let service = UserService() // Constants not supported
-            
+
             💡 Solution: Use 'var' for properties that should be injected from the environment.
             """, line: 2, column: 5, severity: .error)
         ], macros: testMacros)
-        
+
         // Test missing type annotation
         assertMacroExpansion("""
         struct ProblematicView: View {
@@ -138,16 +138,16 @@ final class SwiftUIIntegrationTests: XCTestCase {
         """, diagnostics: [
             DiagnosticSpec(message: """
             @EnvironmentInject requires an explicit type annotation.
-            
+
             ✅ Correct usage:
             @EnvironmentInject var userService: SwiftUIUserServiceProtocol
             @EnvironmentInject var analytics: AnalyticsService
             @EnvironmentInject var optionalService: OptionalService?
-            
+
             ❌ Invalid usage:
             @EnvironmentInject var userService // Missing type annotation
             @EnvironmentInject var service = SomeService() // Type inferred from assignment
-            
+
             💡 Tips:
             - Always provide explicit type annotations for injected properties
             - Use protocols for better testability and flexibility
@@ -155,16 +155,16 @@ final class SwiftUIIntegrationTests: XCTestCase {
             """, line: 2, column: 5, severity: .error)
         ], macros: testMacros)
     }
-    
+
     // MARK: - @ViewModelInject Tests
-    
+
     func testViewModelInjectBasicExpansion() {
         assertMacroExpansion("""
         @ViewModelInject
         class UserProfileViewModel {
             private let userService: SwiftUIUserServiceProtocol
             private let analytics: SwiftUIAnalyticsProtocol
-            
+
             @Published var user: User?
             @Published var isLoading = false
         }
@@ -172,7 +172,7 @@ final class SwiftUIIntegrationTests: XCTestCase {
         class UserProfileViewModel {
             private let userService: SwiftUIUserServiceProtocol
             private let analytics: SwiftUIAnalyticsProtocol
-            
+
             @Published var user: User?
             @Published var isLoading = false
             /// Dependency injection initializer
@@ -184,11 +184,11 @@ final class SwiftUIIntegrationTests: XCTestCase {
                 guard let analytics = container.resolve(SwiftUIAnalyticsProtocol.self) else {
                     fatalError("Failed to resolve required dependency 'analytics' of type 'SwiftUIAnalyticsProtocol'")
                 }
-                
+
                 // Call designated initializer with resolved dependencies
                 self.init(userService: userService, analytics: analytics)
             }
-            
+
             /// Designated initializer with explicit dependencies
             public init(userService: SwiftUIUserServiceProtocol, analytics: SwiftUIAnalyticsProtocol) {
                 self.userService = userService
@@ -204,7 +204,7 @@ final class SwiftUIIntegrationTests: XCTestCase {
         }
         """, macros: testMacros)
     }
-    
+
     func testViewModelInjectWithFactoryGeneration() {
         assertMacroExpansion("""
         @ViewModelInject(generateFactory: true)
@@ -220,11 +220,11 @@ final class SwiftUIIntegrationTests: XCTestCase {
                 guard let apiClient = container.resolve(SwiftUIAPIClientProtocol.self) else {
                     fatalError("Failed to resolve required dependency 'apiClient' of type 'SwiftUIAPIClientProtocol'")
                 }
-                
+
                 // Call designated initializer with resolved dependencies
                 self.init(apiClient: apiClient)
             }
-            
+
             /// Designated initializer with explicit dependencies
             public init(apiClient: SwiftUIAPIClientProtocol) {
                 self.apiClient = apiClient
@@ -242,7 +242,7 @@ final class SwiftUIIntegrationTests: XCTestCase {
         }
         """, macros: testMacros)
     }
-    
+
     func testViewModelInjectErrorCases() {
         // Test non-class type
         assertMacroExpansion("""
@@ -257,55 +257,55 @@ final class SwiftUIIntegrationTests: XCTestCase {
         """, diagnostics: [
             DiagnosticSpec(message: """
             @ViewModelInject can only be applied to classes.
-            
+
             ✅ Correct usage:
             @ViewModelInject
             class UserProfileViewModel {
                 private let userService: SwiftUIUserServiceProtocol
                 private let analytics: SwiftUIAnalyticsProtocol
-                
+
                 @Published var user: User?
                 @Published var isLoading = false
             }
-            
+
             ❌ Invalid usage:
             @ViewModelInject
             struct UserProfileViewModel { ... } // Structs not supported
-            
+
             @ViewModelInject
             protocol ViewModelProtocol { ... } // Protocols not supported
-            
+
             💡 Tip: ViewModels should be classes to work with SwiftUI's ObservableObject.
             """, line: 1, column: 1, severity: .error)
         ], macros: testMacros)
     }
-    
+
     // MARK: - Integration Tests
-    
+
     @MainActor func testDIContainerIntegration() {
         // Test DIContainer class functionality
         let container = Container()
         container.register(SwiftUIMockUserService.self) { _ in SwiftUIMockUserService() }
-        
+
         let diContainer = DIContainer(container)
         let resolvedService: SwiftUIMockUserService? = diContainer.resolve(SwiftUIMockUserService.self)
-        
+
         XCTAssertNotNil(resolvedService)
     }
-    
+
     @MainActor func testEnvironmentKeyIntegration() {
         // Test that the environment key works with SwiftUI
         let container = Container()
         let diContainer = DIContainer(container)
-        
+
         // This would be used in a SwiftUI view like:
         // @Environment(\.diContainer) var diContainer: DIContainer
-        
+
         XCTAssertNotNil(diContainer)
     }
-    
+
     // MARK: - Test Utilities
-    
+
     private let testMacros: [String: Macro.Type] = [
         "EnvironmentInject": EnvironmentInjectMacro.self,
         "ViewModelInject": ViewModelInjectMacro.self
@@ -326,9 +326,15 @@ protocol SwiftUIAPIClientProtocol {
     func fetchData() async throws -> Data
 }
 
+// Mock implementations moved to TestUtilities.swift for reuse
+
+struct SwiftUIUser {
+    let name: String
+}
+
 class SwiftUIMockUserService: SwiftUIUserServiceProtocol {
     func currentUser() -> SwiftUIUser? {
-        return SwiftUIUser(name: "Test User")
+        SwiftUIUser(name: "Test User")
     }
 }
 
@@ -336,14 +342,4 @@ class SwiftUIMockAnalyticsService: SwiftUIAnalyticsProtocol {
     func track(_ event: String) {
         // Mock implementation
     }
-}
-
-class SwiftUIMockAPIClient: SwiftUIAPIClientProtocol {
-    func fetchData() async throws -> Data {
-        return Data()
-    }
-}
-
-struct SwiftUIUser {
-    let name: String
 }

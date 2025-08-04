@@ -1,20 +1,21 @@
 // InterceptorMacroTests.swift - Tests for @Interceptor macro
 // Copyright © 2025 SwinJectMacros. All rights reserved.
 
-import XCTest
 import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
+@testable import SwinjectUtilityMacrosImplementation
+import XCTest
 
 final class InterceptorMacroTests: XCTestCase {
-    
+
     // MARK: - Test Utilities
-    
+
     let testMacros: [String: Macro.Type] = [
         "Interceptor": InterceptorMacro.self
     ]
-    
+
     // MARK: - Basic Functionality Tests
-    
+
     func testBasicInterceptorExpansion() {
         assertMacroExpansion(
             """
@@ -27,7 +28,7 @@ final class InterceptorMacroTests: XCTestCase {
             func processPayment(amount: Double, cardToken: String) -> PaymentResult {
                 return PaymentProcessor.process(amount: amount, token: cardToken)
             }
-            
+
             public func processPaymentIntercepted(amount: Double, cardToken: String) -> PaymentResult {
                 let startTime = CFAbsoluteTimeGetCurrent()
                 let context = InterceptorContext(
@@ -40,18 +41,18 @@ final class InterceptorMacroTests: XCTestCase {
                     returnType: PaymentResult.self,
                     startTime: startTime
                 )
-                
+
                 do {
                     // Execute before interceptors
                     if let interceptor = InterceptorRegistry.get(name: "LoggingInterceptor") {
                         try interceptor.before(context: context)
                     }
-                    
+
                     // Execute original method
                     let result = processPayment(amount: amount, cardToken: cardToken)
-                    
+
                     // No after interceptors
-                    
+
                     return result
                 } catch {
                     // No error interceptors - re-throw
@@ -62,7 +63,7 @@ final class InterceptorMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     func testInterceptorWithBeforeAfterHooks() {
         assertMacroExpansion(
             """
@@ -78,7 +79,7 @@ final class InterceptorMacroTests: XCTestCase {
             func createUser(userData: UserData) throws -> User {
                 return try UserService.create(userData)
             }
-            
+
             public func createUserIntercepted(userData: UserData) throws -> User {
                 let startTime = CFAbsoluteTimeGetCurrent()
                 let context = InterceptorContext(
@@ -91,7 +92,7 @@ final class InterceptorMacroTests: XCTestCase {
                     returnType: User.self,
                     startTime: startTime
                 )
-                
+
                 do {
                     // Execute before interceptors
                     if let interceptor = InterceptorRegistry.get(name: "ValidationInterceptor") {
@@ -100,10 +101,10 @@ final class InterceptorMacroTests: XCTestCase {
                     if let interceptor = InterceptorRegistry.get(name: "LoggingInterceptor") {
                         try interceptor.before(context: context)
                     }
-                    
+
                     // Execute original method
                     let result = try createUser(userData: userData)
-                    
+
                     // Execute after interceptors
                     if let interceptor = InterceptorRegistry.get(name: "NotificationInterceptor") {
                         try interceptor.after(context: context, result: result)
@@ -111,7 +112,7 @@ final class InterceptorMacroTests: XCTestCase {
                     if let interceptor = InterceptorRegistry.get(name: "AuditInterceptor") {
                         try interceptor.after(context: context, result: result)
                     }
-                    
+
                     return result
                 } catch {
                     // No error interceptors - re-throw
@@ -122,7 +123,7 @@ final class InterceptorMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     func testInterceptorWithErrorHandling() {
         assertMacroExpansion(
             """
@@ -138,7 +139,7 @@ final class InterceptorMacroTests: XCTestCase {
             func deleteUser(userId: String) throws {
                 try UserService.delete(userId)
             }
-            
+
             public func deleteUserIntercepted(userId: String) throws {
                 let startTime = CFAbsoluteTimeGetCurrent()
                 let context = InterceptorContext(
@@ -151,18 +152,18 @@ final class InterceptorMacroTests: XCTestCase {
                     returnType: Void.self,
                     startTime: startTime
                 )
-                
+
                 do {
                     // Execute before interceptors
                     if let interceptor = InterceptorRegistry.get(name: "ValidationInterceptor") {
                         try interceptor.before(context: context)
                     }
-                    
+
                     // Execute original method
                     try deleteUser(userId: userId)
-                    
+
                     // No after interceptors
-                    
+
                 } catch {
                     // Execute error interceptors
                     if let interceptor = InterceptorRegistry.get(name: "ErrorHandlingInterceptor") {
@@ -178,7 +179,7 @@ final class InterceptorMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     func testAsyncInterceptor() {
         assertMacroExpansion(
             """
@@ -191,7 +192,7 @@ final class InterceptorMacroTests: XCTestCase {
             func fetchUserData(userId: String) async throws -> UserData {
                 return try await APIClient.fetchUser(userId)
             }
-            
+
             public func fetchUserDataIntercepted(userId: String) async throws -> UserData {
                 let startTime = CFAbsoluteTimeGetCurrent()
                 let context = InterceptorContext(
@@ -204,18 +205,18 @@ final class InterceptorMacroTests: XCTestCase {
                     returnType: UserData.self,
                     startTime: startTime
                 )
-                
+
                 do {
                     // Execute before interceptors
                     if let interceptor = InterceptorRegistry.get(name: "SecurityInterceptor") {
                         try interceptor.before(context: context)
                     }
-                    
+
                     // Execute original method
                     let result = try await fetchUserData(userId: userId)
-                    
+
                     // No after interceptors
-                    
+
                     return result
                 } catch {
                     // No error interceptors - re-throw
@@ -226,7 +227,7 @@ final class InterceptorMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     func testVoidReturnTypeInterceptor() {
         assertMacroExpansion(
             """
@@ -239,7 +240,7 @@ final class InterceptorMacroTests: XCTestCase {
             func sendNotification(message: String) {
                 NotificationService.send(message)
             }
-            
+
             public func sendNotificationIntercepted(message: String) {
                 let startTime = CFAbsoluteTimeGetCurrent()
                 let context = InterceptorContext(
@@ -252,18 +253,18 @@ final class InterceptorMacroTests: XCTestCase {
                     returnType: Void.self,
                     startTime: startTime
                 )
-                
+
                 do {
                     // No before interceptors
-                    
+
                     // Execute original method
                     sendNotification(message: message)
-                    
+
                     // Execute after interceptors
                     if let interceptor = InterceptorRegistry.get(name: "CleanupInterceptor") {
                         try interceptor.after(context: context, result: nil)
                     }
-                    
+
                 } catch {
                     // No error interceptors - re-throw
                     throw error
@@ -273,7 +274,7 @@ final class InterceptorMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     func testStaticMethodInterceptor() {
         assertMacroExpansion(
             """
@@ -286,7 +287,7 @@ final class InterceptorMacroTests: XCTestCase {
             static func validateToken(token: String) -> Bool {
                 return TokenValidator.validate(token)
             }
-            
+
             public static func validateTokenIntercepted(token: String) -> Bool {
                 let startTime = CFAbsoluteTimeGetCurrent()
                 let context = InterceptorContext(
@@ -299,18 +300,18 @@ final class InterceptorMacroTests: XCTestCase {
                     returnType: Bool.self,
                     startTime: startTime
                 )
-                
+
                 do {
                     // Execute before interceptors
                     if let interceptor = InterceptorRegistry.get(name: "LoggingInterceptor") {
                         try interceptor.before(context: context)
                     }
-                    
+
                     // Execute original method
                     let result = validateToken(token: token)
-                    
+
                     // No after interceptors
-                    
+
                     return result
                 } catch {
                     // No error interceptors - re-throw
@@ -321,7 +322,7 @@ final class InterceptorMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     func testMultipleParametersInterceptor() {
         assertMacroExpansion(
             """
@@ -334,7 +335,7 @@ final class InterceptorMacroTests: XCTestCase {
             func updateProfile(userId: String, name: String, email: String, age: Int = 25) -> UserProfile {
                 return UserProfile(userId: userId, name: name, email: email, age: age)
             }
-            
+
             public func updateProfileIntercepted(userId: String, name: String, email: String, age: Int = 25) -> UserProfile {
                 let startTime = CFAbsoluteTimeGetCurrent()
                 let context = InterceptorContext(
@@ -347,18 +348,18 @@ final class InterceptorMacroTests: XCTestCase {
                     returnType: UserProfile.self,
                     startTime: startTime
                 )
-                
+
                 do {
                     // Execute before interceptors
                     if let interceptor = InterceptorRegistry.get(name: "ValidationInterceptor") {
                         try interceptor.before(context: context)
                     }
-                    
+
                     // Execute original method
                     let result = updateProfile(userId: userId, name: name, email: email, age: age)
-                    
+
                     // No after interceptors
-                    
+
                     return result
                 } catch {
                     // No error interceptors - re-throw
@@ -369,9 +370,9 @@ final class InterceptorMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     // MARK: - Error Case Tests
-    
+
     func testInterceptorOnNonFunction() {
         assertMacroExpansion(
             """
@@ -391,7 +392,7 @@ final class InterceptorMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     func testInterceptorOnProperty() {
         assertMacroExpansion(
             """
@@ -411,9 +412,9 @@ final class InterceptorMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     // MARK: - Configuration Tests
-    
+
     func testEmptyInterceptorConfiguration() {
         assertMacroExpansion(
             """
@@ -426,7 +427,7 @@ final class InterceptorMacroTests: XCTestCase {
             func simpleMethod() -> String {
                 return "hello"
             }
-            
+
             public func simpleMethodIntercepted() -> String {
                 let startTime = CFAbsoluteTimeGetCurrent()
                 let context = InterceptorContext(
@@ -439,15 +440,15 @@ final class InterceptorMacroTests: XCTestCase {
                     returnType: String.self,
                     startTime: startTime
                 )
-                
+
                 do {
                     // No before interceptors
-                    
+
                     // Execute original method
                     let result = simpleMethod()
-                    
+
                     // No after interceptors
-                    
+
                     return result
                 } catch {
                     // No error interceptors - re-throw
@@ -458,7 +459,7 @@ final class InterceptorMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     func testComplexInterceptorConfiguration() {
         assertMacroExpansion(
             """
@@ -477,7 +478,7 @@ final class InterceptorMacroTests: XCTestCase {
             func complexOperation(data: ComplexData) async throws -> Result {
                 return try await ProcessingService.process(data)
             }
-            
+
             public func complexOperationIntercepted(data: ComplexData) async throws -> Result {
                 let startTime = CFAbsoluteTimeGetCurrent()
                 let context = InterceptorContext(
@@ -490,7 +491,7 @@ final class InterceptorMacroTests: XCTestCase {
                     returnType: Result.self,
                     startTime: startTime
                 )
-                
+
                 do {
                     // Execute before interceptors
                     if let interceptor = InterceptorRegistry.get(name: "SecurityInterceptor") {
@@ -499,10 +500,10 @@ final class InterceptorMacroTests: XCTestCase {
                     if let interceptor = InterceptorRegistry.get(name: "ValidationInterceptor") {
                         try interceptor.before(context: context)
                     }
-                    
+
                     // Execute original method
                     let result = try await complexOperation(data: data)
-                    
+
                     // Execute after interceptors
                     if let interceptor = InterceptorRegistry.get(name: "CacheInterceptor") {
                         try interceptor.after(context: context, result: result)
@@ -510,7 +511,7 @@ final class InterceptorMacroTests: XCTestCase {
                     if let interceptor = InterceptorRegistry.get(name: "AuditInterceptor") {
                         try interceptor.after(context: context, result: result)
                     }
-                    
+
                     return result
                 } catch {
                     // Execute error interceptors
@@ -524,9 +525,9 @@ final class InterceptorMacroTests: XCTestCase {
             macros: testMacros
         )
     }
-    
+
     // MARK: - Integration Tests
-    
+
     func testInterceptorRegistryIntegration() {
         // This test ensures the generated code works with InterceptorRegistry
         let testCode = """
@@ -537,7 +538,7 @@ final class InterceptorMacroTests: XCTestCase {
             }
         }
         """
-        
+
         // Verify that the macro generates code that references InterceptorRegistry.get(name:)
         assertMacroExpansion(
             testCode,
@@ -546,7 +547,7 @@ final class InterceptorMacroTests: XCTestCase {
                 func testMethod() -> String {
                     return "test"
                 }
-                
+
                 public func testMethodIntercepted() -> String {
                     let startTime = CFAbsoluteTimeGetCurrent()
                     let context = InterceptorContext(
@@ -559,18 +560,18 @@ final class InterceptorMacroTests: XCTestCase {
                         returnType: String.self,
                         startTime: startTime
                     )
-                    
+
                     do {
                         // Execute before interceptors
                         if let interceptor = InterceptorRegistry.get(name: "TestInterceptor") {
                             try interceptor.before(context: context)
                         }
-                        
+
                         // Execute original method
                         let result = testMethod()
-                        
+
                         // No after interceptors
-                        
+
                         return result
                     } catch {
                         // No error interceptors - re-throw
@@ -588,5 +589,5 @@ final class InterceptorMacroTests: XCTestCase {
 
 // Required import statements for macro testing
 #if canImport(SwinJectMacrosImplementation)
-import SwinjectUtilityMacrosImplementation
+    import SwinjectUtilityMacrosImplementation
 #endif

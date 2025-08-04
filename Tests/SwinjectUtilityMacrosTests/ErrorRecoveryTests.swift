@@ -1,13 +1,13 @@
 // ErrorRecoveryTests.swift - Tests for error recovery and resilience scenarios
 // Copyright © 2025 SwinJectMacros. All rights reserved.
 
-import XCTest
 import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
 @testable import SwinjectUtilityMacrosImplementation
+import XCTest
 
 final class ErrorRecoveryTests: XCTestCase {
-    
+
     let testMacros: [String: Macro.Type] = [
         "Injectable": InjectableMacro.self,
         "AutoFactory": AutoFactoryMacro.self,
@@ -18,9 +18,9 @@ final class ErrorRecoveryTests: XCTestCase {
         "Cache": CacheMacro.self,
         "TestContainer": TestContainerMacro.self
     ]
-    
+
     // MARK: - Malformed Syntax Recovery
-    
+
     func testInjectableWithMalformedInitializer() {
         assertMacroExpansion("""
         @Injectable
@@ -38,7 +38,7 @@ final class ErrorRecoveryTests: XCTestCase {
         """, diagnostics: [
             DiagnosticSpec(message: """
             @Injectable requires a class or struct with at least one initializer.
-            
+
             ✅ Correct usage with dependencies:
             @Injectable
             class UserService {
@@ -46,7 +46,7 @@ final class ErrorRecoveryTests: XCTestCase {
                     // Dependency injection initializer
                 }
             }
-            
+
             ✅ Correct usage without dependencies:
             @Injectable
             class ConfigService {
@@ -54,18 +54,18 @@ final class ErrorRecoveryTests: XCTestCase {
                     // Default initializer
                 }
             }
-            
+
             ❌ Invalid usage:
             @Injectable
             class BadService {
                 // Missing initializer - add init() method
             }
-            
+
             💡 Tip: Make your initializer public for better dependency injection control.
             """, line: 1, column: 1, severity: .error)
         ], macros: testMacros)
     }
-    
+
     func testInjectableWithInvalidParameterTypes() {
         assertMacroExpansion("""
         @Injectable
@@ -83,7 +83,7 @@ final class ErrorRecoveryTests: XCTestCase {
         """, diagnostics: [
             DiagnosticSpec(message: """
             @Injectable requires a class or struct with at least one initializer.
-            
+
             ✅ Correct usage with dependencies:
             @Injectable
             class UserService {
@@ -91,7 +91,7 @@ final class ErrorRecoveryTests: XCTestCase {
                     // Dependency injection initializer
                 }
             }
-            
+
             ✅ Correct usage without dependencies:
             @Injectable
             class ConfigService {
@@ -99,18 +99,18 @@ final class ErrorRecoveryTests: XCTestCase {
                     // Default initializer
                 }
             }
-            
+
             ❌ Invalid usage:
             @Injectable
             class BadService {
                 // Missing initializer - add init() method
             }
-            
+
             💡 Tip: Make your initializer public for better dependency injection control.
             """, line: 1, column: 1, severity: .error)
         ], macros: testMacros)
     }
-    
+
     func testInjectableWithGenericConstraintErrors() {
         assertMacroExpansion("""
         @Injectable
@@ -124,7 +124,7 @@ final class ErrorRecoveryTests: XCTestCase {
             init(dependency: T) {
                 // Generic with invalid constraint
             }
-            
+
             static func register(in container: Container) {
                 container.register(GenericService.self) { resolver in
                     GenericService(
@@ -139,9 +139,9 @@ final class ErrorRecoveryTests: XCTestCase {
         """, macros: testMacros)
         // Note: Should still generate code but compiler will catch constraint errors later
     }
-    
+
     // MARK: - Runtime Error Recovery
-    
+
     func testRetryMacroWithInvalidConfiguration() {
         assertMacroExpansion("""
         @Retry(maxAttempts: -5, timeout: "invalid")
@@ -152,19 +152,19 @@ final class ErrorRecoveryTests: XCTestCase {
         func invalidRetryConfig() throws {
             throw TestError.networkFailure
         }
-        
+
         public func invalidRetryConfigRetry() throws {
             let methodKey = "\\(String(describing: type(of: self))).invalidRetryConfig"
             var lastError: Error?
             var totalDelay: TimeInterval = 0.0
-            
+
             // Handle invalid maxAttempts by using default
             let maxAttempts = max(-5, 1) // Ensure at least 1 attempt
-            
+
             for attempt in 1...maxAttempts {
                 do {
                     let result = invalidRetryConfig()
-                    
+
                     // Record successful call
                     RetryMetricsManager.recordResult(
                         for: methodKey,
@@ -172,10 +172,10 @@ final class ErrorRecoveryTests: XCTestCase {
                         attemptCount: attempt,
                         totalDelay: totalDelay
                     )
-                    
+
                 } catch {
                     lastError = error
-                    
+
                     // Check if this is the last attempt
                     if attempt == maxAttempts {
                         // Record final failure
@@ -188,15 +188,15 @@ final class ErrorRecoveryTests: XCTestCase {
                         )
                         throw error
                     }
-                    
+
                     // Calculate backoff delay with safe defaults
                     let baseDelay = 1.0 * pow(2.0, Double(attempt - 1))
                     let cappedDelay = min(baseDelay, 60.0) // Cap at 60 seconds
                     let delay = cappedDelay
-                    
+
                     // Add to total delay tracking
                     totalDelay += delay
-                    
+
                     // Record retry attempt
                     let retryAttempt = RetryAttempt(
                         attemptNumber: attempt,
@@ -204,20 +204,20 @@ final class ErrorRecoveryTests: XCTestCase {
                         delay: delay
                     )
                     RetryMetricsManager.recordAttempt(retryAttempt, for: methodKey)
-                    
+
                     // Wait before retry
                     if delay > 0 {
                         Thread.sleep(forTimeInterval: delay)
                     }
                 }
             }
-            
+
             // This should never be reached, but just in case
             throw lastError ?? RetryError.maxAttemptsExceeded(attempts: maxAttempts)
         }
         """, macros: testMacros)
     }
-    
+
     func testCircuitBreakerWithInvalidThresholds() {
         assertMacroExpansion("""
         @CircuitBreaker(failureThreshold: -1, successThreshold: 0)
@@ -228,10 +228,10 @@ final class ErrorRecoveryTests: XCTestCase {
         func invalidCircuitConfig() throws -> String {
             return "success"
         }
-        
+
         public func invalidCircuitConfigCircuitBreaker() throws -> String {
             let circuitKey = "\\(String(describing: type(of: self))).invalidCircuitConfig"
-            
+
             // Get or create circuit breaker instance with safe defaults
             let circuitBreaker = CircuitBreakerRegistry.getCircuitBreaker(
                 for: circuitKey,
@@ -240,7 +240,7 @@ final class ErrorRecoveryTests: XCTestCase {
                 successThreshold: max(0, 1), // Ensure positive threshold
                 monitoringWindow: 60.0
             )
-            
+
             // Check if call should be allowed
             guard circuitBreaker.shouldAllowCall() else {
                 // Circuit is open, record blocked call
@@ -251,23 +251,23 @@ final class ErrorRecoveryTests: XCTestCase {
                     circuitState: circuitBreaker.currentState
                 )
                 CircuitBreakerRegistry.recordCall(blockedCall, for: circuitKey)
-                
+
                 throw CircuitBreakerError.circuitOpen(circuitName: circuitKey)
             }
-            
+
             // Execute the method with circuit breaker protection
             let startTime = CFAbsoluteTimeGetCurrent()
             var wasSuccessful = false
             var callError: Error?
-            
+
             do {
                 let result = invalidCircuitConfig()
                 wasSuccessful = true
-                
+
                 // Record successful call
                 let endTime = CFAbsoluteTimeGetCurrent()
                 let responseTime = (endTime - startTime) * 1000 // Convert to milliseconds
-                
+
                 let successfulCall = CircuitBreakerCall(
                     wasSuccessful: true,
                     wasBlocked: false,
@@ -275,19 +275,19 @@ final class ErrorRecoveryTests: XCTestCase {
                     circuitState: circuitBreaker.currentState
                 )
                 CircuitBreakerRegistry.recordCall(successfulCall, for: circuitKey)
-                
+
                 // Update circuit breaker state
                 circuitBreaker.recordCall(wasSuccessful: true)
-                
+
                 return result
             } catch {
                 wasSuccessful = false
                 callError = error
-                
+
                 // Record failed call
                 let endTime = CFAbsoluteTimeGetCurrent()
                 let responseTime = (endTime - startTime) * 1000
-                
+
                 let failedCall = CircuitBreakerCall(
                     wasSuccessful: false,
                     wasBlocked: false,
@@ -296,19 +296,19 @@ final class ErrorRecoveryTests: XCTestCase {
                     error: error
                 )
                 CircuitBreakerRegistry.recordCall(failedCall, for: circuitKey)
-                
+
                 // Update circuit breaker state
                 circuitBreaker.recordCall(wasSuccessful: false)
-                
+
                 // Re-throw the error
                 throw error
             }
         }
         """, macros: testMacros)
     }
-    
+
     // MARK: - Memory Management Edge Cases
-    
+
     func testWeakInjectWithValueTypes() {
         assertMacroExpansion("""
         class TestService {
@@ -317,11 +317,11 @@ final class ErrorRecoveryTests: XCTestCase {
         """, expandedSource: """
         class TestService {
             @WeakInject var count: Int?
-            
+
             private weak var _countWeakBacking: Int?
             private var _countOnceToken: Bool = false
             private let _countOnceTokenLock = NSLock()
-            
+
             private func _countWeakAccessor() -> Int? {
                 func resolveWeakReference() {
                     // Register property for metrics tracking
@@ -336,12 +336,12 @@ final class ErrorRecoveryTests: XCTestCase {
                         threadInfo: ThreadInfo()
                     )
                     WeakInjectionMetrics.recordAccess(pendingInfo)
-                    
+
                     do {
                         // Resolve dependency as weak reference (will fail at runtime for value types)
                         if let resolved = Container.shared.resolve(Int.self) {
                             _countWeakBacking = resolved
-                            
+
                             // Record successful resolution
                             let resolvedInfo = WeakPropertyInfo(
                                 propertyName: "count",
@@ -359,7 +359,7 @@ final class ErrorRecoveryTests: XCTestCase {
                         } else {
                             // Service not found - record failure
                             let error = WeakInjectionError.serviceNotRegistered(serviceName: nil, type: "Int")
-                            
+
                             let failedInfo = WeakPropertyInfo(
                                 propertyName: "count",
                                 propertyType: "Int",
@@ -389,7 +389,7 @@ final class ErrorRecoveryTests: XCTestCase {
                         WeakInjectionMetrics.recordAccess(failedInfo)
                     }
                 }
-                
+
                 // Auto-resolve if reference is nil and auto-resolve is enabled
                 if _countWeakBacking == nil {
                     _countOnceTokenLock.lock()
@@ -401,16 +401,16 @@ final class ErrorRecoveryTests: XCTestCase {
                         _countOnceTokenLock.unlock()
                     }
                 }
-                
+
                 return _countWeakBacking
             }
         }
         """, macros: testMacros)
         // Note: This will generate code but fail at runtime - that's expected behavior
     }
-    
+
     // MARK: - Container State Recovery
-    
+
     func testLazyInjectWithMissingContainer() {
         assertMacroExpansion("""
         class TestService {
@@ -419,18 +419,18 @@ final class ErrorRecoveryTests: XCTestCase {
         """, expandedSource: """
         class TestService {
             @LazyInject var dependency: MissingDependency?
-            
+
             private var _dependencyBacking: MissingDependency?
             private var _dependencyOnceToken: Bool = false
             private let _dependencyOnceTokenLock = NSLock()
-            
+
             var dependency: MissingDependency? {
                 get {
                     _dependencyOnceTokenLock.lock()
                     if !_dependencyOnceToken {
                         _dependencyOnceToken = true
                         _dependencyOnceTokenLock.unlock()
-                        
+
                         // Register property for metrics tracking
                         let pendingInfo = LazyPropertyInfo(
                             propertyName: "dependency",
@@ -443,10 +443,10 @@ final class ErrorRecoveryTests: XCTestCase {
                             threadInfo: ThreadInfo()
                         )
                         LazyInjectionMetrics.recordAccess(pendingInfo)
-                        
+
                         do {
                             _dependencyBacking = Container.shared.resolve(MissingDependency.self)
-                            
+
                             // Record resolution attempt
                             let resolvedInfo = LazyPropertyInfo(
                                 propertyName: "dependency",
@@ -479,7 +479,7 @@ final class ErrorRecoveryTests: XCTestCase {
                     } else {
                         _dependencyOnceTokenLock.unlock()
                     }
-                    
+
                     return _dependencyBacking
                 }
                 set {
@@ -492,21 +492,21 @@ final class ErrorRecoveryTests: XCTestCase {
         }
         """, macros: testMacros)
     }
-    
+
     // MARK: - Thread Safety Edge Cases
-    
+
     func testLazyInjectConcurrentAccess() {
         // This tests the generated code handles concurrent access
         assertMacroExpansion("""
         class ConcurrentService {
             @LazyInject var sharedResource: ExpensiveResource
-            
+
             func accessConcurrently() async {
                 // Multiple concurrent accesses should be thread-safe
                 async let resource1 = sharedResource
                 async let resource2 = sharedResource
                 async let resource3 = sharedResource
-                
+
                 let (r1, r2, r3) = await (resource1, resource2, resource3)
                 // All should be the same instance due to lazy loading
             }
@@ -514,28 +514,28 @@ final class ErrorRecoveryTests: XCTestCase {
         """, expandedSource: """
         class ConcurrentService {
             @LazyInject var sharedResource: ExpensiveResource
-            
+
             func accessConcurrently() async {
                 // Multiple concurrent accesses should be thread-safe
                 async let resource1 = sharedResource
                 async let resource2 = sharedResource
                 async let resource3 = sharedResource
-                
+
                 let (r1, r2, r3) = await (resource1, resource2, resource3)
                 // All should be the same instance due to lazy loading
             }
-            
+
             private var _sharedResourceBacking: ExpensiveResource?
             private var _sharedResourceOnceToken: Bool = false
             private let _sharedResourceOnceTokenLock = NSLock()
-            
+
             var sharedResource: ExpensiveResource {
                 get {
                     _sharedResourceOnceTokenLock.lock()
                     if !_sharedResourceOnceToken {
                         _sharedResourceOnceToken = true
                         _sharedResourceOnceTokenLock.unlock()
-                        
+
                         // Register property for metrics tracking
                         let pendingInfo = LazyPropertyInfo(
                             propertyName: "sharedResource",
@@ -548,10 +548,10 @@ final class ErrorRecoveryTests: XCTestCase {
                             threadInfo: ThreadInfo()
                         )
                         LazyInjectionMetrics.recordAccess(pendingInfo)
-                        
+
                         do {
                             _sharedResourceBacking = Container.shared.resolve(ExpensiveResource.self)
-                            
+
                             // Record resolution attempt
                             let resolvedInfo = LazyPropertyInfo(
                                 propertyName: "sharedResource",
@@ -584,7 +584,7 @@ final class ErrorRecoveryTests: XCTestCase {
                     } else {
                         _sharedResourceOnceTokenLock.unlock()
                     }
-                    
+
                     return _sharedResourceBacking!
                 }
                 set {
@@ -597,9 +597,9 @@ final class ErrorRecoveryTests: XCTestCase {
         }
         """, macros: testMacros)
     }
-    
+
     // MARK: - Cache Error Recovery
-    
+
     func testCacheWithInvalidKeyGeneration() {
         assertMacroExpansion("""
         @Cache(keyGenerator: "invalidFunction")
@@ -610,10 +610,10 @@ final class ErrorRecoveryTests: XCTestCase {
         func cachedOperation(param1: String, param2: Int) -> String {
             return "result: \\(param1)-\\(param2)"
         }
-        
+
         public func cachedOperationCached(param1: String, param2: Int) -> String {
             let methodKey = "\\(String(describing: type(of: self))).cachedOperation"
-            
+
             // Generate cache key with fallback to default if custom generator fails
             let cacheKey: String
             do {
@@ -628,17 +628,17 @@ final class ErrorRecoveryTests: XCTestCase {
                 // Fallback to default key generation on error
                 cacheKey = "\\(methodKey)_\\(param1)_\\(param2)"
             }
-            
+
             // Check cache first
             if let cachedResult = CacheManager.shared.get(key: cacheKey, type: String.self) {
                 // Record cache hit
                 CacheMetrics.recordHit(for: methodKey, key: cacheKey)
                 return cachedResult
             }
-            
+
             // Execute method and cache result
             let result = cachedOperation(param1: param1, param2: param2)
-            
+
             // Store in cache with error handling
             do {
                 CacheManager.shared.set(key: cacheKey, value: result, ttl: 300.0)
@@ -647,7 +647,7 @@ final class ErrorRecoveryTests: XCTestCase {
                 // Log cache storage error but don't fail the operation
                 CacheMetrics.recordError(for: methodKey, key: cacheKey, error: error)
             }
-            
+
             return result
         }
         """, macros: testMacros)
@@ -655,56 +655,18 @@ final class ErrorRecoveryTests: XCTestCase {
 }
 
 // MARK: - Test Support Types
-
-enum TestError: Error {
-    case networkFailure
-    case parseError
-    case unknownError
-}
-
-class MissingDependency {
-    let id = UUID()
-}
-
-class ExpensiveResource {
-    let id = UUID()
-    init() {
-        // Simulate expensive initialization
-        Thread.sleep(forTimeInterval: 0.001)
-    }
-}
+// Note: Common test types are now imported from TestUtilities.swift
 
 // MARK: - Mock Implementations for Generated Code
 
-struct RetryAttempt {
-    let attemptNumber: Int
-    let error: Error
-    let delay: TimeInterval
-}
+public struct CircuitBreakerCall {
+    public let wasSuccessful: Bool
+    public let wasBlocked: Bool
+    public let responseTime: TimeInterval
+    public let circuitState: CircuitBreakerState
+    public let error: Error?
 
-enum RetryError: Error {
-    case maxAttemptsExceeded(attempts: Int)
-    case timeoutExceeded(timeout: TimeInterval)
-}
-
-class RetryMetricsManager {
-    static func recordResult(for methodKey: String, succeeded: Bool, attemptCount: Int, totalDelay: TimeInterval, finalError: Error? = nil) {
-        // Mock implementation for testing
-    }
-    
-    static func recordAttempt(_ attempt: RetryAttempt, for methodKey: String) {
-        // Mock implementation for testing
-    }
-}
-
-struct CircuitBreakerCall {
-    let wasSuccessful: Bool
-    let wasBlocked: Bool
-    let responseTime: TimeInterval
-    let circuitState: CircuitBreakerState
-    let error: Error?
-    
-    init(wasSuccessful: Bool, wasBlocked: Bool, responseTime: TimeInterval, circuitState: CircuitBreakerState, error: Error? = nil) {
+    public init(wasSuccessful: Bool, wasBlocked: Bool, responseTime: TimeInterval, circuitState: CircuitBreakerState, error: Error? = nil) {
         self.wasSuccessful = wasSuccessful
         self.wasBlocked = wasBlocked
         self.responseTime = responseTime
@@ -713,36 +675,30 @@ struct CircuitBreakerCall {
     }
 }
 
-enum CircuitBreakerState {
+public enum CircuitBreakerState {
     case closed, open, halfOpen
 }
 
-enum CircuitBreakerError: Error {
+public enum CircuitBreakerError: Error {
     case circuitOpen(circuitName: String)
     case noFallbackAvailable(circuitName: String)
 }
 
-class MockCircuitBreaker {
-    let currentState: CircuitBreakerState = .closed
-    
-    func shouldAllowCall() -> Bool {
-        return currentState != .open
+public class MockCircuitBreaker {
+    public let currentState: CircuitBreakerState = .closed
+
+    public init() {}
+
+    public func shouldAllowCall() -> Bool {
+        currentState != .open
     }
-    
-    func recordCall(wasSuccessful: Bool) {
+
+    public func recordCall(wasSuccessful: Bool) {
         // Mock implementation
     }
 }
 
-class CircuitBreakerRegistry {
-    static func getCircuitBreaker(for key: String, failureThreshold: Int, timeout: TimeInterval, successThreshold: Int, monitoringWindow: TimeInterval) -> MockCircuitBreaker {
-        return MockCircuitBreaker()
-    }
-    
-    static func recordCall(_ call: CircuitBreakerCall, for key: String) {
-        // Mock implementation for testing
-    }
-}
+// CircuitBreakerRegistry is now imported from TestUtilities.swift
 
 struct LazyPropertyInfo {
     let propertyName: String
@@ -756,7 +712,7 @@ struct LazyPropertyInfo {
     let resolutionCount: Int?
     let resolutionError: Error?
     let threadInfo: ThreadInfo
-    
+
     init(propertyName: String, propertyType: String, containerName: String, serviceName: String?, isOptional: Bool, state: LazyPropertyState, initialResolutionTime: Date, lastAccessTime: Date? = nil, resolutionCount: Int? = nil, resolutionError: Error? = nil, threadInfo: ThreadInfo = ThreadInfo()) {
         self.propertyName = propertyName
         self.propertyType = propertyType
@@ -789,7 +745,7 @@ struct WeakPropertyInfo {
     let resolutionError: Error?
     let deallocationTime: Date?
     let threadInfo: ThreadInfo
-    
+
     init(propertyName: String, propertyType: String, containerName: String, serviceName: String?, autoResolve: Bool, state: WeakPropertyState, initialResolutionTime: Date, lastAccessTime: Date? = nil, resolutionCount: Int? = nil, resolutionError: Error? = nil, deallocationTime: Date? = nil, threadInfo: ThreadInfo = ThreadInfo()) {
         self.propertyName = propertyName
         self.propertyType = propertyType
@@ -817,7 +773,7 @@ enum WeakInjectionError: Error {
 struct ThreadInfo {
     let threadId: String
     let queueLabel: String?
-    
+
     init() {
         self.threadId = Thread.current.description
         self.queueLabel = OperationQueue.current?.name
@@ -836,27 +792,17 @@ class WeakInjectionMetrics {
     }
 }
 
-class CacheManager {
-    static let shared = CacheManager()
-    
-    func get<T>(key: String, type: T.Type) -> T? {
-        return nil
-    }
-    
-    func set<T>(key: String, value: T, ttl: TimeInterval) throws {
-        // Mock implementation
-    }
-}
+// CacheManager is now imported from TestUtilities.swift
 
 class CacheMetrics {
     static func recordHit(for methodKey: String, key: String) {
         // Mock implementation
     }
-    
+
     static func recordMiss(for methodKey: String, key: String) {
         // Mock implementation
     }
-    
+
     static func recordError(for methodKey: String, key: String, error: Error) {
         // Mock implementation
     }

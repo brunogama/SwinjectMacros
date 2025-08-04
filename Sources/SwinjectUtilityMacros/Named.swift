@@ -19,7 +19,7 @@ import Swinject
 ///         // Primary database implementation
 ///     }
 /// }
-/// 
+///
 /// @Named("secondary")
 /// class SecondaryDatabase: DatabaseProtocol {
 ///     init(connectionString: String) {
@@ -51,8 +51,8 @@ import Swinject
 /// class HTTPClient: NetworkClientProtocol {
 ///     func request(_ url: URL) async throws -> Data { }
 /// }
-/// 
-/// @Named("websocket", protocol: "NetworkClientProtocol") 
+///
+/// @Named("websocket", protocol: "NetworkClientProtocol")
 /// class WebSocketClient: NetworkClientProtocol {
 ///     func request(_ url: URL) async throws -> Data { }
 /// }
@@ -70,7 +70,7 @@ import Swinject
 ///         // Named dependencies injected automatically
 ///     }
 /// }
-/// 
+///
 /// // Or resolve explicitly:
 /// let primaryDB = container.resolve(DatabaseProtocol.self, name: "primary")
 /// let cache = container.resolve(CacheProtocol.self, name: "redis")
@@ -90,10 +90,10 @@ import Swinject
 /// ```swift
 /// @Named("payment-gateway", priority: 100)
 /// class PremiumPaymentGateway: PaymentGatewayProtocol { }
-/// 
+///
 /// @Named("payment-gateway", priority: 50)
 /// class BasicPaymentGateway: PaymentGatewayProtocol { }
-/// 
+///
 /// // Higher priority service is preferred when multiple services share a name
 /// ```
 ///
@@ -101,7 +101,7 @@ import Swinject
 /// ```swift
 /// @Named("analytics", condition: "Environment.isProduction")
 /// class ProductionAnalytics: AnalyticsProtocol { }
-/// 
+///
 /// @Named("analytics", condition: "Environment.isDevelopment")
 /// class DevelopmentAnalytics: AnalyticsProtocol { }
 /// ```
@@ -112,7 +112,7 @@ import Swinject
 /// class SessionCache: CacheProtocol {
 ///     // Singleton session cache
 /// }
-/// 
+///
 /// @Named("request-cache", scope: .transient)
 /// class RequestCache: CacheProtocol {
 ///     // New cache per request
@@ -131,92 +131,21 @@ public macro Named(
 
 // MARK: - Named Service Support Types
 
-/// Named service configuration
-public struct NamedServiceConfiguration {
-    public let names: [String]
-    public let protocolType: String?
-    public let scope: ObjectScope
-    public let isDefault: Bool
-    public let aliases: [String]
-    public let priority: Int
-    
-    public init(
-        names: [String],
-        protocolType: String? = nil,
-        scope: ObjectScope = .graph,
-        isDefault: Bool = false,
-        aliases: [String] = [],
-        priority: Int = 0
-    ) {
-        self.names = names
-        self.protocolType = protocolType
-        self.scope = scope
-        self.isDefault = isDefault
-        self.aliases = aliases
-        self.priority = priority
-    }
-    
-    /// All names including aliases
-    public var allNames: [String] {
-        return names + aliases
-    }
-    
-    /// Primary name (first in names array)
-    public var primaryName: String {
-        return names.first ?? ""
-    }
-}
-
-/// Named service registry for runtime introspection
-public class NamedServiceRegistry {
-    private static var registrations: [String: [NamedServiceConfiguration]] = [:]
-    private static let lock = NSLock()
-    
-    /// Register a named service configuration
-    public static func register(_ configuration: NamedServiceConfiguration, for typeName: String) {
-        lock.lock()
-        defer { lock.unlock() }
-        
-        if registrations[typeName] == nil {
-            registrations[typeName] = []
-        }
-        registrations[typeName]?.append(configuration)
-    }
-    
-    /// Get all configurations for a service type
-    public static func getConfigurations(for typeName: String) -> [NamedServiceConfiguration] {
-        lock.lock()
-        defer { lock.unlock() }
-        return registrations[typeName] ?? []
-    }
-    
-    /// Find configuration by name
-    public static func findConfiguration(name: String, for typeName: String) -> NamedServiceConfiguration? {
-        let configurations = getConfigurations(for: typeName)
-        return configurations.first { config in
-            config.allNames.contains(name)
-        }
-    }
-    
-    /// Get all registered service names
-    public static func getAllNames(for typeName: String) -> [String] {
-        let configurations = getConfigurations(for: typeName)
-        return configurations.flatMap { $0.allNames }
-    }
-}
+// NamedServiceConfiguration and NamedServiceRegistry are now defined in Utilities/NamedServiceRegistry.swift
+// This avoids duplication and provides a centralized location for these types
 
 /// Named service resolution strategy
 public enum NamedResolutionStrategy {
-    case exact          // Must match exact name
-    case fuzzy          // Allow partial matches
-    case priority       // Use highest priority service
-    case fallback       // Try exact, then priority, then default
+    case exact // Must match exact name
+    case fuzzy // Allow partial matches
+    case priority // Use highest priority service
+    case fallback // Try exact, then priority, then default
 }
 
 // MARK: - Container Extensions for Named Services
 
 public extension Container {
-    
+
     /// Register a service with multiple names
     func registerNamed<Service>(
         _ serviceType: Service.Type,
@@ -228,23 +157,23 @@ public extension Container {
             let registration = register(serviceType, name: primaryName, factory: factory)
             registration.inObjectScope(configuration.scope.swinjectScope)
         }
-        
+
         // Register aliases
         for alias in configuration.aliases {
             let registration = register(serviceType, name: alias) { resolver in
                 // Resolve via primary name
-                return resolver.resolve(serviceType, name: configuration.primaryName)!
+                resolver.resolve(serviceType, name: configuration.primaryName)!
             }
             registration.inObjectScope(configuration.scope.swinjectScope)
         }
-        
+
         // Register as default if specified
         if configuration.isDefault {
             let registration = register(serviceType, factory: factory)
             registration.inObjectScope(configuration.scope.swinjectScope)
         }
     }
-    
+
     /// Resolve service by name with fallback strategy
     func resolveNamed<Service>(
         _ serviceType: Service.Type,
@@ -254,19 +183,19 @@ public extension Container {
         switch strategy {
         case .exact:
             return resolve(serviceType, name: name)
-            
+
         case .priority:
             // Find highest priority service with this name
             let typeName = String(describing: serviceType)
             let configurations = NamedServiceRegistry.getConfigurations(for: typeName)
             let matchingConfigs = configurations.filter { $0.allNames.contains(name) }
             let highestPriority = matchingConfigs.max(by: { $0.priority < $1.priority })
-            
+
             if let config = highestPriority {
                 return resolve(serviceType, name: config.primaryName)
             }
             return nil
-            
+
         case .fallback:
             // Try exact match first, then priority, then default
             if let exact = resolve(serviceType, name: name) {
@@ -276,13 +205,13 @@ public extension Container {
                 return priority
             }
             return resolve(serviceType) // Default registration
-            
+
         case .fuzzy:
             // Find names that contain the search term
             let typeName = String(describing: serviceType)
             let allNames = NamedServiceRegistry.getAllNames(for: typeName)
             let fuzzyMatches = allNames.filter { $0.lowercased().contains(name.lowercased()) }
-            
+
             for match in fuzzyMatches {
                 if let service = resolve(serviceType, name: match) {
                     return service
@@ -291,15 +220,15 @@ public extension Container {
             return nil
         }
     }
-    
+
     /// Get all registered names for a service type
     func getRegisteredNames<Service>(for serviceType: Service.Type) -> [String] {
         let typeName = String(describing: serviceType)
         return NamedServiceRegistry.getAllNames(for: typeName)
     }
-    
+
     /// Check if a named service is available
     func isNamedServiceAvailable<Service>(_ serviceType: Service.Type, name: String) -> Bool {
-        return resolve(serviceType, name: name) != nil
+        resolve(serviceType, name: name) != nil
     }
 }

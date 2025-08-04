@@ -24,7 +24,7 @@ import Swinject
 /// // Usage with debug information:
 /// let container = DIContainer()
 /// container.register(UserService.self) { _ in UserService() }
-/// 
+///
 /// // Debug information available:
 /// print(container.getRegistrationInfo())
 /// print(container.getDependencyGraph())
@@ -76,7 +76,7 @@ import Swinject
 /// ### Registration Information
 /// ```swift
 /// let container = DIContainer()
-/// 
+///
 /// // Get all registrations
 /// let registrations = container.getAllRegistrations()
 /// for registration in registrations {
@@ -91,7 +91,7 @@ import Swinject
 /// // Generate dependency graph
 /// let graph = container.generateDependencyGraph()
 /// print(graph.dotFormat) // GraphViz DOT format
-/// 
+///
 /// // Export to file for visualization
 /// container.exportDependencyGraph(to: "dependencies.dot")
 /// ```
@@ -100,10 +100,10 @@ import Swinject
 /// ```swift
 /// // Enable performance tracking
 /// container.enablePerformanceTracking()
-/// 
+///
 /// // Resolve services with timing
 /// let userService = container.resolve(UserService.self)
-/// 
+///
 /// // Get performance metrics
 /// let metrics = container.getPerformanceMetrics()
 /// print("Average resolution time: \(metrics.averageResolutionTime)ms")
@@ -114,7 +114,7 @@ import Swinject
 /// ```swift
 /// // Validate container health
 /// let healthCheck = container.performHealthCheck()
-/// 
+///
 /// if !healthCheck.isHealthy {
 ///     print("❌ Container Issues:")
 ///     for issue in healthCheck.issues {
@@ -143,10 +143,10 @@ public enum DebugLogLevel: String, CaseIterable {
     case info = "info"
     case verbose = "verbose"
     case trace = "trace"
-    
+
     /// Check if current level includes the specified level
     public func includes(_ level: DebugLogLevel) -> Bool {
-        return self.rawValue >= level.rawValue
+        self.rawValue >= level.rawValue
     }
 }
 
@@ -158,7 +158,7 @@ public struct DebugContainerConfiguration {
     public let performanceTracking: Bool
     public let visualizeGraph: Bool
     public let realTimeMonitoring: Bool
-    
+
     public init(
         logLevel: DebugLogLevel = .info,
         trackResolutions: Bool = true,
@@ -188,7 +188,7 @@ public struct RegistrationInfo {
     public let dependencies: [String]
     public let isResolved: Bool
     public let resolutionCount: Int
-    
+
     public init(
         serviceType: String,
         implementationType: String? = nil,
@@ -216,14 +216,14 @@ public struct RegistrationInfo {
 public struct CircularDependency {
     public let cycle: [String]
     public let detectionTimestamp: Date
-    
+
     public init(cycle: [String], detectionTimestamp: Date = Date()) {
         self.cycle = cycle
         self.detectionTimestamp = detectionTimestamp
     }
-    
+
     public var description: String {
-        return cycle.joined(separator: " -> ") + " -> " + (cycle.first ?? "")
+        cycle.joined(separator: " -> ") + " -> " + (cycle.first ?? "")
     }
 }
 
@@ -236,7 +236,7 @@ public struct ContainerPerformanceMetrics {
     public let fastestResolution: ResolutionMetric?
     public let totalResolutionTime: TimeInterval
     public let cacheHitRate: Double
-    
+
     public init(
         registrationCount: Int = 0,
         resolutionCount: Int = 0,
@@ -262,7 +262,7 @@ public struct ResolutionMetric {
     public let resolutionTime: TimeInterval
     public let timestamp: Date
     public let stackTrace: [String]?
-    
+
     public init(serviceType: String, resolutionTime: TimeInterval, timestamp: Date = Date(), stackTrace: [String]? = nil) {
         self.serviceType = serviceType
         self.resolutionTime = resolutionTime
@@ -277,7 +277,7 @@ public struct ContainerHealthCheck {
     public let issues: [ContainerIssue]
     public let checkTimestamp: Date
     public let checkDuration: TimeInterval
-    
+
     public init(isHealthy: Bool, issues: [ContainerIssue] = [], checkTimestamp: Date = Date(), checkDuration: TimeInterval = 0) {
         self.isHealthy = isHealthy
         self.issues = issues
@@ -291,12 +291,12 @@ public struct ContainerIssue {
     public enum Severity {
         case warning, error, critical
     }
-    
+
     public let severity: Severity
     public let description: String
     public let recommendation: String?
     public let affectedServices: [String]
-    
+
     public init(severity: Severity, description: String, recommendation: String? = nil, affectedServices: [String] = []) {
         self.severity = severity
         self.description = description
@@ -310,37 +310,37 @@ public struct ContainerIssue {
 /// Logger for container debug operations
 public class ContainerDebugLogger {
     public static let shared = ContainerDebugLogger()
-    
+
     private var logLevel: DebugLogLevel = .info
     private var logHandlers: [(DebugLogLevel, String) -> Void] = []
-    
+
     private init() {
         // Add default console logger
         addLogHandler { level, message in
             let prefix = self.getLogPrefix(for: level)
-            print("\(prefix) \(message)")
+            DebugLogger.debug("\(prefix) \(message)")
         }
     }
-    
+
     /// Set the minimum log level
     public func setLogLevel(_ level: DebugLogLevel) {
         logLevel = level
     }
-    
+
     /// Add a custom log handler
     public func addLogHandler(_ handler: @escaping (DebugLogLevel, String) -> Void) {
         logHandlers.append(handler)
     }
-    
+
     /// Log a message at the specified level
     public func log(_ level: DebugLogLevel, _ message: String) {
         guard logLevel.includes(level) else { return }
-        
+
         for handler in logHandlers {
             handler(level, message)
         }
     }
-    
+
     private func getLogPrefix(for level: DebugLogLevel) -> String {
         switch level {
         case .silent: return ""
@@ -356,29 +356,29 @@ public class ContainerDebugLogger {
 // MARK: - Container Extensions for Debugging
 
 public extension Container {
-    
+
     /// Enable debug mode with default configuration
     func enableDebugMode() {
         // Enable basic debug logging
-        print("🐛 Debug mode enabled for container at \(Date())")
+        DebugLogger.info("🐛 Debug mode enabled for container at \(Date())")
     }
-    
+
     /// Get basic registration statistics
     func getRegistrationStats() -> (count: Int, resolvedCount: Int) {
         // This would require introspection into Swinject's internals
         // For now, return placeholder values
-        return (count: 0, resolvedCount: 0)
+        (count: 0, resolvedCount: 0)
     }
-    
+
     /// Log container state for debugging
     func logContainerState() {
         ContainerDebugLogger.shared.log(.info, "Container state logging not yet implemented")
     }
-    
+
     /// Validate container configuration
     func validateConfiguration() -> [String] {
         // Return validation warnings/errors
-        return []
+        []
     }
 }
 
@@ -386,7 +386,7 @@ public extension Container {
 
 /// Utility functions for container debugging
 public struct ContainerDebugUtils {
-    
+
     /// Generate a unique identifier for a service type
     public static func generateServiceId(for serviceType: Any.Type, name: String? = nil) -> String {
         let typeName = String(describing: serviceType)
@@ -395,19 +395,19 @@ public struct ContainerDebugUtils {
         }
         return typeName
     }
-    
+
     /// Extract service type name from a type
     public static func getServiceTypeName(from type: Any.Type) -> String {
-        return String(describing: type)
+        String(describing: type)
     }
-    
+
     /// Generate a timestamp string for logging
     public static func timestamp() -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
         return formatter.string(from: Date())
     }
-    
+
     /// Format time interval for display
     public static func formatTimeInterval(_ interval: TimeInterval) -> String {
         if interval < 0.001 {
@@ -426,7 +426,7 @@ public struct ContainerDebugUtils {
 public class ContainerMemoryTracker {
     private var memorySnapshots: [Date: Int] = [:]
     private let queue = DispatchQueue(label: "container.memory.tracker")
-    
+
     /// Take a memory snapshot
     public func takeSnapshot() {
         queue.async {
@@ -434,22 +434,22 @@ public class ContainerMemoryTracker {
             self.memorySnapshots[Date()] = usage
         }
     }
-    
+
     /// Get memory usage trend
     public func getMemoryTrend() -> [Date: Int] {
-        return queue.sync { memorySnapshots }
+        queue.sync { memorySnapshots }
     }
-    
+
     private func getCurrentMemoryUsage() -> Int {
         var info = mach_task_basic_info()
-        var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size)/4
-        
+        var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size) / 4
+
         let kerr: kern_return_t = withUnsafeMutablePointer(to: &info) {
             $0.withMemoryRebound(to: integer_t.self, capacity: 1) {
                 task_info(mach_task_self_, task_flavor_t(MACH_TASK_BASIC_INFO), $0, &count)
             }
         }
-        
+
         if kerr == KERN_SUCCESS {
             return Int(info.resident_size)
         } else {
