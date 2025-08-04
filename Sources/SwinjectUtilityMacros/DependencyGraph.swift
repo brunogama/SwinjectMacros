@@ -22,7 +22,7 @@ import Swinject
 ///                 logger: resolver.resolve(LoggerProtocol.self)!
 ///             )
 ///         }
-///         
+///
 ///         container.register(DatabaseProtocol.self) { _ in
 ///             PostgreSQLDatabase()
 ///         }
@@ -133,10 +133,10 @@ public struct DependencyGraphConfiguration {
     public let realTimeUpdates: Bool
     public let strictCycleDetection: Bool
     public let breakCyclesAutomatically: Bool
-    
+
     public init(
         format: GraphFormat = .graphviz,
-        includeOptional: Bool = true,  
+        includeOptional: Bool = true,
         detectCycles: Bool = true,
         exportPath: String? = nil,
         realTimeUpdates: Bool = false,
@@ -157,13 +157,13 @@ public struct DependencyGraphConfiguration {
 public protocol DependencyGraphProvider {
     /// Generate dependency graph in the specified format
     func generateDependencyGraph(format: GraphFormat) -> String
-    
+
     /// Detect circular dependencies in the service graph
     func detectCircularDependencies() -> [CircularDependencyInfo]
-    
+
     /// Export dependency graph to file
     func exportDependencyGraph(to path: String, format: GraphFormat) throws
-    
+
     /// Get dependency analysis report
     func getDependencyAnalysis() -> DependencyAnalysisReport
 }
@@ -174,22 +174,22 @@ public struct CircularDependencyInfo {
     public let severity: CycleSeverity
     public let detectedAt: Date
     public let resolutionSuggestion: String
-    
+
     public enum CycleSeverity {
-        case warning   // Optional dependency cycle
-        case error     // Required dependency cycle
-        case critical  // Unresolvable cycle
+        case warning // Optional dependency cycle
+        case error // Required dependency cycle
+        case critical // Unresolvable cycle
     }
-    
+
     public init(cycle: [String], severity: CycleSeverity, detectedAt: Date = Date(), resolutionSuggestion: String) {
         self.cycle = cycle
         self.severity = severity
         self.detectedAt = detectedAt
         self.resolutionSuggestion = resolutionSuggestion
     }
-    
+
     public var description: String {
-        return cycle.joined(separator: " → ") + " → " + (cycle.first ?? "")
+        cycle.joined(separator: " → ") + " → " + (cycle.first ?? "")
     }
 }
 
@@ -202,7 +202,7 @@ public struct DependencyAnalysisReport {
     public let highlyDependentServices: [String]
     public let dependencyDepth: [String: Int]
     public let analysisTimestamp: Date
-    
+
     public init(
         totalServices: Int,
         totalDependencies: Int,
@@ -220,12 +220,12 @@ public struct DependencyAnalysisReport {
         self.dependencyDepth = dependencyDepth
         self.analysisTimestamp = analysisTimestamp
     }
-    
+
     /// Check if the dependency graph is healthy
     public var isHealthy: Bool {
-        return circularDependencies.isEmpty && orphanedServices.isEmpty
+        circularDependencies.isEmpty && orphanedServices.isEmpty
     }
-    
+
     /// Get health score (0.0 - 1.0)
     public var healthScore: Double {
         let circularPenalty = Double(circularDependencies.count) * 0.3
@@ -239,7 +239,7 @@ public struct DependencyAnalysisReport {
 
 /// Utility for generating dependency graphs in various formats
 public struct DependencyGraphGenerator {
-    
+
     /// Generate GraphViz DOT format graph
     public static func generateDotGraph(
         nodes: [DependencyNode],
@@ -250,16 +250,16 @@ public struct DependencyGraphGenerator {
         dot += "    rankdir=TB;\n"
         dot += "    node [shape=box, style=\"rounded,filled\", fontname=\"Arial\"];\n"
         dot += "    edge [fontname=\"Arial\", fontsize=10];\n\n"
-        
+
         // Add nodes with styling
         for node in nodes {
             let fillColor = getNodeColor(for: node)
             let shape = getNodeShape(for: node)
             dot += "    \"\(node.id)\" [label=\"\(node.label)\", fillcolor=\(fillColor), shape=\(shape)];\n"
         }
-        
+
         dot += "\n"
-        
+
         // Add edges with styling
         for edge in edges {
             let style = edge.isOptional ? "dashed" : "solid"
@@ -270,11 +270,11 @@ public struct DependencyGraphGenerator {
             }
             dot += "    \"\(edge.from)\" -> \"\(edge.to)\" [style=\(style), color=\(color)\(edgeLabel)];\n"
         }
-        
+
         dot += "}\n"
         return dot
     }
-    
+
     /// Generate JSON format graph
     public static func generateJSONGraph(
         nodes: [DependencyNode],
@@ -299,7 +299,7 @@ public struct DependencyGraphGenerator {
                 ]
             }
         ]
-        
+
         do {
             let jsonData = try JSONSerialization.data(withJSONObject: graph, options: .prettyPrinted)
             return String(data: jsonData, encoding: .utf8) ?? "{}"
@@ -307,31 +307,31 @@ public struct DependencyGraphGenerator {
             return "{\"error\": \"Failed to serialize graph to JSON\"}"
         }
     }
-    
+
     /// Generate Mermaid.js format graph
     public static func generateMermaidGraph(
         nodes: [DependencyNode],
         edges: [DependencyEdge]
     ) -> String {
         var mermaid = "graph TD\n"
-        
+
         // Add nodes
         for node in nodes {
-            let shape = node.isResolved ? "[]" : "()"
+            _ = node.isResolved ? "[]" : "()" // Shape could be used for future formatting
             mermaid += "    \(node.id)[\(node.label)]\n"
         }
-        
+
         mermaid += "\n"
-        
+
         // Add edges
         for edge in edges {
             let arrow = edge.isOptional ? "-.->" : "-->"
             mermaid += "    \(edge.from) \(arrow) \(edge.to)\n"
         }
-        
+
         return mermaid
     }
-    
+
     private static func getNodeColor(for node: DependencyNode) -> String {
         switch node.objectScope.lowercased() {
         case "container": return "lightblue"
@@ -340,9 +340,9 @@ public struct DependencyGraphGenerator {
         default: return node.isResolved ? "lightgreen" : "lightgray"
         }
     }
-    
+
     private static func getNodeShape(for node: DependencyNode) -> String {
-        return node.isResolved ? "box" : "ellipse"
+        node.isResolved ? "box" : "ellipse"
     }
 }
 
@@ -350,7 +350,7 @@ public struct DependencyGraphGenerator {
 
 /// Advanced circular dependency detector
 public class CircularDependencyDetector {
-    
+
     /// Detect all circular dependencies in a dependency graph
     public static func detectCircularDependencies(
         in graph: DependencyGraph
@@ -359,7 +359,7 @@ public class CircularDependencyDetector {
         var visited: Set<String> = []
         var recursionStack: Set<String> = []
         var currentPath: [String] = []
-        
+
         for node in graph.nodes {
             if !visited.contains(node.id) {
                 detectCyclesRecursive(
@@ -372,10 +372,10 @@ public class CircularDependencyDetector {
                 )
             }
         }
-        
+
         return cycles
     }
-    
+
     private static func detectCyclesRecursive(
         nodeId: String,
         graph: DependencyGraph,
@@ -387,13 +387,13 @@ public class CircularDependencyDetector {
         visited.insert(nodeId)
         recursionStack.insert(nodeId)
         currentPath.append(nodeId)
-        
+
         // Find all edges from this node
         let outgoingEdges = graph.edges.filter { $0.from == nodeId }
-        
+
         for edge in outgoingEdges {
             let targetId = edge.to
-            
+
             if !visited.contains(targetId) {
                 // Continue DFS
                 detectCyclesRecursive(
@@ -410,7 +410,7 @@ public class CircularDependencyDetector {
                     let cycle = Array(currentPath[cycleStartIndex...])
                     let severity: CircularDependencyInfo.CycleSeverity = edge.isOptional ? .warning : .error
                     let suggestion = generateResolutionSuggestion(for: cycle)
-                    
+
                     cycles.append(CircularDependencyInfo(
                         cycle: cycle,
                         severity: severity,
@@ -419,11 +419,11 @@ public class CircularDependencyDetector {
                 }
             }
         }
-        
+
         recursionStack.remove(nodeId)
         currentPath.removeLast()
     }
-    
+
     private static func generateResolutionSuggestion(for cycle: [String]) -> String {
         if cycle.count == 2 {
             return "Consider using lazy injection or breaking the dependency with an interface"
@@ -439,7 +439,7 @@ public class CircularDependencyDetector {
 
 /// Tools for visualizing and analyzing dependency graphs
 public struct GraphVisualizationTools {
-    
+
     /// Export graph to various formats
     public static func exportGraph(
         _ graph: DependencyGraph,
@@ -447,7 +447,7 @@ public struct GraphVisualizationTools {
         format: GraphFormat
     ) throws {
         let content: String
-        
+
         switch format {
         case .graphviz:
             content = DependencyGraphGenerator.generateDotGraph(
@@ -469,36 +469,36 @@ public struct GraphVisualizationTools {
         case .yaml:
             content = generateYAMLGraph(graph)
         }
-        
+
         try content.write(to: URL(fileURLWithPath: path), atomically: true, encoding: .utf8)
     }
-    
+
     /// Generate graph statistics
     public static func generateStatistics(for graph: DependencyGraph) -> GraphStatistics {
         let nodeCount = graph.nodes.count
         let edgeCount = graph.edges.count
         let optionalEdgeCount = graph.edges.filter { $0.isOptional }.count
         let circularDependencyCount = graph.circularDependencies.count
-        
+
         // Calculate node degrees
         var inDegree: [String: Int] = [:]
         var outDegree: [String: Int] = [:]
-        
+
         for node in graph.nodes {
             inDegree[node.id] = 0
             outDegree[node.id] = 0
         }
-        
+
         for edge in graph.edges {
             outDegree[edge.from, default: 0] += 1
             inDegree[edge.to, default: 0] += 1
         }
-        
+
         let maxInDegree = inDegree.values.max() ?? 0
         let maxOutDegree = outDegree.values.max() ?? 0
         let avgInDegree = Double(edgeCount) / Double(nodeCount)
         let avgOutDegree = avgInDegree // Same for directed graphs
-        
+
         return GraphStatistics(
             nodeCount: nodeCount,
             edgeCount: edgeCount,
@@ -512,29 +512,29 @@ public struct GraphVisualizationTools {
             outDegree: outDegree
         )
     }
-    
+
     private static func generateXMLGraph(_ graph: DependencyGraph) -> String {
         var xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<dependencyGraph>\n"
-        
+
         xml += "  <nodes>\n"
         for node in graph.nodes {
             xml += "    <node id=\"\(node.id)\" label=\"\(node.label)\" serviceType=\"\(node.serviceType)\" scope=\"\(node.objectScope)\" resolved=\"\(node.isResolved)\"/>\n"
         }
         xml += "  </nodes>\n"
-        
+
         xml += "  <edges>\n"
         for edge in graph.edges {
             xml += "    <edge from=\"\(edge.from)\" to=\"\(edge.to)\" optional=\"\(edge.isOptional)\"/>\n"
         }
         xml += "  </edges>\n"
-        
+
         xml += "</dependencyGraph>\n"
         return xml
     }
-    
+
     private static func generateYAMLGraph(_ graph: DependencyGraph) -> String {
         var yaml = "dependencyGraph:\n"
-        
+
         yaml += "  nodes:\n"
         for node in graph.nodes {
             yaml += "    - id: \(node.id)\n"
@@ -543,14 +543,14 @@ public struct GraphVisualizationTools {
             yaml += "      scope: \(node.objectScope)\n"
             yaml += "      resolved: \(node.isResolved)\n"
         }
-        
+
         yaml += "  edges:\n"
         for edge in graph.edges {
             yaml += "    - from: \(edge.from)\n"
             yaml += "      to: \(edge.to)\n"
             yaml += "      optional: \(edge.isOptional)\n"
         }
-        
+
         return yaml
     }
 }
@@ -567,7 +567,7 @@ public struct GraphStatistics {
     public let averageOutDegree: Double
     public let inDegree: [String: Int]
     public let outDegree: [String: Int]
-    
+
     public init(
         nodeCount: Int,
         edgeCount: Int,
@@ -591,14 +591,14 @@ public struct GraphStatistics {
         self.inDegree = inDegree
         self.outDegree = outDegree
     }
-    
+
     /// Get the most depended-upon services
     public var mostDependedUpon: [String] {
-        return inDegree.sorted { $0.value > $1.value }.prefix(5).map { $0.key }
+        inDegree.sorted { $0.value > $1.value }.prefix(5).map { $0.key }
     }
-    
+
     /// Get the services with the most dependencies
     public var mostDependencies: [String] {
-        return outDegree.sorted { $0.value > $1.value }.prefix(5).map { $0.key }
+        outDegree.sorted { $0.value > $1.value }.prefix(5).map { $0.key }
     }
 }

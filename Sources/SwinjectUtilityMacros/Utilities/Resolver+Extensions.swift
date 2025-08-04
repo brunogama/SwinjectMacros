@@ -3,7 +3,7 @@ import Swinject
 
 /// Extensions to Swinject's Resolver for thread-safe operations
 public extension Resolver {
-    
+
     /// Returns a thread-safe resolver instance.
     ///
     /// This computed property ensures that the resolver returned is thread-safe for concurrent access.
@@ -14,7 +14,7 @@ public extension Resolver {
     /// ```swift
     /// let container = Container()
     /// // ... register services
-    /// 
+    ///
     /// let threadSafeResolver = container.synchronizedResolver
     /// // Use threadSafeResolver for concurrent resolution operations
     /// ```
@@ -36,11 +36,11 @@ public extension Resolver {
         if let container = self as? Container {
             return container.synchronize()
         }
-        
+
         // If already a resolver (not a container), assume it's already synchronized
         return self
     }
-    
+
     /// Thread-safe resolve method that automatically uses synchronized resolver
     ///
     /// This method provides a convenient way to resolve dependencies in a thread-safe manner
@@ -54,9 +54,9 @@ public extension Resolver {
     /// - Parameter serviceType: The service type to resolve
     /// - Returns: The resolved service instance, or nil if not registered
     func synchronizedResolve<Service>(_ serviceType: Service.Type) -> Service? {
-        return synchronizedResolver.resolve(serviceType)
+        synchronizedResolver.resolve(serviceType)
     }
-    
+
     /// Thread-safe resolve method with name parameter
     ///
     /// - Parameters:
@@ -64,9 +64,9 @@ public extension Resolver {
     ///   - name: The registration name
     /// - Returns: The resolved service instance, or nil if not registered
     func synchronizedResolve<Service>(_ serviceType: Service.Type, name: String?) -> Service? {
-        return synchronizedResolver.resolve(serviceType, name: name)
+        synchronizedResolver.resolve(serviceType, name: name)
     }
-    
+
     /// Thread-safe resolve method with arguments
     ///
     /// - Parameters:
@@ -74,9 +74,9 @@ public extension Resolver {
     ///   - argument: The argument to pass to the factory
     /// - Returns: The resolved service instance, or nil if not registered
     func synchronizedResolve<Service, Arg1>(_ serviceType: Service.Type, argument: Arg1) -> Service? {
-        return synchronizedResolver.resolve(serviceType, argument: argument)
+        synchronizedResolver.resolve(serviceType, argument: argument)
     }
-    
+
     /// Thread-safe resolve method with name and arguments
     ///
     /// - Parameters:
@@ -85,13 +85,13 @@ public extension Resolver {
     ///   - argument: The argument to pass to the factory
     /// - Returns: The resolved service instance, or nil if not registered
     func synchronizedResolve<Service, Arg1>(_ serviceType: Service.Type, name: String?, argument: Arg1) -> Service? {
-        return synchronizedResolver.resolve(serviceType, name: name, argument: argument)
+        synchronizedResolver.resolve(serviceType, name: name, argument: argument)
     }
 }
 
 /// Additional utilities for Container management
 public extension Container {
-    
+
     /// Creates a thread-safe container with proper initialization
     ///
     /// This is a convenience method that creates a container and immediately returns
@@ -103,16 +103,16 @@ public extension Container {
     /// // Register services on the original container (single-threaded)
     /// let originalContainer = (threadSafeContainer as! Container).parent!
     /// originalContainer.register(MyService.self) { _ in MyServiceImpl() }
-    /// 
+    ///
     /// // Use threadSafeContainer for resolution (multi-threaded)
     /// let service = threadSafeContainer.resolve(MyService.self)
     /// ```
     ///
     /// - Returns: A thread-safe Resolver instance
     static func createSynchronized() -> Resolver {
-        return Container().synchronize()
+        Container().synchronize()
     }
-    
+
     /// Checks if a resolver is thread-safe
     ///
     /// This method helps determine whether a resolver instance is already synchronized
@@ -130,8 +130,8 @@ public extension Container {
         // and there's no public API to check this flag, we'll assume any resolver
         // could potentially be synchronized. The safest approach is to always
         // use synchronizedResolver when thread safety is needed.
-        
+
         // For practical purposes, we'll check if it's at least a valid resolver
-        return resolver is Container || true
+        resolver is Container || true
     }
 }

@@ -18,23 +18,23 @@ import Swinject
 /// class UserProfileViewModel {
 ///     private let userService: UserServiceProtocol
 ///     private let analytics: AnalyticsProtocol
-///     
+///
 ///     @Published var user: User?
 ///     @Published var isLoading = false
-///     
+///
 ///     func loadUser(_ id: String) async {
 ///         isLoading = true
 ///         defer { isLoading = false }
-///         
+///
 ///         user = try? await userService.fetchUser(id)
 ///         analytics.track("user_profile_loaded", properties: ["user_id": id])
 ///     }
 /// }
-/// 
+///
 /// struct UserProfileView: View {
 ///     @StateObject private var viewModel = UserProfileViewModel()
 ///     let userId: String
-///     
+///
 ///     var body: some View {
 ///         VStack {
 ///             if viewModel.isLoading {
@@ -58,10 +58,10 @@ import Swinject
 ///     private let primaryAPI: APIClientProtocol
 ///     private let fallbackAPI: APIClientProtocol
 ///     private let cache: CacheServiceProtocol
-///     
+///
 ///     @Published var data: [DataModel] = []
 ///     @Published var error: Error?
-///     
+///
 ///     // Dependencies are automatically injected based on parameter types and names
 ///     init(
 ///         @Named("primary") primaryAPI: APIClientProtocol,
@@ -72,7 +72,7 @@ import Swinject
 ///         self.fallbackAPI = fallbackAPI
 ///         self.cache = cache
 ///     }
-///     
+///
 ///     func fetchData() async {
 ///         do {
 ///             // Try primary API first
@@ -81,7 +81,7 @@ import Swinject
 ///                 self.data = result
 ///                 self.error = nil
 ///             }
-///             
+///
 ///             // Cache the result
 ///             await cache.store(result, forKey: "main_data")
 ///         } catch {
@@ -121,11 +121,11 @@ import Swinject
 ///         // Register dependencies
 ///         register(UserServiceProtocol.self) { _ in UserService() }
 ///         register(AnalyticsProtocol.self) { _ in AnalyticsService() }
-///         
+///
 ///         // Named services
 ///         register(APIClientProtocol.self, name: "primary") { _ in PrimaryAPIClient() }
 ///         register(APIClientProtocol.self, name: "fallback") { _ in FallbackAPIClient() }
-///         
+///
 ///         // Register ViewModels (optional - for factory pattern)
 ///         register(UserProfileViewModel.self) { resolver in
 ///             UserProfileViewModel(container: self)
@@ -141,12 +141,12 @@ import Swinject
 /// ```swift
 /// struct ContentView: View {
 ///     let container = Container()
-///     
+///
 ///     var body: some View {
 ///         TabView {
 ///             UserProfileView()
 ///                 .tabItem { Label("Profile", systemImage: "person") }
-///             
+///
 ///             SettingsView()
 ///                 .tabItem { Label("Settings", systemImage: "gear") }
 ///         }
@@ -163,10 +163,10 @@ import Swinject
 /// struct UserProfileView_Previews: PreviewProvider {
 ///     static var previews: some View {
 ///         let mockContainer = Container()
-///         mockContainer.register(UserServiceProtocol.self) { _ in 
+///         mockContainer.register(UserServiceProtocol.self) { _ in
 ///             MockUserService(users: [User.preview])
 ///         }
-///         
+///
 ///         UserProfileView()
 ///             .environmentObject(DIContainer(mockContainer))
 ///             .previewDisplayName("User Profile")
@@ -183,26 +183,26 @@ import Swinject
 /// class AsyncDataViewModel: ObservableObject {
 ///     private let dataService: DataServiceProtocol
 ///     private let notificationCenter: NotificationCenterProtocol
-///     
+///
 ///     @Published var items: [DataItem] = []
 ///     @Published var isLoading = false
 ///     @Published var error: Error?
-///     
+///
 ///     @MainActor
 ///     func loadData() async {
 ///         isLoading = true
 ///         error = nil
-///         
+///
 ///         do {
 ///             let fetchedItems = try await dataService.fetchItems()
 ///             items = fetchedItems
-///             
+///
 ///             // Send notification
 ///             await notificationCenter.post(.dataLoaded, object: fetchedItems)
 ///         } catch {
 ///             self.error = error
 ///         }
-///         
+///
 ///         isLoading = false
 ///     }
 /// }
@@ -217,17 +217,17 @@ import Swinject
 ///     func testUserLoading() async {
 ///         // Arrange
 ///         let mockUserService = MockUserService()
-///         let mockAnalytics = MockAnalyticsService() 
+///         let mockAnalytics = MockAnalyticsService()
 ///         let container = Container()
-///         
+///
 ///         container.register(UserServiceProtocol.self) { _ in mockUserService }
 ///         container.register(AnalyticsProtocol.self) { _ in mockAnalytics }
-///         
+///
 ///         let viewModel = UserProfileViewModel(container: container)
-///         
+///
 ///         // Act
 ///         await viewModel.loadUser("test-id")
-///         
+///
 ///         // Assert
 ///         XCTAssertNotNil(viewModel.user)
 ///         XCTAssertEqual(mockAnalytics.trackedEvents.count, 1)
@@ -264,56 +264,56 @@ import Swinject
 ///     private let cartService: CartServiceProtocol
 ///     private let productService: ProductServiceProtocol
 ///     private let paymentService: PaymentServiceProtocol
-///     
+///
 ///     @Published var items: [CartItem] = []
 ///     @Published var total: Decimal = 0
 ///     @Published var isProcessingPayment = false
-///     
+///
 ///     func addItem(_ productId: String, quantity: Int = 1) async {
 ///         guard let product = await productService.product(id: productId) else { return }
-///         
+///
 ///         let cartItem = CartItem(product: product, quantity: quantity)
 ///         await cartService.addItem(cartItem)
 ///         await refreshCart()
 ///     }
-///     
+///
 ///     func checkout() async throws {
 ///         isProcessingPayment = true
 ///         defer { isProcessingPayment = false }
-///         
+///
 ///         try await paymentService.processPayment(for: items, total: total)
 ///         await cartService.clear()
 ///         await refreshCart()
 ///     }
-///     
+///
 ///     private func refreshCart() async {
 ///         items = await cartService.items()
 ///         total = items.reduce(0) { $0 + $1.totalPrice }
 ///     }
 /// }
-/// 
+///
 /// // Social Media App
 /// @ViewModelInject
 /// class PostComposerViewModel: ObservableObject {
 ///     private let postService: PostServiceProtocol
 ///     private let mediaService: MediaServiceProtocol
 ///     private let userService: UserServiceProtocol
-///     
+///
 ///     @Published var text = ""
 ///     @Published var selectedImages: [UIImage] = []
 ///     @Published var isPosting = false
 ///     @Published var error: Error?
-///     
+///
 ///     func addImage(_ image: UIImage) {
 ///         selectedImages.append(image)
 ///     }
-///     
+///
 ///     func post() async {
 ///         guard !text.isEmpty || !selectedImages.isEmpty else { return }
-///         
+///
 ///         isPosting = true
 ///         error = nil
-///         
+///
 ///         do {
 ///             // Upload media first
 ///             var mediaUrls: [URL] = []
@@ -321,16 +321,16 @@ import Swinject
 ///                 let url = try await mediaService.upload(image)
 ///                 mediaUrls.append(url)
 ///             }
-///             
+///
 ///             // Create post
 ///             let post = Post(
 ///                 text: text,
 ///                 mediaUrls: mediaUrls,
 ///                 author: userService.currentUser
 ///             )
-///             
+///
 ///             try await postService.create(post)
-///             
+///
 ///             // Reset form
 ///             await MainActor.run {
 ///                 text = ""
@@ -341,7 +341,7 @@ import Swinject
 ///                 self.error = error
 ///             }
 ///         }
-///         
+///
 ///         isPosting = false
 ///     }
 /// }
@@ -361,16 +361,16 @@ public macro ViewModelInject(
 public struct ViewModelConfig {
     /// Container name for multi-container scenarios
     public let containerName: String
-    
+
     /// Object scope for ViewModel registration
     public let scope: ObjectScope
-    
+
     /// Whether to generate factory method
     public let generateFactory: Bool
-    
+
     /// Whether to generate preview support
     public let previewSupport: Bool
-    
+
     public init(
         containerName: String = "default",
         scope: ObjectScope = .transient,
@@ -388,7 +388,7 @@ public struct ViewModelConfig {
 public protocol InjectableViewModel: ObservableObject {
     /// Container used for dependency resolution
     var container: DIContainer { get }
-    
+
     /// Initialize ViewModel with dependency injection container
     init(container: DIContainer)
 }
@@ -399,12 +399,12 @@ public enum ViewModelInjectError: Error, LocalizedError {
     case dependencyResolutionFailed(type: String, dependency: String)
     case invalidViewModelConfiguration
     case initializerGenerationFailed
-    
+
     public var errorDescription: String? {
         switch self {
         case .containerNotFound:
             return "DIContainer not found for ViewModel dependency injection"
-        case .dependencyResolutionFailed(let type, let dependency):
+        case let .dependencyResolutionFailed(type, dependency):
             return "Failed to resolve dependency '\(dependency)' for ViewModel '\(type)'"
         case .invalidViewModelConfiguration:
             return "Invalid ViewModel configuration for dependency injection"
@@ -419,7 +419,7 @@ public enum ViewModelInjectError: Error, LocalizedError {
 /// Protocol for ViewModels that can be created by factories
 public protocol ViewModelFactory {
     associatedtype ViewModel: InjectableViewModel
-    
+
     /// Create ViewModel instance with dependency injection
     static func create(container: DIContainer) -> ViewModel
 }
@@ -443,13 +443,13 @@ extension View {
 public struct ViewModelInjectionModifier<VM: InjectableViewModel>: ViewModifier {
     let viewModelType: VM.Type
     let container: DIContainer?
-    
+
     @EnvironmentObject private var environmentContainer: DIContainer
-    
+
     public func body(content: Content) -> some View {
         let actualContainer = container ?? environmentContainer
         let viewModel = VM(container: actualContainer)
-        
+
         content
             .environmentObject(viewModel)
     }
@@ -468,20 +468,20 @@ public struct PreviewViewModel {
         configure(container)
         return VM(container: DIContainer(container))
     }
-    
+
     /// Create a ViewModel with specific mock services
     @MainActor public static func mock<VM: InjectableViewModel>(
         _ viewModelType: VM.Type,
         mockServices: [String: Any]
     ) -> VM {
         let container = Container()
-        
-        for (serviceTypeName, mockInstance) in mockServices {
+
+        for (_, _) in mockServices {
             // Register mock services in container
             // Note: This is a simplified approach - real implementation would use type erasure
             // Services are identified by string names instead of types for simplicity
         }
-        
+
         return VM(container: DIContainer(container))
     }
 }
@@ -493,7 +493,7 @@ public struct PreviewViewModel {
 public struct Named<T> {
     public let name: String
     public var wrappedValue: T
-    
+
     public init(_ name: String, wrappedValue: T) {
         self.name = name
         self.wrappedValue = wrappedValue
@@ -504,7 +504,7 @@ public struct Named<T> {
 @propertyWrapper
 public struct Optional<T> {
     public var wrappedValue: T?
-    
+
     public init(wrappedValue: T? = nil) {
         self.wrappedValue = wrappedValue
     }
@@ -515,7 +515,7 @@ public struct Optional<T> {
 extension ObjectScope {
     /// Default scope for ViewModel objects
     public static let viewModel: ObjectScope = .transient
-    
+
     /// Singleton scope for shared ViewModels
     public static let sharedViewModel: ObjectScope = .container
 }
