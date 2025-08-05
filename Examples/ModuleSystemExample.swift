@@ -1,272 +1,18 @@
 // ModuleSystemExample.swift - Example usage of the module system
-// Copyright © 2025 SwinjectUtilityMacros. All rights reserved.
+// Copyright © 2025 SwinjectMacros. All rights reserved.
 
 import Foundation
 import Swinject
 import SwinjectMacros
 
-// MARK: - Module Interfaces
+// MARK: - Module System Example
 
-/// Define interfaces that can be shared across modules
-@ModuleInterface
-protocol HTTPClientInterface {
-    func request(_ endpoint: String) async throws -> Data
-}
+// This example demonstrates the advanced Module System features introduced in v1.0.1
+// including lifecycle management, hot-swapping, performance optimization, and debug tools
 
-@ModuleInterface
-protocol DatabaseInterface {
-    func save(_ entity: Any) async throws
-    func fetch(id: String) async throws -> Any?
-}
+// MARK: - Service Definitions
 
-@ModuleInterface
-protocol UserServiceInterface {
-    func getUser(id: String) async throws -> User?
-    func createUser(_ user: User) async throws
-}
-
-@ModuleInterface
-protocol AnalyticsInterface {
-    func track(event: String, properties: [String: Any])
-}
-
-// MARK: - Network Module
-
-@Module(
-    name: "Network",
-    priority: 100,
-    exports: [HTTPClientInterface.self]
-)
-struct NetworkModule {
-
-    @Provides(scope: .singleton)
-    static func httpClient() -> HTTPClientInterface {
-        URLSessionHTTPClient()
-    }
-
-    @Provides
-    static func urlSession() -> URLSession {
-        let config = URLSessionConfiguration.default
-        config.timeoutIntervalForRequest = 30
-        return URLSession(configuration: config)
-    }
-
-    static func configure(_ container: Container) {
-        // Additional network-specific configurations
-        container.register(NetworkReachability.self) { _ in
-            NetworkReachability()
-        }
-    }
-}
-
-// MARK: - Database Module
-
-@Module(
-    name: "Database",
-    priority: 90,
-    exports: [DatabaseInterface.self]
-)
-struct DatabaseModule {
-
-    @Provides(scope: .singleton)
-    static func database() -> DatabaseInterface {
-        #if DEBUG
-            return InMemoryDatabase()
-        #else
-            return SQLiteDatabase()
-        #endif
-    }
-
-    @Provides
-    static func migrationManager() -> DatabaseMigrationManager {
-        DatabaseMigrationManager()
-    }
-}
-
-// MARK: - User Module
-
-@Module(
-    name: "User",
-    priority: 50,
-    dependencies: [NetworkModule.self, DatabaseModule.self],
-    exports: [UserServiceInterface.self]
-)
-struct UserModule {
-
-    static func configure(_ container: Container) {
-        // Register user service with dependencies from other modules
-        container.register(UserServiceInterface.self) { resolver in
-            guard let httpClient = resolver.resolve(HTTPClientInterface.self),
-                  let database = resolver.resolve(DatabaseInterface.self)
-            else {
-                fatalError("Failed to resolve required dependencies for UserService")
-            }
-            return UserService(httpClient: httpClient, database: database)
-        }.inObjectScope(.container)
-
-        // Register other user-related services
-        container.register(UserValidator.self) { _ in
-            UserValidator()
-        }
-
-        container.register(UserCache.self) { _ in
-            UserCache()
-        }.inObjectScope(.container)
-    }
-}
-
-// MARK: - Analytics Module
-
-@Module(
-    name: "Analytics",
-    priority: 30,
-    dependencies: [NetworkModule.self]
-)
-struct AnalyticsModule {
-
-    @Provides(scope: .singleton)
-    static func analytics() -> AnalyticsInterface {
-        #if DEBUG
-            return DebugAnalytics()
-        #else
-            return ProductionAnalytics()
-        #endif
-    }
-
-    @Provides
-    static func analyticsQueue() -> AnalyticsQueue {
-        AnalyticsQueue(maxBatchSize: 100)
-    }
-}
-
-// MARK: - Feature Modules
-
-@Module(name: "Payment")
-struct PaymentModule {
-    static func configure(_ container: Container) {
-        container.register(PaymentProcessor.self) { resolver in
-            guard let httpClient = resolver.resolve(HTTPClientInterface.self) else {
-                fatalError("Failed to resolve HTTPClientInterface for PaymentProcessor")
-            }
-            return StripePaymentProcessor(httpClient: httpClient)
-        }
-    }
-}
-
-@Module(name: "Chat")
-struct ChatModule {
-    static func configure(_ container: Container) {
-        container.register(ChatService.self) { resolver in
-            guard let httpClient = resolver.resolve(HTTPClientInterface.self),
-                  let database = resolver.resolve(DatabaseInterface.self)
-            else {
-                fatalError("Failed to resolve required dependencies for ChatService")
-            }
-            return ChatService(httpClient: httpClient, database: database)
-        }
-    }
-}
-
-// MARK: - App Module (Composition Root)
-
-@Module(
-    name: "App",
-    priority: 0
-)
-struct AppModule {
-
-    // Include core modules
-    @Include(NetworkModule.self)
-    @Include(DatabaseModule.self)
-    @Include(UserModule.self)
-    @Include(AnalyticsModule.self)
-
-    // Conditionally include feature modules
-    @Include(PaymentModule.self, condition: .featureFlag("payments_enabled"))
-    @Include(ChatModule.self, condition: .featureFlag("chat_enabled"))
-
-    static func configure(_ container: Container) {
-        // App-level service registrations
-        container.register(AppCoordinator.self) { resolver in
-            guard let userService = resolver.resolve(UserServiceInterface.self),
-                  let analytics = resolver.resolve(AnalyticsInterface.self)
-            else {
-                fatalError("Failed to resolve required dependencies for AppCoordinator")
-            }
-            return AppCoordinator(
-                userService: userService,
-                analytics: analytics
-            )
-        }
-    }
-}
-
-// MARK: - Application Setup
-
-class Application {
-
-    let moduleSystem = ModuleSystem.shared
-
-    func setup() async throws {
-        // Configure feature flags
-        configureFeatureFlags()
-
-        // Register the app module (which includes all others)
-        AppModule.register(in: moduleSystem)
-
-        // Initialize the module system
-        try moduleSystem.initialize()
-
-        // Log module information
-        logModuleInfo()
-    }
-
-    private func configureFeatureFlags() {
-        // Enable features based on configuration
-        if ProcessInfo.processInfo.environment["ENABLE_PAYMENTS"] == "true" {
-            FeatureFlags.enable("payments_enabled")
-        }
-
-        if ProcessInfo.processInfo.environment["ENABLE_CHAT"] == "true" {
-            FeatureFlags.enable("chat_enabled")
-        }
-    }
-
-    private func logModuleInfo() {
-        print("Initialized Modules:")
-        for moduleName in moduleSystem.moduleNames {
-            if let info = moduleSystem.info(for: moduleName) {
-                print("  - \(info.name) (priority: \(info.priority))")
-                if !info.dependencies.isEmpty {
-                    print("    Dependencies: \(info.dependencies.joined(separator: ", "))")
-                }
-                if !info.exports.isEmpty {
-                    print("    Exports: \(info.exports.joined(separator: ", "))")
-                }
-            }
-        }
-    }
-
-    // Service resolution examples
-    func resolveServices() {
-        // Resolve from any module
-        let userService = moduleSystem.resolve(UserServiceInterface.self)
-
-        // Resolve from specific module
-        let httpClient = moduleSystem.resolve(
-            HTTPClientInterface.self,
-            from: "Network"
-        )
-
-        // Resolve optional feature services
-        let paymentProcessor = moduleSystem.resolve(PaymentProcessor.self)
-        if paymentProcessor != nil {
-            print("Payment processing is available")
-        }
-    }
-}
-
-// MARK: - Service Implementations (Simplified)
+// Define services that will be organized into modules
 
 struct User: Codable {
     let id: String
@@ -274,111 +20,363 @@ struct User: Codable {
     let email: String
 }
 
-class URLSessionHTTPClient: HTTPClientInterface {
+protocol HTTPClientProtocol {
+    func request(_ endpoint: String) async throws -> Data
+}
+
+protocol DatabaseProtocol {
+    func save(_ entity: Any) async throws
+    func fetch(id: String) async throws -> Any?
+}
+
+protocol UserServiceProtocol {
+    func getUser(id: String) async throws -> User?
+    func createUser(_ user: User) async throws
+}
+
+protocol AnalyticsProtocol {
+    func track(event: String, properties: [String: Any])
+}
+
+// MARK: - Service Implementations
+
+@Injectable(scope: .container)
+class URLSessionHTTPClient: HTTPClientProtocol {
     func request(_ endpoint: String) async throws -> Data {
-        // Implementation
-        Data()
+        print("📡 HTTP Request: \(endpoint)")
+        // Mock implementation
+        return Data()
     }
 }
 
-class InMemoryDatabase: DatabaseInterface {
+@Injectable(scope: .container)
+class InMemoryDatabase: DatabaseProtocol {
     private var storage: [String: Any] = [:]
 
     func save(_ entity: Any) async throws {
-        // Implementation
+        if let user = entity as? User {
+            storage[user.id] = user
+            print("💾 Saved user: \(user.name)")
+        }
     }
 
     func fetch(id: String) async throws -> Any? {
-        storage[id]
+        print("🔍 Fetching entity with id: \(id)")
+        return storage[id]
     }
 }
 
-class SQLiteDatabase: DatabaseInterface {
-    func save(_ entity: Any) async throws {
-        // Implementation
-    }
+@Injectable
+class UserService: UserServiceProtocol {
+    private let httpClient: HTTPClientProtocol
+    private let database: DatabaseProtocol
 
-    func fetch(id: String) async throws -> Any? {
-        // Implementation
-        nil
-    }
-}
-
-class UserService: UserServiceInterface {
-    private let httpClient: HTTPClientInterface
-    private let database: DatabaseInterface
-
-    init(httpClient: HTTPClientInterface, database: DatabaseInterface) {
+    init(httpClient: HTTPClientProtocol, database: DatabaseProtocol) {
         self.httpClient = httpClient
         self.database = database
     }
 
     func getUser(id: String) async throws -> User? {
-        // Try cache first
+        // Try database first
         if let cached = try await database.fetch(id: id) as? User {
             return cached
         }
 
-        // Fetch from API
-        let data = try await httpClient.request("/users/\(id)")
-        let user = try JSONDecoder().decode(User.self, from: data)
+        // Fetch from network
+        _ = try await httpClient.request("/users/\(id)")
 
-        // Cache result
+        // Mock user for demo
+        let user = User(id: id, name: "John Doe", email: "john@example.com")
         try await database.save(user)
 
         return user
     }
 
     func createUser(_ user: User) async throws {
-        let data = try JSONEncoder().encode(user)
         _ = try await httpClient.request("/users")
         try await database.save(user)
     }
 }
 
-class DebugAnalytics: AnalyticsInterface {
+@Injectable(scope: .container)
+class Analytics: AnalyticsProtocol {
     func track(event: String, properties: [String: Any]) {
-        print("📊 [DEBUG] Analytics: \(event) - \(properties)")
+        print("📊 Analytics Event: \(event)")
+        for (key, value) in properties {
+            print("   - \(key): \(value)")
+        }
     }
 }
 
-class ProductionAnalytics: AnalyticsInterface {
-    func track(event: String, properties: [String: Any]) {
-        // Send to analytics service
+// MARK: - Module Definitions
+
+// Define modules that group related services
+
+@Module
+struct NetworkModule {
+    static let name = "Network"
+    static let priority = 100
+    static let dependencies: [String] = []
+
+    static func configure(_ container: Container) {
+        print("🌐 Configuring Network Module")
+
+        // Register HTTP client
+        URLSessionHTTPClient.register(in: container)
+
+        // Register protocol mapping
+        container.register(HTTPClientProtocol.self) { resolver in
+            resolver.resolve(URLSessionHTTPClient.self)!
+        }
     }
 }
 
-// Placeholder types
-class NetworkReachability {}
-class DatabaseMigrationManager {}
-class UserValidator {}
-class UserCache {}
-class AnalyticsQueue {
-    init(maxBatchSize: Int) {}
+@Module
+struct DatabaseModule {
+    static let name = "Database"
+    static let priority = 90
+    static let dependencies: [String] = []
+
+    static func configure(_ container: Container) {
+        print("🗄️ Configuring Database Module")
+
+        // Register database
+        InMemoryDatabase.register(in: container)
+
+        // Register protocol mapping
+        container.register(DatabaseProtocol.self) { resolver in
+            resolver.resolve(InMemoryDatabase.self)!
+        }
+    }
 }
 
-class PaymentProcessor {}
-class StripePaymentProcessor: PaymentProcessor {
-    init(httpClient: HTTPClientInterface) {}
+@Module
+struct UserModule {
+    static let name = "User"
+    static let priority = 50
+    static let dependencies = ["Network", "Database"]
+
+    static func configure(_ container: Container) {
+        print("👤 Configuring User Module")
+
+        // Register user service
+        UserService.register(in: container)
+
+        // Register protocol mapping
+        container.register(UserServiceProtocol.self) { resolver in
+            resolver.resolve(UserService.self)!
+        }
+    }
 }
 
-class ChatService {
-    init(httpClient: HTTPClientInterface, database: DatabaseInterface) {}
+@Module
+struct AnalyticsModule {
+    static let name = "Analytics"
+    static let priority = 30
+    static let dependencies: [String] = []
+
+    static func configure(_ container: Container) {
+        print("📈 Configuring Analytics Module")
+
+        // Register analytics
+        Analytics.register(in: container)
+
+        // Register protocol mapping
+        container.register(AnalyticsProtocol.self) { resolver in
+            resolver.resolve(Analytics.self)!
+        }
+    }
 }
 
-class AppCoordinator {
-    init(userService: UserServiceInterface, analytics: AnalyticsInterface) {}
+// MARK: - Module System Usage
+
+func demonstrateModuleSystem() async {
+    print("🚀 Module System Example")
+    print("========================\n")
+
+    // Initialize module system
+    let moduleSystem = ModuleSystem.shared
+
+    // Register modules
+    print("📦 Registering Modules...")
+    moduleSystem.register(module: NetworkModule.self)
+    moduleSystem.register(module: DatabaseModule.self)
+    moduleSystem.register(module: UserModule.self)
+    moduleSystem.register(module: AnalyticsModule.self)
+
+    do {
+        // Initialize all modules
+        print("\n🔧 Initializing Modules...")
+        try moduleSystem.initialize()
+
+        // Start all modules
+        print("\n▶️ Starting Modules...")
+        try await moduleSystem.startAll()
+
+        // Use services from modules
+        print("\n💼 Using Services...")
+        let container = moduleSystem.rootContainer
+
+        let userService = container.resolve(UserServiceProtocol.self)!
+        let analytics = container.resolve(AnalyticsProtocol.self)!
+
+        // Track module usage
+        analytics.track(event: "module_system_demo", properties: [
+            "modules_count": 4,
+            "status": "running"
+        ])
+
+        // Use user service
+        if let user = try await userService.getUser(id: "123") {
+            print("✅ Retrieved user: \(user.name)")
+
+            analytics.track(event: "user_retrieved", properties: [
+                "user_id": user.id,
+                "user_name": user.name
+            ])
+        }
+
+        // Demonstrate module lifecycle
+        print("\n🔄 Module Lifecycle Demo...")
+
+        // Get module info
+        if let userModuleInfo = moduleSystem.getModuleInfo("User") {
+            print("User Module State: \(userModuleInfo.state)")
+            print("Dependencies: \(userModuleInfo.dependencies)")
+        }
+
+        // Hot-swap a module (replace Analytics with a new implementation)
+        print("\n🔥 Hot-Swapping Analytics Module...")
+
+        // Define a new analytics implementation
+        @Module
+        struct EnhancedAnalyticsModule {
+            static let name = "Analytics" // Same name to replace
+            static let priority = 30
+            static let dependencies: [String] = []
+
+            static func configure(_ container: Container) {
+                print("📊 Configuring Enhanced Analytics Module")
+
+                // Register enhanced analytics
+                container.register(AnalyticsProtocol.self) { _ in
+                    EnhancedAnalytics()
+                }
+            }
+        }
+
+        class EnhancedAnalytics: AnalyticsProtocol {
+            func track(event: String, properties: [String: Any]) {
+                print("📊✨ Enhanced Analytics Event: \(event)")
+                print("   Timestamp: \(Date())")
+                for (key, value) in properties {
+                    print("   - \(key): \(value)")
+                }
+            }
+        }
+
+        try await moduleSystem.hotSwapModule(
+            moduleName: "Analytics",
+            newModule: EnhancedAnalyticsModule.self
+        )
+
+        // Use the new analytics
+        let newAnalytics = container.resolve(AnalyticsProtocol.self)!
+        newAnalytics.track(event: "module_hot_swapped", properties: [
+            "module": "Analytics",
+            "version": "enhanced"
+        ])
+
+        // Performance optimization demo
+        print("\n⚡ Performance Optimization Demo...")
+
+        let optimizer = ModulePerformanceOptimizer()
+
+        // Profile module performance
+        let profile = try await optimizer.profileModule("User", in: moduleSystem)
+        print("User Module Performance:")
+        print("  - Initialization: \(profile.initializationTime)ms")
+        print("  - Memory: \(profile.memoryFootprint) bytes")
+        print("  - CPU: \(profile.cpuUsage)%")
+
+        // Get optimization recommendations
+        let recommendations = try await optimizer.analyzeAndRecommend(moduleSystem)
+        print("\nOptimization Recommendations:")
+        for recommendation in recommendations {
+            print("  - \(recommendation)")
+        }
+
+        // Debug tools demo
+        print("\n🔍 Debug Tools Demo...")
+
+        let debugTools = ModuleDebugTools()
+
+        // Get module debug info
+        let debugInfo = debugTools.getDebugInfo(for: "User", in: moduleSystem)
+        print("User Module Debug Info:")
+        print("  - Container Count: \(debugInfo.containerInfo.containerCount)")
+        print("  - Service Count: \(debugInfo.containerInfo.serviceCount)")
+        print("  - Dependencies: \(debugInfo.dependencyGraph.nodeCount) nodes")
+
+        // Monitor module health
+        let healthReport = debugTools.healthCheck(moduleSystem)
+        print("\nModule System Health:")
+        print("  - Overall Health: \(healthReport.overallHealth)")
+        print("  - Active Modules: \(healthReport.activeModules)")
+        if !healthReport.issues.isEmpty {
+            print("  - Issues:")
+            for issue in healthReport.issues {
+                print("    • \(issue)")
+            }
+        }
+
+        // Module scope demo
+        print("\n🔒 Module Scope Demo...")
+
+        // Services can be scoped to modules
+        let moduleScope = ModuleScope(moduleId: "User")
+
+        // Create a module-scoped service
+        let scopedService = moduleScope.resolve { container in
+            ModuleScopedLogger(module: "User")
+        }
+
+        scopedService.log("This is a module-scoped logger")
+
+        // Cleanup
+        print("\n🧹 Cleaning up...")
+        try await moduleSystem.stopAll()
+
+        print("\n✅ Module System Example Complete!")
+
+    } catch {
+        print("❌ Error: \(error)")
+    }
 }
 
-// MARK: - Usage Example
+// Helper class for module-scoped services
+class ModuleScopedLogger {
+    let module: String
 
+    init(module: String) {
+        self.module = module
+    }
+
+    func log(_ message: String) {
+        print("[\(module)] \(message)")
+    }
+}
+
+// MARK: - Run the Example
+
+// To run this example:
+// 1. Ensure SwinjectMacros is properly imported
+// 2. Call demonstrateModuleSystem() from your main function or app entry point
+
+// Example main function:
 @main
-struct ModuleSystemApp {
-    static func main() async throws {
-        let app = Application()
-        try await app.setup()
-        app.resolveServices()
-
-        print("\n✅ Module system successfully initialized!")
+struct ModuleSystemExampleApp {
+    static func main() async {
+        await demonstrateModuleSystem()
     }
 }
