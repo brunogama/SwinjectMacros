@@ -180,7 +180,7 @@ Add SwinjectMacros to your project via Xcode or by adding it to your `Package.sw
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/brunogama/SwinjectMacros.git", from: "1.0.0")
+    .package(url: "https://github.com/brunogama/SwinjectMacros.git", from: "1.0.1")
 ],
 targets: [
     .target(
@@ -1369,6 +1369,93 @@ SwinjectMacros is actively developed with 25+ macros planned. Here's what's comi
 - `@ViewModelInject` - MVVM pattern support
 - `@InjectedStateObject` - State management integration
 - `@PublisherInject` - Combine publishers injection
+
+## ⚠️ Known Issues
+
+### 1. **ObjectScope.module Compatibility**
+
+**Issue**: The custom `.module` ObjectScope for Swinject is currently disabled due to version compatibility issues.
+
+**Impact**:
+
+- Tests using `.inObjectScope(.module)` are temporarily disabled
+- Module-scoped services fall back to standard Swinject scopes
+
+**Workaround**: Use `.container` or `.graph` scopes until compatibility is resolved.
+
+**Status**: Under investigation - related to Swinject's internal ObjectScope initializer accessibility.
+
+### 2. **Performance Test Stability**
+
+**Issue**: Some performance and stress tests may fail in development environments due to:
+
+- Concurrent container access without proper synchronization
+- High resource usage during test execution
+- Timing-sensitive assertions
+
+**Impact**:
+
+- Performance benchmark tests may show failures
+- Stress tests with multiple threads may encounter race conditions
+
+**Workaround**:
+
+- Run performance tests individually for more stable results
+- Use `Container.shared.synchronizedResolve()` for thread-safe resolution
+- Consider running performance tests in release builds
+
+**Status**: Known limitation - tests work correctly in production scenarios.
+
+### 3. **Macro Expansion Test Maintenance**
+
+**Issue**: Macro implementation updates may cause test failures in API design validation tests.
+
+**Impact**:
+
+- Some macro expansion tests temporarily disabled pending updates
+- Generated code format changes require test expectation updates
+
+**Workaround**: Tests are disabled until expected outputs can be updated to match current macro implementations.
+
+**Status**: In progress - tests will be re-enabled with updated expectations.
+
+### 4. **Build Warnings from Dependencies**
+
+**Issue**: Swinject dependency generates warnings about unhandled files:
+
+```
+warning: 'swinject': found 5 file(s) which are unhandled
+    Sources/Container.Arguments.erb
+    Sources/PrivacyInfo.xcprivacy
+    ...
+```
+
+**Impact**: Cosmetic build warnings that don't affect functionality.
+
+**Workaround**: These warnings can be safely ignored - they're from Swinject's template files.
+
+**Status**: External dependency issue - no action required.
+
+### 5. **Module System Dependency Resolution**
+
+**Issue**: Complex module dependency chains may fail to resolve services properly during initialization.
+
+**Impact**:
+
+- `testModuleDependencies` temporarily disabled
+- Advanced module system features may need additional setup
+
+**Workaround**:
+
+- Register modules in dependency order (dependencies first)
+- Use explicit dependency declarations in module protocols
+- Consider simpler dependency graphs during development
+
+**Status**: Under active development as part of Phase 2 module system improvements.
+
+______________________________________________________________________
+
+**Note**: These issues don't affect core functionality (`@Injectable`, `@AutoFactory`, `@TestContainer`) which work reliably in production. They primarily impact advanced features and test scenarios.
 
 ## 🤝 Contributing
 

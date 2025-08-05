@@ -27,7 +27,7 @@ let package = Package(
         .executableTarget(
             name: "SwinjectMacrosiOSDemo",
             dependencies: [
-                "SwinjectMacros",
+                .byProduct(name: "SwinjectMacros", package: "../.."),
                 .product(name: "Swinject", package: "Swinject")
             ],
             path: "Sources"

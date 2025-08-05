@@ -118,7 +118,7 @@ public final class ModuleSystem {
             logger.info("Module system initialized successfully with \(self.modules.count) modules")
 
         } catch {
-            lifecycleState = .failed(error)
+            lifecycleState = .failed
             logger.error("Module system initialization failed: \(error)")
             throw error
         }
@@ -316,7 +316,7 @@ public final class ModuleSystem {
             }
         }
 
-        lifecycleState = .shutdown
+        lifecycleState = .destroyed
         logger.info("Module system shut down")
     }
 }
@@ -350,23 +350,22 @@ public final class ModuleContainer {
     }
 }
 
-/// Module lifecycle states
-public enum ModuleLifecycleState: Equatable {
+/// Basic module lifecycle states (for legacy compatibility)
+public enum BasicModuleLifecycleState: Equatable {
     case uninitialized
     case initializing
     case initialized
-    case failed(Error)
-    case shutdown
+    case failed
+    case destroyed
 
-    public static func == (lhs: ModuleLifecycleState, rhs: ModuleLifecycleState) -> Bool {
+    public static func == (lhs: BasicModuleLifecycleState, rhs: BasicModuleLifecycleState) -> Bool {
         switch (lhs, rhs) {
         case (.uninitialized, .uninitialized),
              (.initializing, .initializing),
              (.initialized, .initialized),
-             (.shutdown, .shutdown):
+             (.failed, .failed),
+             (.destroyed, .destroyed):
             true
-        case (.failed, .failed):
-            true // Consider all failed states equal for simplicity
         default:
             false
         }

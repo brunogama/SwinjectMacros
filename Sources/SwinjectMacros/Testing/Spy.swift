@@ -1,4 +1,5 @@
 // Spy.swift - Method call tracking for testing
+// Copyright © 2025 SwinjectMacros. All rights reserved.
 
 import Foundation
 
@@ -141,7 +142,7 @@ import Foundation
 ///
 /// // In tests:
 /// let service = PaymentService()
-/// XCTAssertThrowsError(try service.processPayment(-10)) { error in
+/// XCTAssertThrowsError(try service.processPayment(negativeValue)) { error in
 ///     XCTAssertTrue(error is PaymentError)
 /// }
 ///
@@ -282,21 +283,39 @@ public class SpyCallRecorder<CallType: SpyCall> {
     }
 }
 
+// MARK: - Test Assertion Error
+
+/// Error type for test assertion failures
+public struct TestAssertionError: Error, CustomStringConvertible {
+    public let message: String
+    public let file: StaticString
+    public let line: UInt
+
+    public init(message: String, file: StaticString = #file, line: UInt = #line) {
+        self.message = message
+        self.file = file
+        self.line = line
+    }
+
+    public var description: String {
+        "\(message) at \(file):\(line)"
+    }
+}
+
 // MARK: - Spy Verification Utilities
 
 /// Utilities for verifying spy calls in tests
 public enum SpyVerification {
-
     /// Verify that a method was called a specific number of times
     public static func verifyCalled(
         _ calls: [some SpyCall],
         times expectedCount: Int,
         file: StaticString = #file,
         line: UInt = #line
-    ) {
+    ) throws {
         guard calls.count == expectedCount else {
-            fatalError(
-                "Expected \(expectedCount) calls but got \(calls.count)",
+            throw TestAssertionError(
+                message: "Expected \(expectedCount) calls but got \(calls.count)",
                 file: file,
                 line: line
             )
@@ -308,8 +327,8 @@ public enum SpyVerification {
         _ calls: [some SpyCall],
         file: StaticString = #file,
         line: UInt = #line
-    ) {
-        verifyCalled(calls, times: 0, file: file, line: line)
+    ) throws {
+        try verifyCalled(calls, times: 0, file: file, line: line)
     }
 
     /// Verify that a method was called at least once
@@ -317,9 +336,13 @@ public enum SpyVerification {
         _ calls: [some SpyCall],
         file: StaticString = #file,
         line: UInt = #line
-    ) {
+    ) throws {
         guard !calls.isEmpty else {
-            fatalError("Expected at least one call but method was never called", file: file, line: line)
+            throw TestAssertionError(
+                message: "Expected at least one call but method was never called",
+                file: file,
+                line: line
+            )
         }
     }
 
@@ -329,16 +352,20 @@ public enum SpyVerification {
         before secondCalls: [some SpyCall],
         file: StaticString = #file,
         line: UInt = #line
-    ) {
+    ) throws {
         guard let firstCall = firstCalls.first,
               let secondCall = secondCalls.first
         else {
-            fatalError("Both methods must be called to verify order", file: file, line: line)
+            throw TestAssertionError(
+                message: "Both methods must be called to verify order",
+                file: file,
+                line: line
+            )
         }
 
         guard firstCall.timestamp < secondCall.timestamp else {
-            fatalError(
-                "Expected \(firstCall.methodName) to be called before \(secondCall.methodName)",
+            throw TestAssertionError(
+                message: "Expected \(firstCall.methodName) to be called before \(secondCall.methodName)",
                 file: file,
                 line: line
             )
