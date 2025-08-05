@@ -375,6 +375,101 @@ final class ModulePerformanceOptimizerTests: XCTestCase {
         XCTAssertEqual(summary.totalModules, 0, "Total modules should be 0 after reset")
         XCTAssertEqual(summary.cacheSize, 0, "Cache size should be 0 after reset")
     }
+
+    // MARK: - Shutdown and Cleanup Tests
+
+    func testShutdownCancelsBackgroundTasks() async throws {
+        // Configure a test module
+        let config = ModulePerformanceConfig(
+            moduleId: "shutdown-test",
+            strategy: .balanced,
+            priority: .normal,
+            enableCaching: true
+        )
+        await optimizer.configureModule(config)
+
+        // Verify optimizer is running
+        let isShutdownBefore = await optimizer.isShutdown
+        XCTAssertFalse(isShutdownBefore, "Optimizer should be running before shutdown")
+
+        // Shutdown the optimizer
+        await optimizer.shutdown()
+
+        // Verify optimizer is shut down
+        let isShutdownAfter = await optimizer.isShutdown
+        XCTAssertTrue(isShutdownAfter, "Optimizer should be shut down after shutdown")
+
+        // Verify state is cleared
+        let summary = await optimizer.getPerformanceSummary()
+        XCTAssertEqual(summary.totalModules, 0, "All modules should be cleared after shutdown")
+    }
+
+    func testRestartAfterShutdown() async throws {
+        // Initial shutdown
+        await optimizer.shutdown()
+        var isShutdown = await optimizer.isShutdown
+        XCTAssertTrue(isShutdown, "Optimizer should be shut down")
+
+        // Restart
+        await optimizer.restart()
+        isShutdown = await optimizer.isShutdown
+        XCTAssertFalse(isShutdown, "Optimizer should be running after restart")
+
+        // Configure a module after restart
+        let config = ModulePerformanceConfig(
+            moduleId: "restart-test",
+            strategy: .lazyLoading
+        )
+        await optimizer.configureModule(config)
+
+        // Verify module was configured
+        let retrievedConfig = await optimizer.getConfiguration(for: "restart-test")
+        XCTAssertEqual(retrievedConfig?.strategy, .lazyLoading, "Module should be configured after restart")
+    }
+
+    func testCancelSpecificUnloadTask() async throws {
+        // Configure module with unload timeout
+        let config = ModulePerformanceConfig(
+            moduleId: "unload-test",
+            strategy: .memoryOptimized,
+            unloadTimeout: 5.0 // 5 seconds
+        )
+        await optimizer.configureModule(config)
+
+        // Cancel any potential unload task (note: scheduleUnload is private, so we test the cancel method)
+        await optimizer.cancelUnloadTask(for: "unload-test")
+
+        // Wait a bit
+        try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+
+        // Module should still be in configurations
+        let retrievedConfig = await optimizer.getConfiguration(for: "unload-test")
+        XCTAssertNotNil(retrievedConfig, "Module should still be configured")
+    }
+
+    func testMultipleShutdownsAreSafe() async throws {
+        // Multiple shutdowns should be safe
+        await optimizer.shutdown()
+        await optimizer.shutdown()
+        await optimizer.shutdown()
+
+        let isShutdown = await optimizer.isShutdown
+        XCTAssertTrue(isShutdown, "Optimizer should remain shut down after multiple shutdown calls")
+    }
+
+    func testRestartWhileRunningDoesNothing() async throws {
+        // Ensure optimizer is running (restart if needed)
+        if await optimizer.isShutdown {
+            await optimizer.restart()
+        }
+
+        // Try to restart while running
+        await optimizer.restart()
+
+        // Should still be running
+        let isShutdown = await optimizer.isShutdown
+        XCTAssertFalse(isShutdown, "Optimizer should still be running after restart attempt while running")
+    }
 }
 
 // MARK: - Performance Error Tests

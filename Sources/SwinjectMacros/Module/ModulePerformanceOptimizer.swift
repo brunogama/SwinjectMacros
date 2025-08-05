@@ -142,11 +142,23 @@ public actor ModulePerformanceOptimizer {
     private var cacheHits: [String: UInt64] = [:]
     private var cacheMisses: [String: UInt64] = [:]
 
+    // Background task references for cleanup
+    private var monitoringTask: Task<Void, Never>?
+    private var isShuttingDown = false
+
     /// Shared instance
     public static let shared = ModulePerformanceOptimizer()
 
     private init() {
-        Task {
+        // Initialize monitoring task after actor initialization
+        Task { [weak self] in
+            guard let self = self else { return }
+            await startMonitoring()
+        }
+    }
+
+    private func startMonitoring() async {
+        monitoringTask = Task {
             await startPerformanceMonitoring()
         }
     }
@@ -505,12 +517,17 @@ public actor ModulePerformanceOptimizer {
         }
     }
 
-    private func startPerformanceMonitoring() {
-        // Start background monitoring using Task
-        Task {
-            while true {
-                try? await Task.sleep(nanoseconds: 30_000_000_000) // 30 seconds
-                await performPeriodicMaintenance()
+    private func startPerformanceMonitoring() async {
+        // Start background monitoring with cancellation support
+        while !isShuttingDown {
+            do {
+                try await Task.sleep(nanoseconds: 30_000_000_000) // 30 seconds
+                if !isShuttingDown {
+                    await performPeriodicMaintenance()
+                }
+            } catch {
+                // Task was cancelled or interrupted
+                break
             }
         }
     }
@@ -677,6 +694,67 @@ public actor ModulePerformanceOptimizer {
     private func updateMemoryUsage(for moduleId: String) {
         // This would integrate with system memory monitoring
         // Placeholder implementation
+    }
+
+    // MARK: - Cleanup and Resource Management
+
+    /// Shutdown the performance optimizer and cancel all background tasks
+    public func shutdown() async {
+        logger.info("Shutting down ModulePerformanceOptimizer")
+        isShuttingDown = true
+
+        // Cancel the monitoring task
+        monitoringTask?.cancel()
+
+        // Cancel all scheduled unload tasks
+        for (moduleId, task) in unloadTasks {
+            logger.debug("Cancelling unload task for module: \(moduleId)")
+            task.cancel()
+        }
+        unloadTasks.removeAll()
+
+        // Wait for monitoring task to complete
+        if let task = monitoringTask {
+            _ = await task.result
+        }
+
+        // Clear all caches
+        serviceCache.removeAll()
+        configurations.removeAll()
+        metrics.removeAll()
+        lazyLoadingStates.removeAll()
+        cacheHits.removeAll()
+        cacheMisses.removeAll()
+
+        logger.info("ModulePerformanceOptimizer shutdown complete")
+    }
+
+    /// Cancel specific module's unload task
+    public func cancelUnloadTask(for moduleId: String) {
+        if let task = unloadTasks[moduleId] {
+            task.cancel()
+            unloadTasks.removeValue(forKey: moduleId)
+            logger.debug("Cancelled unload task for module: \(moduleId)")
+        }
+    }
+
+    /// Check if optimizer is shutting down
+    public var isShutdown: Bool {
+        isShuttingDown
+    }
+
+    /// Restart monitoring after shutdown
+    public func restart() async {
+        guard isShuttingDown else {
+            logger.warning("Cannot restart - optimizer is not shut down")
+            return
+        }
+
+        logger.info("Restarting ModulePerformanceOptimizer")
+        isShuttingDown = false
+
+        // Restart monitoring
+        await startMonitoring()
     }
 }
 
