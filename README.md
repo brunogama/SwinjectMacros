@@ -9,11 +9,11 @@ SwinjectMacros brings the power of Swift Macros to dependency injection, dramati
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](<>)
 
-## 🎯 Why SwinjectMacros?
+## Why SwinjectMacros?
 
 Traditional dependency injection in Swift requires significant boilerplate code:
 
-### ❌ **Before: Traditional Swinject (Lots of Boilerplate)**
+### Before: Traditional Swinject (Extensive Boilerplate)
 
 ```swift
 // Service Definition
@@ -55,7 +55,7 @@ class AppAssembly: Assembly {
 }
 ```
 
-### ✅ **After: SwinjectMacros (Clean & Concise)**
+### After: SwinjectMacros (Clean and Concise)
 
 ```swift
 // Service Definition with Auto-Registration
@@ -84,53 +84,53 @@ class LoggerServiceImpl: LoggerService { /* implementation */ }
 // That's it! Registration is automatically generated at compile-time
 ```
 
-## 🚀 Key Benefits
+## Key Benefits
 
-- **🔥 Zero Runtime Overhead**: All code generation happens at compile-time
-- **🎯 Type Safety**: Full Swift type system integration with compile-time validation
-- **📝 Dramatically Less Code**: Reduce dependency injection boilerplate by 80%+
-- **🔍 Better Error Messages**: Clear, actionable compile-time diagnostics
-- **⚡ Performance**: No reflection, no runtime lookups - pure Swift performance
-- **🧪 Testing Made Easy**: Automatic mock generation and test container setup
-- **🏗️ Factory Patterns**: Automatic factory generation for services with runtime parameters
+- **Zero Runtime Overhead**: All code generation happens at compile-time
+- **Type Safety**: Full Swift type system integration with compile-time validation
+- **Dramatically Less Code**: Reduce dependency injection boilerplate by 80%+
+- **Better Error Messages**: Clear, actionable compile-time diagnostics
+- **Performance**: No reflection, no runtime lookups - pure Swift performance
+- **Testing Made Easy**: Automatic mock generation and test container setup
+- **Factory Patterns**: Automatic factory generation for services with runtime parameters
 
-## 📋 Table of Contents
+## Table of Contents
 
-### 🚀 Getting Started
+### Getting Started
 
-- [📦 Installation](#-installation)
-- [📋 Requirements](#-requirements)
-- [🏗️ Complete Example: Real-World Application](#%EF%B8%8F-complete-example-real-world-application)
+- [Installation](#installation)
+- [Requirements](#requirements)
+- [Complete Example: Real-World Application](#complete-example-real-world-application)
 
-### 🎓 Core Macros Guide
+### Core Macros Guide
 
 - [1. @Injectable - Automatic Service Registration](#1-injectable---automatic-service-registration)
 
-  - [🤔 Why @Injectable?](#-why-injectable)
-  - [📖 How It Works](#-how-it-works)
-  - [🔧 Basic Usage](#-basic-usage)
-  - [⚙️ Advanced Configuration](#%EF%B8%8F-advanced-configuration)
+  - [Why @Injectable?](#why-injectable)
+  - [How It Works](#how-it-works)
+  - [Basic Usage](#basic-usage)
+  - [Advanced Configuration](#advanced-configuration)
     - [Object Scopes](#object-scopes)
     - [Named Services](#named-services)
     - [Optional Dependencies](#optional-dependencies)
-  - [🎯 Smart Dependency Classification](#-smart-dependency-classification)
+  - [Smart Dependency Classification](#smart-dependency-classification)
 
 - [2. @AutoFactory - Factory Pattern Generation](#2-autofactory---factory-pattern-generation)
 
-  - [🤔 Why @AutoFactory?](#-why-autofactory)
-  - [📖 How It Works](#-how-it-works-1)
-  - [🔧 Basic Usage](#-basic-usage-1)
-  - [⚙️ Advanced Configuration](#%EF%B8%8F-advanced-configuration-1)
+  - [Why @AutoFactory?](#why-autofactory)
+  - [How It Works](#how-it-works-1)
+  - [Basic Usage](#basic-usage-1)
+  - [Advanced Configuration](#advanced-configuration-1)
     - [Async/Throws Support](#asyncthrows-support)
     - [Custom Factory Names](#custom-factory-names)
     - [Factory Registration and Usage](#factory-registration-and-usage)
 
 - [3. @TestContainer - Test Mock Generation](#3-testcontainer---test-mock-generation)
 
-  - [🤔 Why @TestContainer?](#-why-testcontainer)
-  - [📖 How It Works](#-how-it-works-2)
-  - [🔧 Basic Usage](#-basic-usage-2)
-  - [⚙️ Advanced Configuration](#%EF%B8%8F-advanced-configuration-2)
+  - [Why @TestContainer?](#why-testcontainer)
+  - [How It Works](#how-it-works-2)
+  - [Basic Usage](#basic-usage-2)
+  - [Advanced Configuration](#advanced-configuration-2)
     - [Custom Mock Prefix](#custom-mock-prefix)
     - [Custom Scope](#custom-scope)
     - [Manual Mock Control](#manual-mock-control)
@@ -138,28 +138,28 @@ class LoggerServiceImpl: LoggerService { /* implementation */ }
 
 - [4. @Interceptor - Aspect-Oriented Programming](#4-interceptor---aspect-oriented-programming)
 
-  - [🤔 Why @Interceptor?](#-why-interceptor)
-  - [📖 How It Works](#-how-it-works-3)
-  - [🔧 Basic Usage](#-basic-usage-3)
-  - [⚙️ Advanced Configuration](#%EF%B8%8F-advanced-configuration-3)
+  - [Why @Interceptor?](#why-interceptor)
+  - [How It Works](#how-it-works-3)
+  - [Basic Usage](#basic-usage-3)
+  - [Advanced Configuration](#advanced-configuration-3)
     - [Async/Throws Support](#asyncthrows-support-1)
     - [Static Method Interception](#static-method-interception)
-  - [🛠️ Creating Custom Interceptors](#%EF%B8%8F-creating-custom-interceptors)
-  - [🏭 Built-in Interceptors](#-built-in-interceptors)
+  - [Creating Custom Interceptors](#creating-custom-interceptors)
+  - [Built-in Interceptors](#built-in-interceptors)
     - [LoggingInterceptor](#logginginterceptor)
     - [PerformanceInterceptor](#performanceinterceptor)
-  - [🔄 Interceptor Registration](#-interceptor-registration)
-  - [🎯 Real-World Example: E-commerce Service](#-real-world-example-e-commerce-service)
-  - [⚡ Performance Benefits](#-performance-benefits)
+  - [Interceptor Registration](#interceptor-registration)
+  - [Real-World Example: E-commerce Service](#real-world-example-e-commerce-service)
+  - [Performance Benefits](#performance-benefits)
 
-### 📚 Guides & Best Practices
+### Guides and Best Practices
 
-- [🎯 Best Practices](#-best-practices)
+- [Best Practices](#best-practices)
   - [Service Design Guidelines](#1-service-design-guidelines)
   - [Scope Selection](#2-scope-selection)
   - [Factory vs Injectable Decision](#3-factory-vs-injectable-decision)
   - [Testing Strategy](#4-testing-strategy)
-- [⚠️ Common Pitfalls & Solutions](#%EF%B8%8F-common-pitfalls--solutions)
+- [Common Pitfalls and Solutions](#common-pitfalls-and-solutions)
   - [Circular Dependencies](#1-circular-dependencies)
   - [Runtime Parameters in @Injectable](#2-runtime-parameters-in-injectable)
   - [Missing Protocol Registrations](#3-missing-protocol-registrations)
