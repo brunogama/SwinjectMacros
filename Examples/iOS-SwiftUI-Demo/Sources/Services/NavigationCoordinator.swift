@@ -1,9 +1,9 @@
 // NavigationCoordinator.swift - Navigation coordination service demonstrating @Injectable
-// Copyright © 2025 SwinJectMacros Demo. All rights reserved.
+// Copyright © 2025 SwinjectMacros Demo. All rights reserved.
 
 import SwiftUI
-import SwinjectUtilityMacros
 import Swinject
+import SwinjectMacros
 
 // MARK: - Navigation Protocol
 
@@ -12,7 +12,7 @@ protocol NavigationCoordinatorProtocol: ObservableObject {
     var navigationStack: [AppRoute] { get }
     var presentedSheet: AppSheet? { get }
     var presentedAlert: AppAlert? { get }
-    
+
     func navigate(to route: AppRoute)
     func navigateBack()
     func navigateToRoot()
@@ -27,41 +27,41 @@ protocol NavigationCoordinatorProtocol: ObservableObject {
 
 @Injectable
 class NavigationCoordinator: NavigationCoordinatorProtocol {
-    
+
     // Published properties for SwiftUI
     @Published var currentRoute: AppRoute = .home
     @Published var navigationStack: [AppRoute] = []
     @Published var presentedSheet: AppSheet? = nil
     @Published var presentedAlert: AppAlert? = nil
-    
+
     // Dependencies
     private let logger: LoggerServiceProtocol
     private let analytics: AnalyticsServiceProtocol
-    
+
     // Navigation history for analytics
     private var navigationHistory: [NavigationEvent] = []
     private let maxHistorySize = 100
-    
+
     init(
         logger: LoggerServiceProtocol,
         analytics: AnalyticsServiceProtocol
     ) {
         self.logger = logger
         self.analytics = analytics
-        
+
         logger.info("🧭 NavigationCoordinator initialized")
         setupNavigationTracking()
     }
-    
+
     // MARK: - NavigationCoordinatorProtocol Implementation
-    
+
     func navigate(to route: AppRoute) {
         logger.info("🧭 Navigating to: \(route)")
-        
+
         let previousRoute = currentRoute
         currentRoute = route
         navigationStack.append(route)
-        
+
         // Track navigation event
         trackNavigationEvent(
             from: previousRoute,
@@ -69,31 +69,31 @@ class NavigationCoordinator: NavigationCoordinatorProtocol {
             action: .navigate,
             timestamp: Date()
         )
-        
+
         // Limit stack size to prevent memory issues
         if navigationStack.count > 50 {
             navigationStack.removeFirst(10)
             logger.warning("⚠️ Navigation stack trimmed due to size")
         }
     }
-    
+
     func navigateBack() {
         guard canNavigateBack() else {
             logger.warning("⚠️ Cannot navigate back - no previous route")
             return
         }
-        
+
         let previousRoute = currentRoute
         navigationStack.removeLast()
-        
+
         if let lastRoute = navigationStack.last {
             currentRoute = lastRoute
         } else {
             currentRoute = .home
         }
-        
+
         logger.info("🔙 Navigated back to: \(currentRoute)")
-        
+
         // Track navigation event
         trackNavigationEvent(
             from: previousRoute,
@@ -102,14 +102,14 @@ class NavigationCoordinator: NavigationCoordinatorProtocol {
             timestamp: Date()
         )
     }
-    
+
     func navigateToRoot() {
         let previousRoute = currentRoute
         currentRoute = .home
         navigationStack = [.home]
-        
+
         logger.info("🏠 Navigated to root")
-        
+
         // Track navigation event
         trackNavigationEvent(
             from: previousRoute,
@@ -118,42 +118,42 @@ class NavigationCoordinator: NavigationCoordinatorProtocol {
             timestamp: Date()
         )
     }
-    
+
     func presentSheet(_ sheet: AppSheet) {
         logger.info("📋 Presenting sheet: \(sheet)")
-        
+
         presentedSheet = sheet
-        
+
         // Track sheet presentation
         Task {
-            await analytics.trackUserAction(.tap, userId: "current_user")
-            await analytics.trackScreenView("sheet_\(sheet.rawValue)", userId: "current_user")
+            await self.analytics.trackUserAction(.tap, userId: "current_user")
+            await self.analytics.trackScreenView("sheet_\(sheet.rawValue)", userId: "current_user")
         }
     }
-    
+
     func dismissSheet() {
         guard let sheet = presentedSheet else {
             logger.warning("⚠️ No sheet to dismiss")
             return
         }
-        
+
         logger.info("❌ Dismissing sheet: \(sheet)")
         presentedSheet = nil
-        
+
         // Track sheet dismissal
         Task {
-            await analytics.trackUserAction(.tap, userId: "current_user")
+            await self.analytics.trackUserAction(.tap, userId: "current_user")
         }
     }
-    
+
     func presentAlert(_ alert: AppAlert) {
         logger.info("🚨 Presenting alert: \(alert.title)")
-        
+
         presentedAlert = alert
-        
+
         // Track alert presentation
         Task {
-            await analytics.trackEvent(AnalyticsEvent(
+            await self.analytics.trackEvent(AnalyticsEvent(
                 name: "alert_presented",
                 properties: [
                     "alert_type": alert.title,
@@ -162,19 +162,19 @@ class NavigationCoordinator: NavigationCoordinatorProtocol {
             ))
         }
     }
-    
+
     func dismissAlert() {
         guard let alert = presentedAlert else {
             logger.warning("⚠️ No alert to dismiss")
             return
         }
-        
+
         logger.info("❌ Dismissing alert: \(alert.title)")
         presentedAlert = nil
-        
+
         // Track alert dismissal
         Task {
-            await analytics.trackEvent(AnalyticsEvent(
+            await self.analytics.trackEvent(AnalyticsEvent(
                 name: "alert_dismissed",
                 properties: [
                     "alert_type": alert.title
@@ -182,13 +182,13 @@ class NavigationCoordinator: NavigationCoordinatorProtocol {
             ))
         }
     }
-    
+
     func canNavigateBack() -> Bool {
-        return navigationStack.count > 1
+        navigationStack.count > 1
     }
-    
+
     // MARK: - Navigation Tracking
-    
+
     private func setupNavigationTracking() {
         // Track initial route
         trackNavigationEvent(
@@ -198,7 +198,7 @@ class NavigationCoordinator: NavigationCoordinatorProtocol {
             timestamp: Date()
         )
     }
-    
+
     private func trackNavigationEvent(
         from: AppRoute,
         to: AppRoute,
@@ -212,42 +212,42 @@ class NavigationCoordinator: NavigationCoordinatorProtocol {
             timestamp: timestamp,
             stackDepth: navigationStack.count
         )
-        
+
         navigationHistory.append(event)
-        
+
         // Limit history size
         if navigationHistory.count > maxHistorySize {
             navigationHistory.removeFirst(10)
         }
-        
+
         // Track in analytics
         Task {
-            await analytics.trackEvent(AnalyticsEvent(
+            await self.analytics.trackEvent(AnalyticsEvent(
                 name: "navigation",
                 properties: [
                     "from_route": from.rawValue,
                     "to_route": to.rawValue,
                     "action": action.rawValue,
-                    "stack_depth": navigationStack.count
+                    "stack_depth": self.navigationStack.count
                 ]
             ))
-            
-            await analytics.trackScreenView(to.rawValue, userId: "current_user")
+
+            await self.analytics.trackScreenView(to.rawValue, userId: "current_user")
         }
     }
-    
+
     // MARK: - Navigation Analytics
-    
+
     func getNavigationAnalytics() -> NavigationAnalytics {
         let totalNavigations = navigationHistory.count
         let routeCounts = navigationHistory.reduce(into: [String: Int]()) { counts, event in
             counts[event.to.rawValue, default: 0] += 1
         }
-        
+
         let mostVisitedRoutes = routeCounts.sorted { $0.value > $1.value }.prefix(5)
-        let averageStackDepth = navigationHistory.isEmpty ? 0 : 
+        let averageStackDepth = navigationHistory.isEmpty ? 0 :
             Double(navigationHistory.map { $0.stackDepth }.reduce(0, +)) / Double(navigationHistory.count)
-        
+
         return NavigationAnalytics(
             totalNavigations: totalNavigations,
             mostVisitedRoutes: Array(mostVisitedRoutes),
@@ -269,52 +269,52 @@ enum AppRoute: String, CaseIterable, Identifiable {
     case analytics = "analytics"
     case debug = "debug"
     case about = "about"
-    
+
     var id: String { rawValue }
-    
+
     var displayName: String {
         switch self {
-        case .home: return "Home"
-        case .profile: return "Profile"
-        case .settings: return "Settings"
-        case .userList: return "Users"
-        case .userDetail: return "User Details"
-        case .analytics: return "Analytics"
-        case .debug: return "Debug"
-        case .about: return "About"
+        case .home: "Home"
+        case .profile: "Profile"
+        case .settings: "Settings"
+        case .userList: "Users"
+        case .userDetail: "User Details"
+        case .analytics: "Analytics"
+        case .debug: "Debug"
+        case .about: "About"
         }
     }
-    
+
     var icon: String {
         switch self {
-        case .home: return "house.fill"
-        case .profile: return "person.fill"
-        case .settings: return "gear.fill"
-        case .userList: return "person.3.fill"
-        case .userDetail: return "person.crop.circle.fill"
-        case .analytics: return "chart.bar.fill"
-        case .debug: return "ladybug.fill"
-        case .about: return "info.circle.fill"
+        case .home: "house.fill"
+        case .profile: "person.fill"
+        case .settings: "gear.fill"
+        case .userList: "person.3.fill"
+        case .userDetail: "person.crop.circle.fill"
+        case .analytics: "chart.bar.fill"
+        case .debug: "ladybug.fill"
+        case .about: "info.circle.fill"
         }
     }
 }
 
 enum AppSheet: String, CaseIterable {
     case createUser = "create_user"
-    case editProfile = "edit_profile"  
+    case editProfile = "edit_profile"
     case themeSelector = "theme_selector"
     case debugConsole = "debug_console"
     case analyticsReport = "analytics_report"
     case appSettings = "app_settings"
-    
+
     var displayName: String {
         switch self {
-        case .createUser: return "Create User"
-        case .editProfile: return "Edit Profile"
-        case .themeSelector: return "Theme Selector"
-        case .debugConsole: return "Debug Console"
-        case .analyticsReport: return "Analytics Report"
-        case .appSettings: return "App Settings"
+        case .createUser: "Create User"
+        case .editProfile: "Edit Profile"
+        case .themeSelector: "Theme Selector"
+        case .debugConsole: "Debug Console"
+        case .analyticsReport: "Analytics Report"
+        case .appSettings: "App Settings"
         }
     }
 }
@@ -325,33 +325,33 @@ struct AppAlert {
     let severity: AlertSeverity
     let primaryAction: AlertAction?
     let secondaryAction: AlertAction?
-    
+
     enum AlertSeverity: String {
         case info = "info"
         case warning = "warning"
         case error = "error"
         case success = "success"
     }
-    
+
     struct AlertAction {
         let title: String
         let style: ActionStyle
         let handler: (() -> Void)?
-        
+
         enum ActionStyle {
             case `default`
             case cancel
             case destructive
         }
     }
-    
+
     // Convenience initializers
     static func error(
         title: String = "Error",
         message: String,
         action: AlertAction? = nil
     ) -> AppAlert {
-        return AppAlert(
+        AppAlert(
             title: title,
             message: message,
             severity: .error,
@@ -359,14 +359,14 @@ struct AppAlert {
             secondaryAction: nil
         )
     }
-    
+
     static func warning(
         title: String = "Warning",
         message: String,
         primaryAction: AlertAction? = nil,
         secondaryAction: AlertAction? = nil
     ) -> AppAlert {
-        return AppAlert(
+        AppAlert(
             title: title,
             message: message,
             severity: .warning,
@@ -374,12 +374,12 @@ struct AppAlert {
             secondaryAction: secondaryAction
         )
     }
-    
+
     static func info(
         title: String = "Information",
         message: String
     ) -> AppAlert {
-        return AppAlert(
+        AppAlert(
             title: title,
             message: message,
             severity: .info,
@@ -391,12 +391,12 @@ struct AppAlert {
             secondaryAction: nil
         )
     }
-    
+
     static func success(
         title: String = "Success",
         message: String
     ) -> AppAlert {
-        return AppAlert(
+        AppAlert(
             title: title,
             message: message,
             severity: .success,
@@ -451,18 +451,18 @@ extension EnvironmentValues {
 
 extension View {
     func navigationCoordinator(_ coordinator: NavigationCoordinatorProtocol) -> some View {
-        self.environment(\.navigationCoordinator, coordinator)
+        environment(\.navigationCoordinator, coordinator)
     }
-    
+
     func handleNavigationSheet(
         item: Binding<AppSheet?>,
         coordinator: NavigationCoordinatorProtocol
     ) -> some View {
-        self.sheet(item: item) { sheet in
+        sheet(item: item) { sheet in
             NavigationSheetView(sheet: sheet, coordinator: coordinator)
         }
     }
-    
+
     func handleNavigationAlert(
         alert: Binding<AppAlert?>,
         coordinator: NavigationCoordinatorProtocol
@@ -493,11 +493,11 @@ extension View {
 // Helper for AppAlert to conform to Identifiable
 extension AppAlert: Identifiable {
     var id: String {
-        return "\(title)_\(message)_\(severity.rawValue)"
+        "\(title)_\(message)_\(severity.rawValue)"
     }
 }
 
-// Helper for AppSheet to conform to Identifiable  
+// Helper for AppSheet to conform to Identifiable
 extension AppSheet: Identifiable {
     var id: String { rawValue }
 }
@@ -507,7 +507,7 @@ extension AppSheet: Identifiable {
 struct NavigationSheetView: View {
     let sheet: AppSheet
     let coordinator: NavigationCoordinatorProtocol
-    
+
     var body: some View {
         NavigationView {
             Group {

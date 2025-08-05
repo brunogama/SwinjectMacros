@@ -1,0 +1,173 @@
+// InjectedStateObjectMacro.swift - SwiftUI StateObject dependency injection implementation
+
+import SwiftDiagnostics
+import SwiftSyntax
+import SwiftSyntaxBuilder
+import SwiftSyntaxMacros
+
+/// Implementation of the @InjectedStateObject macro for SwiftUI StateObject dependency injection
+///
+/// Generates SwiftUI StateObject property wrappers that resolve dependencies from the DI container
+/// while maintaining proper SwiftUI lifecycle semantics and ObservableObject integration.
+///
+/// ## AccessorMacro Limitations
+///
+/// This macro implements `AccessorMacro` which has several important limitations:
+/// - Can only provide computed property accessors (get/set/willSet/didSet)
+/// - Cannot add stored properties directly to the type
+/// - Cannot modify the property's type or visibility
+/// - Must work within the existing property declaration structure
+/// - Generated accessors replace any existing accessors on the property
+///
+/// These limitations mean the macro works by generating computed property accessors
+/// that manage an underlying storage mechanism, rather than directly modifying the property.
+public struct InjectedStateObjectMacro: AccessorMacro {
+
+    public static func expansion(
+        of node: AttributeSyntax,
+        providingAccessorsOf declaration: some DeclSyntaxProtocol,
+        in context: some MacroExpansionContext
+    ) throws -> [AccessorDeclSyntax] {
+
+        // Validate that this is applied to a property
+        guard let variableDecl = declaration.as(VariableDeclSyntax.self),
+              let binding = variableDecl.bindings.first,
+              let identifier = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier,
+              let typeAnnotation = binding.typeAnnotation?.type
+        else {
+
+            context.diagnose(Diagnostic(
+                node: declaration,
+                message: InjectedStateObjectMacroError(message: """
+                @InjectedStateObject can only be applied to properties with explicit type annotations.
+
+                Example:
+                @InjectedStateObject var viewModel: UserViewModel
+                """)
+            ))
+            return []
+        }
+
+        // Extract macro arguments
+        let arguments = extractArguments(from: node)
+        let propertyName = identifier.text
+        let typeName = typeAnnotation.description.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Generate backing storage property name
+        let backingStorageName = "_\(propertyName)StateObject"
+
+        // Create the StateObject property wrapper getter
+        let getter = AccessorDeclSyntax(
+            accessorSpecifier: .keyword(.get)
+        ) {
+            CodeBlockItemListSyntax([
+                // Generate lazy StateObject initialization
+                CodeBlockItemSyntax(item: .expr(ExprSyntax(stringLiteral: """
+                if \(backingStorageName) == nil {
+                    \(backingStorageName) = StateObject(wrappedValue: {
+                        let container = \(arguments.containerAccess)
+                        guard let dependency = container.\(arguments.resolveCall) else {
+                            fatalError("Failed to resolve \(typeName)\(
+                                arguments
+                                    .nameDescription
+                ) - ensure it's registered in the container")
+                        }
+                        return dependency
+                    }())
+                }
+                return \(backingStorageName)!.wrappedValue
+                """)))
+            ])
+        }
+
+        // Create the StateObject property wrapper setter (for @StateObject compatibility)
+        let setter = AccessorDeclSyntax(
+            accessorSpecifier: .keyword(.set)
+        ) {
+            CodeBlockItemListSyntax([
+                CodeBlockItemSyntax(item: .expr(ExprSyntax(stringLiteral: """
+                if \(backingStorageName) == nil {
+                    \(backingStorageName) = StateObject(wrappedValue: newValue)
+                } else {
+                    \(backingStorageName)!.wrappedValue = newValue
+                }
+                """)))
+            ])
+        }
+
+        return [getter, setter]
+    }
+}
+
+// MARK: - Argument Extraction
+
+extension InjectedStateObjectMacro {
+
+    fileprivate struct MacroArguments {
+        let name: String?
+        let containerName: String?
+        let resolverName: String
+
+        var containerAccess: String {
+            if let containerName = containerName {
+                "Container.named(\"\(containerName)\")"
+            } else {
+                "Container.shared ?? Environment(\\.stateObjectContainer).wrappedValue ?? Container()"
+            }
+        }
+
+        var resolveCall: String {
+            if let name = name {
+                "resolve(\(resolverName == "resolver" ? "" : "\(resolverName): ")\(name.isEmpty ? "" : "name: \"\(name)\", "))"
+            } else {
+                "resolve(\(resolverName == "resolver" ? "" : "\(resolverName): "))"
+            }
+        }
+
+        var nameDescription: String {
+            if let name = name, !name.isEmpty {
+                return " with name '\(name)'"
+            }
+            return ""
+        }
+    }
+
+    fileprivate static func extractArguments(from node: AttributeSyntax) -> MacroArguments {
+        var name: String? = nil
+        var containerName: String? = nil
+        var resolverName = "resolver"
+
+        if let arguments = node.arguments?.as(LabeledExprListSyntax.self) {
+            for argument in arguments {
+                if argument.label == nil {
+                    // First unlabeled argument is the name
+                    if let stringValue = argument.expression.as(StringLiteralExprSyntax.self) {
+                        name = stringValue.segments.first?.description
+                    }
+                } else if argument.label?.text == "container" {
+                    if let stringValue = argument.expression.as(StringLiteralExprSyntax.self) {
+                        containerName = stringValue.segments.first?.description
+                    }
+                } else if argument.label?.text == "resolver" {
+                    if let stringValue = argument.expression.as(StringLiteralExprSyntax.self) {
+                        resolverName = stringValue.segments.first?.description ?? "resolver"
+                    }
+                }
+            }
+        }
+
+        return MacroArguments(
+            name: name,
+            containerName: containerName,
+            resolverName: resolverName
+        )
+    }
+}
+
+// MARK: - Error Types
+
+private struct InjectedStateObjectMacroError: DiagnosticMessage, Error {
+    let message: String
+    let diagnosticID = MessageID(domain: "SwinjectUtilityMacros", id: "InjectedStateObjectMacro")
+    let severity = DiagnosticSeverity.error
+}

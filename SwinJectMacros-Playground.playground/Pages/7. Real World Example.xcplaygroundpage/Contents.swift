@@ -79,22 +79,22 @@ struct CartItem {
 class ProductCatalogService {
     private let productRepository: ProductRepository
     private let logger: LoggerService
-    
+
     init(productRepository: ProductRepository, logger: LoggerService) {
         self.productRepository = productRepository
         self.logger = logger
     }
-    
+
     func searchProducts(query: String, category: String? = nil) async throws -> [Product] {
         logger.log("Searching products: '\(query)' in category: \(category ?? "all")")
         return try await productRepository.searchProducts(query: query, category: category)
     }
-    
+
     func getProduct(id: String) async throws -> Product? {
         logger.log("Getting product: \(id)")
         return try await productRepository.getProduct(id: id)
     }
-    
+
     func getFeaturedProducts() async throws -> [Product] {
         logger.log("Getting featured products")
         return try await productRepository.getFeaturedProducts()
@@ -106,21 +106,21 @@ class UserAccountService {
     private let userRepository: UserRepository
     private let emailService: EmailService
     private let logger: LoggerService
-    
+
     init(userRepository: UserRepository, emailService: EmailService, logger: LoggerService) {
         self.userRepository = userRepository
         self.emailService = emailService
         self.logger = logger
     }
-    
+
     func createAccount(email: String, name: String, password: String) async throws -> User {
         logger.log("Creating account for: \(email)")
-        
+
         // Check if user already exists
         if let _ = try await userRepository.getUserByEmail(email) {
             throw AccountError.userAlreadyExists
         }
-        
+
         let user = User(
             id: UUID().uuidString,
             email: email,
@@ -133,23 +133,23 @@ class UserAccountService {
                 theme: "light"
             )
         )
-        
+
         try await userRepository.saveUser(user)
-        
+
         // Send welcome email
         try await emailService.sendWelcomeEmail(to: user)
-        
+
         logger.log("Account created successfully for: \(email)")
         return user
     }
-    
+
     func updateProfile(userId: String, name: String?, address: Address?) async throws {
         logger.log("Updating profile for user: \(userId)")
-        
+
         guard let user = try await userRepository.getUser(id: userId) else {
             throw AccountError.userNotFound
         }
-        
+
         let updatedUser = User(
             id: user.id,
             email: user.email,
@@ -157,7 +157,7 @@ class UserAccountService {
             address: address ?? user.address,
             preferences: user.preferences
         )
-        
+
         try await userRepository.saveUser(updatedUser)
         logger.log("Profile updated for user: \(userId)")
     }
@@ -172,13 +172,13 @@ class OrderProcessingService {
     private let inventoryService: InventoryService
     private let emailService: EmailService
     private let logger: LoggerService
-    
+
     // Runtime parameters
     private let userId: String
     private let cartItems: [CartItem]
     private let shippingAddress: Address
     private let paymentMethod: PaymentMethod
-    
+
     init(
         orderRepository: OrderRepository,
         productRepository: ProductRepository,
@@ -203,27 +203,27 @@ class OrderProcessingService {
         self.cartItems = cartItems
         self.shippingAddress = shippingAddress
         self.paymentMethod = paymentMethod
-        
+
         logger.log("OrderProcessingService created for user: \(userId)")
     }
-    
+
     func processOrder() async throws -> Order {
         logger.log("Processing order for user: \(userId)")
-        
+
         // Validate user
         guard let user = try await userRepository.getUser(id: userId) else {
             throw OrderError.userNotFound
         }
-        
+
         // Validate and reserve inventory
         var orderItems: [OrderItem] = []
         var total: Decimal = 0
-        
+
         for cartItem in cartItems {
             guard let product = try await productRepository.getProduct(id: cartItem.productId) else {
                 throw OrderError.productNotFound(cartItem.productId)
             }
-            
+
             // Check inventory
             guard try await inventoryService.reserveStock(
                 productId: product.id,
@@ -231,7 +231,7 @@ class OrderProcessingService {
             ) else {
                 throw OrderError.insufficientStock(product.id)
             }
-            
+
             let itemTotal = product.price * Decimal(cartItem.quantity)
             let orderItem = OrderItem(
                 productId: product.id,
@@ -240,18 +240,18 @@ class OrderProcessingService {
                 unitPrice: product.price,
                 totalPrice: itemTotal
             )
-            
+
             orderItems.append(orderItem)
             total += itemTotal
         }
-        
+
         // Process payment
         let paymentResult = try await paymentService.processPayment(
             amount: total,
             method: paymentMethod,
             description: "Order payment for user \(userId)"
         )
-        
+
         guard paymentResult.success else {
             // Release reserved inventory
             for item in orderItems {
@@ -259,7 +259,7 @@ class OrderProcessingService {
             }
             throw OrderError.paymentFailed(paymentResult.error)
         }
-        
+
         // Create order
         let order = Order(
             id: UUID().uuidString,
@@ -270,12 +270,12 @@ class OrderProcessingService {
             createdAt: Date(),
             shippingAddress: shippingAddress
         )
-        
+
         try await orderRepository.saveOrder(order)
-        
+
         // Send confirmation email
         try await emailService.sendOrderConfirmation(order: order, to: user)
-        
+
         logger.log("Order processed successfully: \(order.id)")
         return order
     }
@@ -293,18 +293,18 @@ protocol OrderProcessingServiceFactory {
 
 class OrderProcessingServiceFactoryImpl: OrderProcessingServiceFactory {
     private let resolver: Resolver
-    
+
     init(resolver: Resolver) {
         self.resolver = resolver
     }
-    
+
     func makeOrderProcessingService(
         userId: String,
         cartItems: [CartItem],
         shippingAddress: Address,
         paymentMethod: PaymentMethod
     ) -> OrderProcessingService {
-        return OrderProcessingService(
+        OrderProcessingService(
             orderRepository: resolver.synchronizedResolve(OrderRepository.self)!,
             productRepository: resolver.synchronizedResolve(ProductRepository.self)!,
             userRepository: resolver.synchronizedResolve(UserRepository.self)!,
@@ -392,12 +392,12 @@ enum AccountError: Error, LocalizedError {
     case userAlreadyExists
     case userNotFound
     case invalidCredentials
-    
+
     var errorDescription: String? {
         switch self {
-        case .userAlreadyExists: return "User already exists"
-        case .userNotFound: return "User not found"
-        case .invalidCredentials: return "Invalid credentials"
+        case .userAlreadyExists: "User already exists"
+        case .userNotFound: "User not found"
+        case .invalidCredentials: "Invalid credentials"
         }
     }
 }
@@ -408,14 +408,14 @@ enum OrderError: Error, LocalizedError {
     case insufficientStock(String)
     case paymentFailed(String?)
     case orderNotFound
-    
+
     var errorDescription: String? {
         switch self {
-        case .userNotFound: return "User not found"
-        case .productNotFound(let id): return "Product not found: \(id)"
-        case .insufficientStock(let id): return "Insufficient stock for product: \(id)"
-        case .paymentFailed(let error): return "Payment failed: \(error ?? "unknown error")"
-        case .orderNotFound: return "Order not found"
+        case .userNotFound: "User not found"
+        case .productNotFound(let id): "Product not found: \(id)"
+        case .insufficientStock(let id): "Insufficient stock for product: \(id)"
+        case .paymentFailed(let error): "Payment failed: \(error ?? "unknown error")"
+        case .orderNotFound: "Order not found"
         }
     }
 }
@@ -427,12 +427,12 @@ enum OrderError: Error, LocalizedError {
 class DatabaseProductRepository: ProductRepository {
     private let database: DatabaseConnection
     private let logger: LoggerService
-    
+
     init(database: DatabaseConnection, logger: LoggerService) {
         self.database = database
         self.logger = logger
     }
-    
+
     func getProduct(id: String) async throws -> Product? {
         logger.log("Fetching product: \(id)")
         // Mock implementation
@@ -445,21 +445,35 @@ class DatabaseProductRepository: ProductRepository {
             imageURL: "https://example.com/product.jpg"
         )
     }
-    
+
     func searchProducts(query: String, category: String?) async throws -> [Product] {
         logger.log("Searching products: '\(query)' in category: \(category ?? "all")")
         // Mock implementation
         return [
-            Product(id: "1", name: "iPhone 15", price: 999.99, category: "electronics", stockQuantity: 50, imageURL: nil),
-            Product(id: "2", name: "MacBook Pro", price: 1999.99, category: "electronics", stockQuantity: 25, imageURL: nil)
+            Product(
+                id: "1",
+                name: "iPhone 15",
+                price: 999.99,
+                category: "electronics",
+                stockQuantity: 50,
+                imageURL: nil
+            ),
+            Product(
+                id: "2",
+                name: "MacBook Pro",
+                price: 1999.99,
+                category: "electronics",
+                stockQuantity: 25,
+                imageURL: nil
+            )
         ]
     }
-    
+
     func getFeaturedProducts() async throws -> [Product] {
         logger.log("Fetching featured products")
         return try await searchProducts(query: "", category: nil)
     }
-    
+
     func updateStock(productId: String, quantity: Int) async throws {
         logger.log("Updating stock for product \(productId): \(quantity)")
     }
@@ -469,12 +483,12 @@ class DatabaseProductRepository: ProductRepository {
 class DatabaseUserRepository: UserRepository {
     private let database: DatabaseConnection
     private let logger: LoggerService
-    
+
     init(database: DatabaseConnection, logger: LoggerService) {
         self.database = database
         self.logger = logger
     }
-    
+
     func getUser(id: String) async throws -> User? {
         logger.log("Fetching user: \(id)")
         return User(
@@ -485,16 +499,16 @@ class DatabaseUserRepository: UserRepository {
             preferences: UserPreferences(currency: "USD", language: "en", emailNotifications: true, theme: "light")
         )
     }
-    
+
     func getUserByEmail(_ email: String) async throws -> User? {
         logger.log("Fetching user by email: \(email)")
         return nil // Mock: user not found
     }
-    
+
     func saveUser(_ user: User) async throws {
         logger.log("Saving user: \(user.email)")
     }
-    
+
     func deleteUser(id: String) async throws {
         logger.log("Deleting user: \(id)")
     }
@@ -504,26 +518,26 @@ class DatabaseUserRepository: UserRepository {
 class DatabaseOrderRepository: OrderRepository {
     private let database: DatabaseConnection
     private let logger: LoggerService
-    
+
     init(database: DatabaseConnection, logger: LoggerService) {
         self.database = database
         self.logger = logger
     }
-    
+
     func getOrder(id: String) async throws -> Order? {
         logger.log("Fetching order: \(id)")
         return nil
     }
-    
+
     func getOrdersByUser(userId: String) async throws -> [Order] {
         logger.log("Fetching orders for user: \(userId)")
         return []
     }
-    
+
     func saveOrder(_ order: Order) async throws {
         logger.log("Saving order: \(order.id)")
     }
-    
+
     func updateOrderStatus(orderId: String, status: OrderStatus) async throws {
         logger.log("Updating order \(orderId) status to: \(status)")
     }
@@ -532,20 +546,20 @@ class DatabaseOrderRepository: OrderRepository {
 // @Injectable(scope: .container)
 class SMTPEmailService: EmailService {
     private let logger: LoggerService
-    
+
     init(logger: LoggerService) {
         self.logger = logger
     }
-    
+
     func sendWelcomeEmail(to user: User) async throws {
         logger.log("Sending welcome email to: \(user.email)")
         // Mock SMTP implementation
     }
-    
+
     func sendOrderConfirmation(order: Order, to user: User) async throws {
         logger.log("Sending order confirmation to: \(user.email) for order: \(order.id)")
     }
-    
+
     func sendShippingNotification(order: Order, to user: User) async throws {
         logger.log("Sending shipping notification to: \(user.email) for order: \(order.id)")
     }
@@ -556,28 +570,28 @@ class SMTPEmailService: EmailService {
 class StripePaymentService: PaymentService {
     private let apiKey: String
     private let logger: LoggerService
-    
+
     init(logger: LoggerService) {
-        self.apiKey = "mock_stripe_key"
+        apiKey = "mock_stripe_key"
         self.logger = logger
     }
-    
+
     func processPayment(amount: Decimal, method: PaymentMethod, description: String) async throws -> PaymentResult {
         logger.log("Processing payment: $\(amount) via \(method.type)")
-        
+
         // Mock payment processing
         await Task.sleep(UInt64(0.5 * 1_000_000_000)) // 0.5 seconds
-        
+
         return PaymentResult(
             success: true,
             transactionId: "txn_\(UUID().uuidString.prefix(8))",
             error: nil
         )
     }
-    
+
     func refundPayment(transactionId: String, amount: Decimal) async throws -> PaymentResult {
         logger.log("Processing refund: $\(amount) for transaction: \(transactionId)")
-        
+
         return PaymentResult(
             success: true,
             transactionId: "refund_\(UUID().uuidString.prefix(8))",
@@ -590,27 +604,27 @@ class StripePaymentService: PaymentService {
 class RedisInventoryService: InventoryService {
     private let redis: RedisConnection
     private let logger: LoggerService
-    
+
     init(redis: RedisConnection, logger: LoggerService) {
         self.redis = redis
         self.logger = logger
     }
-    
+
     func getStock(productId: String) async throws -> Int {
         logger.log("Getting stock for product: \(productId)")
         return 100 // Mock stock level
     }
-    
+
     func reserveStock(productId: String, quantity: Int) async throws -> Bool {
         logger.log("Reserving \(quantity) units of product: \(productId)")
         let currentStock = try await getStock(productId: productId)
         return currentStock >= quantity
     }
-    
+
     func releaseStock(productId: String, quantity: Int) async throws {
         logger.log("Releasing \(quantity) units of product: \(productId)")
     }
-    
+
     func updateStock(productId: String, quantity: Int) async throws {
         logger.log("Updating stock for product \(productId) to: \(quantity)")
     }
@@ -621,11 +635,11 @@ class ConsoleLoggerService: LoggerService {
     func log(_ message: String) {
         print("📝 LOG: \(message)")
     }
-    
+
     func error(_ message: String) {
         print("❌ ERROR: \(message)")
     }
-    
+
     func debug(_ message: String) {
         print("🐛 DEBUG: \(message)")
     }
@@ -634,13 +648,13 @@ class ConsoleLoggerService: LoggerService {
 // MARK: - Infrastructure Support
 
 class DatabaseConnection {
-    func query(_ sql: String) -> [Any] { return [] }
-    func execute(_ sql: String) -> Bool { return true }
+    func query(_ sql: String) -> [Any] { [] }
+    func execute(_ sql: String) -> Bool { true }
 }
 
 class RedisConnection {
-    func get(_ key: String) -> String? { return nil }
-    func set(_ key: String, value: String) -> Bool { return true }
+    func get(_ key: String) -> String? { nil }
+    func set(_ key: String, value: String) -> Bool { true }
 }
 
 //: ## Application Layer - Assembly and Configuration
@@ -656,7 +670,7 @@ class DomainAssembly: Assembly {
                 logger: resolver.resolve(LoggerService.self)!
             )
         }
-        
+
         container.register(UserAccountService.self) { resolver in
             UserAccountService(
                 userRepository: resolver.resolve(UserRepository.self)!,
@@ -664,7 +678,7 @@ class DomainAssembly: Assembly {
                 logger: resolver.resolve(LoggerService.self)!
             )
         }
-        
+
         // Register factories
         container.register(OrderProcessingServiceFactory.self) { resolver in
             OrderProcessingServiceFactoryImpl(resolver: resolver)
@@ -678,11 +692,11 @@ class InfrastructureAssembly: Assembly {
         container.register(DatabaseConnection.self) { _ in
             DatabaseConnection()
         }.inObjectScope(.container)
-        
+
         container.register(RedisConnection.self) { _ in
             RedisConnection()
         }.inObjectScope(.container)
-        
+
         // Register repositories
         container.register(ProductRepository.self) { resolver in
             DatabaseProductRepository(
@@ -690,37 +704,37 @@ class InfrastructureAssembly: Assembly {
                 logger: resolver.resolve(LoggerService.self)!
             )
         }.inObjectScope(.container)
-        
+
         container.register(UserRepository.self) { resolver in
             DatabaseUserRepository(
                 database: resolver.resolve(DatabaseConnection.self)!,
                 logger: resolver.resolve(LoggerService.self)!
             )
         }.inObjectScope(.container)
-        
+
         container.register(OrderRepository.self) { resolver in
             DatabaseOrderRepository(
                 database: resolver.resolve(DatabaseConnection.self)!,
                 logger: resolver.resolve(LoggerService.self)!
             )
         }.inObjectScope(.container)
-        
+
         // Register services
         container.register(EmailService.self) { resolver in
             SMTPEmailService(logger: resolver.resolve(LoggerService.self)!)
         }.inObjectScope(.container)
-        
+
         container.register(PaymentService.self) { resolver in
             StripePaymentService(logger: resolver.resolve(LoggerService.self)!)
         }.inObjectScope(.container)
-        
+
         container.register(InventoryService.self) { resolver in
             RedisInventoryService(
                 redis: resolver.resolve(RedisConnection.self)!,
                 logger: resolver.resolve(LoggerService.self)!
             )
         }.inObjectScope(.container)
-        
+
         container.register(LoggerService.self) { _ in
             ConsoleLoggerService()
         }.inObjectScope(.container)
@@ -732,7 +746,7 @@ class InfrastructureAssembly: Assembly {
 // @TestContainer
 class OrderProcessingIntegrationTests {
     var container: Container!
-    
+
     // Mock dependencies
     var orderRepository: OrderRepository!
     var productRepository: ProductRepository!
@@ -741,13 +755,13 @@ class OrderProcessingIntegrationTests {
     var inventoryService: InventoryService!
     var emailService: EmailService!
     var logger: LoggerService!
-    
+
     // Factory under test
     var orderFactory: OrderProcessingServiceFactory!
-    
+
     func setUp() {
         container = setupTestContainer()
-        
+
         orderRepository = container.resolve(OrderRepository.self)!
         productRepository = container.resolve(ProductRepository.self)!
         userRepository = container.resolve(UserRepository.self)!
@@ -755,14 +769,14 @@ class OrderProcessingIntegrationTests {
         inventoryService = container.resolve(InventoryService.self)!
         emailService = container.resolve(EmailService.self)!
         logger = container.resolve(LoggerService.self)!
-        
+
         orderFactory = container.resolve(OrderProcessingServiceFactory.self)!
     }
-    
+
     // Generated by @TestContainer macro
     func setupTestContainer() -> Container {
         let container = Container()
-        
+
         registerOrderRepository(in: container, mock: MockOrderRepository())
         registerProductRepository(in: container, mock: MockProductRepository())
         registerUserRepository(in: container, mock: MockUserRepository())
@@ -770,49 +784,49 @@ class OrderProcessingIntegrationTests {
         registerInventoryService(in: container, mock: MockInventoryService())
         registerEmailService(in: container, mock: MockEmailService())
         registerLoggerService(in: container, mock: MockLoggerService())
-        
+
         container.register(OrderProcessingServiceFactory.self) { resolver in
             OrderProcessingServiceFactoryImpl(resolver: resolver)
         }
-        
+
         return container
     }
-    
+
     func registerOrderRepository(in container: Container, mock: OrderRepository) {
         container.register(OrderRepository.self) { _ in mock }.inObjectScope(.graph)
     }
-    
+
     func registerProductRepository(in container: Container, mock: ProductRepository) {
         container.register(ProductRepository.self) { _ in mock }.inObjectScope(.graph)
     }
-    
+
     func registerUserRepository(in container: Container, mock: UserRepository) {
         container.register(UserRepository.self) { _ in mock }.inObjectScope(.graph)
     }
-    
+
     func registerPaymentService(in container: Container, mock: PaymentService) {
         container.register(PaymentService.self) { _ in mock }.inObjectScope(.graph)
     }
-    
+
     func registerInventoryService(in container: Container, mock: InventoryService) {
         container.register(InventoryService.self) { _ in mock }.inObjectScope(.graph)
     }
-    
+
     func registerEmailService(in container: Container, mock: EmailService) {
         container.register(EmailService.self) { _ in mock }.inObjectScope(.graph)
     }
-    
+
     func registerLoggerService(in container: Container, mock: LoggerService) {
         container.register(LoggerService.self) { _ in mock }.inObjectScope(.graph)
     }
-    
+
     func testSuccessfulOrderProcessing() async throws {
         // Given
         let mockUser = userRepository as! MockUserRepository
         let mockProduct = productRepository as! MockProductRepository
         let mockInventory = inventoryService as! MockInventoryService
         let mockPayment = paymentService as! MockPaymentService
-        
+
         mockUser.getUserResult = User(
             id: "user123",
             email: "test@example.com",
@@ -820,7 +834,7 @@ class OrderProcessingIntegrationTests {
             address: nil,
             preferences: UserPreferences(currency: "USD", language: "en", emailNotifications: true, theme: "light")
         )
-        
+
         mockProduct.getProductResult = Product(
             id: "prod123",
             name: "Test Product",
@@ -829,24 +843,30 @@ class OrderProcessingIntegrationTests {
             stockQuantity: 100,
             imageURL: nil
         )
-        
+
         mockInventory.reserveStockResult = true
         mockPayment.processPaymentResult = PaymentResult(success: true, transactionId: "txn123", error: nil)
-        
+
         // When
         let cartItems = [CartItem(productId: "prod123", quantity: 2)]
-        let shippingAddress = Address(street: "123 Main St", city: "Test City", state: "TS", zipCode: "12345", country: "USA")
+        let shippingAddress = Address(
+            street: "123 Main St",
+            city: "Test City",
+            state: "TS",
+            zipCode: "12345",
+            country: "USA"
+        )
         let paymentMethod = PaymentMethod(type: .creditCard, details: [:])
-        
+
         let orderProcessor = orderFactory.makeOrderProcessingService(
             userId: "user123",
             cartItems: cartItems,
             shippingAddress: shippingAddress,
             paymentMethod: paymentMethod
         )
-        
+
         let order = try await orderProcessor.processOrder()
-        
+
         // Then
         assert(order.userId == "user123")
         assert(order.items.count == 1)
@@ -861,38 +881,41 @@ class OrderProcessingIntegrationTests {
 class MockOrderRepository: OrderRepository {
     var saveOrderCalled = false
     var savedOrder: Order?
-    
-    func getOrder(id: String) async throws -> Order? { return nil }
-    func getOrdersByUser(userId: String) async throws -> [Order] { return [] }
+
+    func getOrder(id: String) async throws -> Order? { nil }
+    func getOrdersByUser(userId: String) async throws -> [Order] { [] }
     func saveOrder(_ order: Order) async throws {
         saveOrderCalled = true
         savedOrder = order
     }
+
     func updateOrderStatus(orderId: String, status: OrderStatus) async throws {}
 }
 
 class MockProductRepository: ProductRepository {
     var getProductResult: Product?
     var getProductCalled = false
-    
+
     func getProduct(id: String) async throws -> Product? {
         getProductCalled = true
         return getProductResult
     }
-    func searchProducts(query: String, category: String?) async throws -> [Product] { return [] }
-    func getFeaturedProducts() async throws -> [Product] { return [] }
+
+    func searchProducts(query: String, category: String?) async throws -> [Product] { [] }
+    func getFeaturedProducts() async throws -> [Product] { [] }
     func updateStock(productId: String, quantity: Int) async throws {}
 }
 
 class MockUserRepository: UserRepository {
     var getUserResult: User?
     var getUserCalled = false
-    
+
     func getUser(id: String) async throws -> User? {
         getUserCalled = true
         return getUserResult
     }
-    func getUserByEmail(_ email: String) async throws -> User? { return nil }
+
+    func getUserByEmail(_ email: String) async throws -> User? { nil }
     func saveUser(_ user: User) async throws {}
     func deleteUser(id: String) async throws {}
 }
@@ -900,25 +923,27 @@ class MockUserRepository: UserRepository {
 class MockPaymentService: PaymentService {
     var processPaymentResult = PaymentResult(success: true, transactionId: "mock", error: nil)
     var processPaymentCalled = false
-    
+
     func processPayment(amount: Decimal, method: PaymentMethod, description: String) async throws -> PaymentResult {
         processPaymentCalled = true
         return processPaymentResult
     }
+
     func refundPayment(transactionId: String, amount: Decimal) async throws -> PaymentResult {
-        return PaymentResult(success: true, transactionId: "refund", error: nil)
+        PaymentResult(success: true, transactionId: "refund", error: nil)
     }
 }
 
 class MockInventoryService: InventoryService {
     var reserveStockResult = true
     var reserveStockCalled = false
-    
-    func getStock(productId: String) async throws -> Int { return 100 }
+
+    func getStock(productId: String) async throws -> Int { 100 }
     func reserveStock(productId: String, quantity: Int) async throws -> Bool {
         reserveStockCalled = true
         return reserveStockResult
     }
+
     func releaseStock(productId: String, quantity: Int) async throws {}
     func updateStock(productId: String, quantity: Int) async throws {}
 }
@@ -926,19 +951,21 @@ class MockInventoryService: InventoryService {
 class MockEmailService: EmailService {
     var sendWelcomeEmailCalled = false
     var sendOrderConfirmationCalled = false
-    
+
     func sendWelcomeEmail(to user: User) async throws {
         sendWelcomeEmailCalled = true
     }
+
     func sendOrderConfirmation(order: Order, to user: User) async throws {
         sendOrderConfirmationCalled = true
     }
+
     func sendShippingNotification(order: Order, to user: User) async throws {}
 }
 
 class MockLoggerService: LoggerService {
     var logMessages: [String] = []
-    
+
     func log(_ message: String) { logMessages.append(message) }
     func error(_ message: String) { logMessages.append("ERROR: \(message)") }
     func debug(_ message: String) { logMessages.append("DEBUG: \(message)") }
@@ -969,7 +996,7 @@ Task {
             password: "secure123"
         )
         print("✅ Created user account: \(newUser.name) (\(newUser.email))")
-        
+
         // Update user profile
         let address = Address(
             street: "456 Oak Street",
@@ -984,27 +1011,27 @@ Task {
             address: address
         )
         print("✅ Updated user profile")
-        
+
         // Search for products
         let catalogService = container.resolve(ProductCatalogService.self)!
         let products = try await catalogService.searchProducts(query: "iPhone", category: "electronics")
         print("✅ Found \(products.count) products")
-        
+
         // Process an order
         let orderFactory = container.resolve(OrderProcessingServiceFactory.self)!
         let cartItems = [CartItem(productId: "1", quantity: 1)]
         let paymentMethod = PaymentMethod(type: .creditCard, details: ["last4": "1234"])
-        
+
         let orderProcessor = orderFactory.makeOrderProcessingService(
             userId: newUser.id,
             cartItems: cartItems,
             shippingAddress: address,
             paymentMethod: paymentMethod
         )
-        
+
         let order = try await orderProcessor.processOrder()
         print("✅ Processed order: \(order.id) - Total: $\(order.total)")
-        
+
     } catch {
         print("❌ Application error: \(error)")
     }

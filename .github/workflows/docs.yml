@@ -21,14 +21,14 @@ jobs:
   build-docs:
     name: Build Documentation
     runs-on: macos-14
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Select Xcode version
       run: sudo xcode-select -s /Applications/Xcode_15.0.app/Contents/Developer
-      
+
     - name: Cache Swift Package Manager
       uses: actions/cache@v4
       with:
@@ -37,10 +37,10 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-spm-docs-
           ${{ runner.os }}-spm-
-          
+
     - name: Build package
       run: swift build
-      
+
     - name: Generate documentation
       run: |
         swift package generate-documentation \
@@ -49,7 +49,7 @@ jobs:
           --transform-for-static-hosting \
           --hosting-base-path SwinJectMacros \
           --include-extended-types
-          
+
     - name: Generate documentation index
       run: |
         cat > docs/index.html << 'EOF'
@@ -153,29 +153,29 @@ jobs:
                 <div class="logo">SwinJectMacros</div>
                 <div class="subtitle">Advanced Dependency Injection Utilities for Swift</div>
             </div>
-            
+
             <div class="nav-grid">
                 <a href="documentation/swinjectmacros/" class="nav-card">
                     <h3>📚 API Documentation</h3>
                     <p>Complete API reference with examples and usage guides</p>
                 </a>
-                
+
                 <a href="#getting-started" class="nav-card">
                     <h3>🚀 Getting Started</h3>
                     <p>Quick start guide and installation instructions</p>
                 </a>
-                
+
                 <a href="#examples" class="nav-card">
                     <h3>💡 Examples</h3>
                     <p>Real-world usage examples and best practices</p>
                 </a>
-                
+
                 <a href="#migration" class="nav-card">
                     <h3>🔄 Migration Guide</h3>
                     <p>Upgrade guides and breaking changes</p>
                 </a>
             </div>
-            
+
             <div class="features">
                 <h2>✨ Features</h2>
                 <ul>
@@ -189,7 +189,7 @@ jobs:
                     <li><strong>Comprehensive Documentation</strong> - Extensive guides and examples</li>
                 </ul>
             </div>
-            
+
             <div class="github-link">
                 <a href="https://github.com/anthropics/SwinJectMacros" target="_blank">
                     View on GitHub
@@ -198,7 +198,7 @@ jobs:
         </body>
         </html>
         EOF
-        
+
     - name: Validate documentation
       run: |
         # Check that key documentation files exist
@@ -206,16 +206,16 @@ jobs:
           echo "❌ Main documentation not generated"
           exit 1
         fi
-        
+
         # Check documentation size (should be substantial)
         DOC_SIZE=$(du -s docs | cut -f1)
         if [ $DOC_SIZE -lt 100 ]; then
           echo "❌ Documentation seems too small ($DOC_SIZE KB)"
           exit 1
         fi
-        
+
         echo "✅ Documentation validation passed ($DOC_SIZE KB generated)"
-        
+
     - name: Upload documentation artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -228,14 +228,14 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-docs
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    
+
     steps:
     - name: Download documentation
       uses: actions/download-artifact@v4
       with:
         name: documentation-${{ github.sha }}
         path: docs/
-        
+
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
       with:
@@ -250,18 +250,18 @@ jobs:
     name: Validate Documentation Links
     runs-on: ubuntu-latest
     needs: build-docs
-    
+
     steps:
     - name: Download documentation
       uses: actions/download-artifact@v4
       with:
         name: documentation-${{ github.sha }}
         path: docs/
-        
+
     - name: Install link checker
       run: |
         npm install -g markdown-link-check
-        
+
     - name: Check documentation links
       run: |
         # Find all HTML files and check for broken links
@@ -271,34 +271,34 @@ jobs:
           grep -v "^href=\"javascript:" | \
           sed 's/href="//g' | sed 's/"//g' | \
           sort -u > links.txt
-          
+
         echo "Found $(wc -l < links.txt) unique links to validate"
-        
+
         # Basic validation - check for obviously broken patterns
         if grep -q "undefined\|null\|PLACEHOLDER" links.txt; then
           echo "❌ Found placeholder or undefined links"
           grep "undefined\|null\|PLACEHOLDER" links.txt
           exit 1
         fi
-        
+
         echo "✅ Link validation passed"
 
   accessibility-check:
     name: Accessibility Check
     runs-on: ubuntu-latest
     needs: build-docs
-    
+
     steps:
     - name: Download documentation
       uses: actions/download-artifact@v4
       with:
         name: documentation-${{ github.sha }}
         path: docs/
-        
+
     - name: Install accessibility checker
       run: |
         npm install -g @axe-core/cli
-        
+
     - name: Check accessibility
       run: |
         # Basic accessibility check on main documentation page
@@ -313,20 +313,20 @@ jobs:
     name: Documentation Performance
     runs-on: ubuntu-latest
     needs: build-docs
-    
+
     steps:
     - name: Download documentation
       uses: actions/download-artifact@v4
       with:
         name: documentation-${{ github.sha }}
         path: docs/
-        
+
     - name: Check documentation size
       run: |
         # Check total documentation size
         TOTAL_SIZE=$(du -sh docs | cut -f1)
         TOTAL_SIZE_KB=$(du -s docs | cut -f1)
-        
+
         echo "📊 Documentation Statistics:"
         echo "Total size: $TOTAL_SIZE ($TOTAL_SIZE_KB KB)"
         echo "Files: $(find docs -type f | wc -l)"
@@ -334,7 +334,7 @@ jobs:
         echo "CSS files: $(find docs -name "*.css" | wc -l)"
         echo "JS files: $(find docs -name "*.js" | wc -l)"
         echo "Images: $(find docs -name "*.png" -o -name "*.jpg" -o -name "*.svg" | wc -l)"
-        
+
         # Warn if documentation is unusually large
         if [ $TOTAL_SIZE_KB -gt 50000 ]; then
           echo "⚠️ Documentation is quite large ($TOTAL_SIZE). Consider optimization."
@@ -344,7 +344,7 @@ jobs:
         else
           echo "✅ Documentation size is reasonable"
         fi
-        
+
     - name: Find large files
       run: |
         echo "📁 Largest files in documentation:"

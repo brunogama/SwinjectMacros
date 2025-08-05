@@ -85,7 +85,7 @@ body:
       render: swift
       placeholder: |
         import SwinJectMacros
-        
+
         class MyService {
             @LazyInject var dependency: DependencyProtocol = DependencyImpl()
         }

@@ -1,16 +1,16 @@
-# Migration Guide: From Traditional DI to SwinjectUtilityMacros
+# Migration Guide: From Traditional DI to SwinjectMacros
 
-This guide helps you migrate from traditional dependency injection patterns to SwinjectUtilityMacros, showing you exactly what changes and how to adopt the new macros incrementally.
+This guide helps you migrate from traditional dependency injection patterns to SwinjectMacros, showing you exactly what changes and how to adopt the new macros incrementally.
 
 ## 📋 Table of Contents
 
 1. [Migration Strategy](#migration-strategy)
-2. [Service Registration Migration](#service-registration-migration)
-3. [Factory Pattern Migration](#factory-pattern-migration)
-4. [Testing Migration](#testing-migration)
-5. [Cross-Cutting Concerns Migration](#cross-cutting-concerns-migration)
-6. [Common Migration Scenarios](#common-migration-scenarios)
-7. [Troubleshooting](#troubleshooting)
+1. [Service Registration Migration](#service-registration-migration)
+1. [Factory Pattern Migration](#factory-pattern-migration)
+1. [Testing Migration](#testing-migration)
+1. [Cross-Cutting Concerns Migration](#cross-cutting-concerns-migration)
+1. [Common Migration Scenarios](#common-migration-scenarios)
+1. [Troubleshooting](#troubleshooting)
 
 ## Migration Strategy
 
@@ -19,14 +19,15 @@ This guide helps you migrate from traditional dependency injection patterns to S
 **Don't migrate everything at once!** Follow this proven migration path:
 
 1. **Phase 1**: Migrate simple services (no dependencies)
-2. **Phase 2**: Migrate services with dependencies  
-3. **Phase 3**: Migrate factory patterns
-4. **Phase 4**: Migrate test setup
-5. **Phase 5**: Clean up old registration code
+1. **Phase 2**: Migrate services with dependencies
+1. **Phase 3**: Migrate factory patterns
+1. **Phase 4**: Migrate test setup
+1. **Phase 5**: Clean up old registration code
 
 ### 🔄 **Backward Compatibility**
 
-SwinjectUtilityMacros is fully compatible with existing Swinject code. You can:
+SwinjectMacros is fully compatible with existing Swinject code. You can:
+
 - Keep existing registrations and add new macro-based ones
 - Mix manual registration with macro registration
 - Migrate gradually without breaking existing functionality
@@ -42,12 +43,12 @@ SwinjectUtilityMacros is fully compatible with existing Swinject code. You can:
 class UserService {
     private let apiClient: APIClient
     private let logger: LoggerService
-    
+
     init(apiClient: APIClient, logger: LoggerService) {
         self.apiClient = apiClient
         self.logger = logger
     }
-    
+
     func getUser(id: String) -> User? {
         // implementation
     }
@@ -59,11 +60,11 @@ class UserAssembly: Assembly {
         container.register(APIClient.self) { _ in
             HTTPAPIClient()
         }.inObjectScope(.container)
-        
+
         container.register(LoggerService.self) { _ in
             ConsoleLogger()
         }
-        
+
         container.register(UserService.self) { resolver in
             UserService(
                 apiClient: resolver.resolve(APIClient.self)!,
@@ -74,7 +75,7 @@ class UserAssembly: Assembly {
 }
 ```
 
-#### ✅ **After: With SwinjectUtilityMacros**
+#### ✅ **After: With SwinjectMacros**
 
 ```swift
 // Service definition with macro
@@ -82,12 +83,12 @@ class UserAssembly: Assembly {
 class UserService {
     private let apiClient: APIClient
     private let logger: LoggerService
-    
+
     init(apiClient: APIClient, logger: LoggerService) {
         self.apiClient = apiClient
         self.logger = logger
     }
-    
+
     func getUser(id: String) -> User? {
         // implementation
     }
@@ -103,7 +104,7 @@ class HTTPAPIClient: APIClient {
 @Injectable
 class ConsoleLogger: LoggerService {
     init() {
-        // implementation  
+        // implementation
     }
 }
 
@@ -114,7 +115,7 @@ class UserAssembly: Assembly {
         ConsoleLogger.register(in: container)
         HTTPAPIClient.register(in: container)
         UserService.register(in: container)
-        
+
         // Protocol bindings (still manual, but much less code)
         container.register(APIClient.self) { resolver in
             resolver.resolve(HTTPAPIClient.self)!
@@ -210,11 +211,11 @@ protocol ReportGeneratorFactory {
 // Manual factory implementation
 class ReportGeneratorFactoryImpl: ReportGeneratorFactory {
     private let resolver: Resolver
-    
+
     init(resolver: Resolver) {
         self.resolver = resolver
     }
-    
+
     func makeReportGenerator(type: ReportType, dateRange: DateRange) -> ReportGenerator {
         return ReportGenerator(
             database: resolver.resolve(DatabaseService.self)!,
@@ -231,8 +232,8 @@ class ReportGenerator {
     private let emailService: EmailService
     private let type: ReportType
     private let dateRange: DateRange
-    
-    init(database: DatabaseService, emailService: EmailService, 
+
+    init(database: DatabaseService, emailService: EmailService,
          type: ReportType, dateRange: DateRange) {
         // implementation
     }
@@ -254,8 +255,8 @@ class ReportGenerator {
     private let emailService: EmailService  // Injected automatically
     private let type: ReportType            // Runtime parameter
     private let dateRange: DateRange        // Runtime parameter
-    
-    init(database: DatabaseService, emailService: EmailService, 
+
+    init(database: DatabaseService, emailService: EmailService,
          type: ReportType, dateRange: DateRange) {
         // implementation
     }
@@ -278,11 +279,11 @@ protocol AsyncDataProcessorFactory {
 
 class AsyncDataProcessorFactoryImpl: AsyncDataProcessorFactory {
     private let resolver: Resolver
-    
+
     init(resolver: Resolver) {
         self.resolver = resolver
     }
-    
+
     func makeAsyncDataProcessor(inputData: Data) async throws -> AsyncDataProcessor {
         return try await AsyncDataProcessor(
             apiClient: resolver.resolve(APIClient.self)!,
@@ -305,9 +306,9 @@ class AsyncDataProcessor {
 @AutoFactory(async: true, throws: true)
 class AsyncDataProcessor {
     private let apiClient: APIClient      // Injected
-    private let validator: DataValidator  // Injected  
+    private let validator: DataValidator  // Injected
     private let inputData: Data          // Runtime parameter
-    
+
     init(apiClient: APIClient, validator: DataValidator, inputData: Data) async throws {
         // Async initialization - automatically handled
     }
@@ -329,19 +330,19 @@ class UserServiceTests: XCTestCase {
     var mockAPIClient: MockAPIClient!
     var mockLogger: MockLoggerService!
     var userService: UserService!
-    
+
     override func setUp() {
         super.setUp()
         container = Container()
-        
+
         // Create mocks manually
         mockAPIClient = MockAPIClient()
         mockLogger = MockLoggerService()
-        
+
         // Register mocks manually
         container.register(APIClient.self) { _ in self.mockAPIClient }
         container.register(LoggerService.self) { _ in self.mockLogger }
-        
+
         // Register service under test
         container.register(UserService.self) { resolver in
             UserService(
@@ -349,10 +350,10 @@ class UserServiceTests: XCTestCase {
                 logger: resolver.resolve(LoggerService.self)!
             )
         }
-        
+
         userService = container.resolve(UserService.self)!
     }
-    
+
     // Test methods...
 }
 ```
@@ -363,28 +364,28 @@ class UserServiceTests: XCTestCase {
 @TestContainer
 class UserServiceTests: XCTestCase {
     var container: Container!
-    
+
     // Services automatically detected for mocking
     var apiClient: APIClient!
     var logger: LoggerService!
-    
+
     var userService: UserService!
-    
+
     override func setUp() {
         super.setUp()
-        
+
         // Generated method creates container with mocks
         container = setupTestContainer()
-        
+
         // Resolve mocked dependencies
         apiClient = container.resolve(APIClient.self)!
         logger = container.resolve(LoggerService.self)!
-        
+
         // Register and resolve service under test
         UserService.register(in: container)
         userService = container.resolve(UserService.self)!
     }
-    
+
     // Test methods - same as before but much less setup code!
 }
 ```
@@ -395,7 +396,7 @@ class UserServiceTests: XCTestCase {
 
 ### Migrating from Scattered Cross-Cutting Code to @Interceptor
 
-One of the most powerful features of SwinjectUtilityMacros is the ability to clean up cross-cutting concerns using the `@Interceptor` macro.
+One of the most powerful features of SwinjectMacros is the ability to clean up cross-cutting concerns using the `@Interceptor` macro.
 
 #### ❌ **Before: Scattered Cross-Cutting Code**
 
@@ -406,8 +407,8 @@ class OrderService {
     private let securityValidator: SecurityValidator
     private let performanceMonitor: PerformanceMonitor
     private let auditLogger: AuditLogger
-    
-    init(repository: OrderRepository, logger: Logger, 
+
+    init(repository: OrderRepository, logger: Logger,
          securityValidator: SecurityValidator, performanceMonitor: PerformanceMonitor,
          auditLogger: AuditLogger) {
         self.repository = repository
@@ -416,26 +417,26 @@ class OrderService {
         self.performanceMonitor = performanceMonitor
         self.auditLogger = auditLogger
     }
-    
+
     func createOrder(customerId: String, items: [OrderItem]) throws -> Order {
         // Logging
         logger.log("Creating order for customer: \(customerId)")
         let startTime = Date()
-        
+
         // Security validation
         try securityValidator.validateCustomer(customerId)
         try securityValidator.validateOrderItems(items)
-        
+
         // Business logic (buried in boilerplate!)
         let order = Order(customerId: customerId, items: items)
         let savedOrder = try repository.save(order)
-        
+
         // More logging and monitoring
         let duration = Date().timeIntervalSince(startTime)
         logger.log("Order \(savedOrder.id) created in \(duration)ms")
         performanceMonitor.record("createOrder", duration: duration)
         auditLogger.log("Order created", orderId: savedOrder.id, customerId: customerId)
-        
+
         return savedOrder
     }
 }
@@ -447,11 +448,11 @@ class OrderService {
 @Injectable
 class OrderService {
     private let repository: OrderRepository
-    
+
     init(repository: OrderRepository) {
         self.repository = repository
     }
-    
+
     @Interceptor(
         before: ["SecurityInterceptor", "LoggingInterceptor"],
         after: ["PerformanceInterceptor", "AuditInterceptor"]
@@ -469,6 +470,7 @@ class OrderService {
 #### Step 1: Identify Cross-Cutting Code Patterns
 
 Look for these common patterns in your existing code:
+
 - Logging at method entry/exit
 - Performance timing measurements
 - Security/validation checks
@@ -477,7 +479,7 @@ Look for these common patterns in your existing code:
 - Caching logic
 - Transaction management
 
-#### Step 2: Extract Cross-Cutting Logic into Interceptors  
+#### Step 2: Extract Cross-Cutting Logic into Interceptors
 
 ```swift
 // Before: Logging scattered everywhere
@@ -488,7 +490,7 @@ class UserService {
         logger.log("User created: \(user.id)")
         return user
     }
-    
+
     func deleteUser(id: String) {
         logger.log("Deleting user: \(id)")
         // ... business logic
@@ -501,7 +503,7 @@ class LoggingInterceptor: MethodInterceptor {
     func before(context: InterceptorContext) throws {
         print("🚀 Starting \(context.methodName) with: \(context.parameters)")
     }
-    
+
     func after(context: InterceptorContext, result: Any?) throws {
         print("✅ Completed \(context.methodName) in \(context.executionTime)ms")
     }
@@ -514,7 +516,7 @@ class UserService {
         // Pure business logic
         return User(name: name)
     }
-    
+
     @Interceptor(before: ["LoggingInterceptor"])
     func deleteUser(id: String) {
         // Pure business logic
@@ -526,6 +528,7 @@ class UserService {
 #### Step 3: Incremental Migration Process
 
 1. **Identify Methods with Cross-Cutting Concerns**
+
    ```bash
    # Search for common patterns
    grep -r "logger\." your_project/
@@ -533,7 +536,8 @@ class UserService {
    grep -r "validate\|security" your_project/
    ```
 
-2. **Create Interceptors for Each Concern**
+1. **Create Interceptors for Each Concern**
+
    ```swift
    // Start with the most common patterns
    class LoggingInterceptor: MethodInterceptor { /* ... */ }
@@ -541,7 +545,8 @@ class UserService {
    class PerformanceInterceptor: MethodInterceptor { /* ... */ }
    ```
 
-3. **Register Interceptors in App Startup**
+1. **Register Interceptors in App Startup**
+
    ```swift
    func setupInterceptors() {
        InterceptorRegistry.register(interceptor: LoggingInterceptor(), name: "LoggingInterceptor")
@@ -550,14 +555,15 @@ class UserService {
    }
    ```
 
-4. **Migrate Methods One by One**
+1. **Migrate Methods One by One**
+
    ```swift
    // Before
    func processPayment(amount: Double) -> Result {
        logger.log("Processing payment: \(amount)")
        // business logic with scattered cross-cutting code
    }
-   
+
    // After
    @Interceptor(before: ["LoggingInterceptor", "SecurityInterceptor"])
    func processPayment(amount: Double) -> Result {
@@ -565,11 +571,12 @@ class UserService {
    }
    ```
 
-5. **Remove Old Cross-Cutting Dependencies**
+1. **Remove Old Cross-Cutting Dependencies**
+
    ```swift
    // Remove these from your service constructors
    - logger: Logger
-   - securityValidator: SecurityValidator  
+   - securityValidator: SecurityValidator
    - performanceMonitor: PerformanceMonitor
    - auditLogger: AuditLogger
    ```
@@ -585,7 +592,7 @@ func processOrder(order: Order) throws -> ProcessedOrder {
         securityValidator.validate(order)
         auditLogger.log("Processing order", orderId: order.id)
     }
-    
+
     if enablePerformanceMonitoring {
         let startTime = Date()
         let result = doProcessOrder(order)
@@ -626,11 +633,11 @@ func updateUserProfile(userId: String, profile: UserProfile) throws -> UserProfi
             transaction.rollback()
         }
     }
-    
+
     try validateProfile(profile)
     let updatedProfile = try repository.updateProfile(userId: userId, profile: profile)
     try auditLogger.logProfileUpdate(userId: userId, profile: profile)
-    
+
     transaction.commit()
     return updatedProfile
 }
@@ -658,36 +665,36 @@ When migrating cross-cutting concerns, ensure your tests cover both business log
 @TestContainer
 class OrderServiceInterceptorMigrationTests: XCTestCase {
     var orderService: OrderService!
-    
+
     override func setUp() {
         super.setUp()
         container = setupTestContainer()
-        
+
         // Register test interceptors
         InterceptorRegistry.register(interceptor: TestSecurityInterceptor(), name: "SecurityInterceptor")
         InterceptorRegistry.register(interceptor: TestLoggingInterceptor(), name: "LoggingInterceptor")
-        
+
         OrderService.register(in: container)
         orderService = container.resolve(OrderService.self)!
     }
-    
+
     func testCreateOrderBusinessLogic() throws {
         // Test pure business logic (original method)
         let order = try orderService.createOrder(customerId: "123", items: [])
         XCTAssertEqual(order.customerId, "123")
     }
-    
+
     func testCreateOrderWithInterceptors() throws {
         // Test intercepted version with cross-cutting concerns
         let order = try orderService.createOrderIntercepted(customerId: "123", items: [])
-        
+
         // Verify business logic still works
         XCTAssertEqual(order.customerId, "123")
-        
+
         // Verify interceptors were called
         let securityInterceptor = InterceptorRegistry.get(name: "SecurityInterceptor") as! TestSecurityInterceptor
         XCTAssertTrue(securityInterceptor.beforeCalled)
-        
+
         let loggingInterceptor = InterceptorRegistry.get(name: "LoggingInterceptor") as! TestLoggingInterceptor
         XCTAssertTrue(loggingInterceptor.beforeCalled)
         XCTAssertTrue(loggingInterceptor.afterCalled)
@@ -698,11 +705,11 @@ class OrderServiceInterceptorMigrationTests: XCTestCase {
 ### Benefits of Cross-Cutting Concerns Migration
 
 1. **Cleaner Business Logic**: Methods focus solely on business rules
-2. **Reusable Concerns**: Write once, apply to multiple methods/services
-3. **Easier Testing**: Test business logic and cross-cutting concerns separately
-4. **Better Maintainability**: Change logging/security logic in one place
-5. **Consistent Application**: All methods get the same cross-cutting behavior
-6. **Performance**: No more scattered performance monitoring code
+1. **Reusable Concerns**: Write once, apply to multiple methods/services
+1. **Easier Testing**: Test business logic and cross-cutting concerns separately
+1. **Better Maintainability**: Change logging/security logic in one place
+1. **Consistent Application**: All methods get the same cross-cutting behavior
+1. **Performance**: No more scattered performance monitoring code
 
 **💡 Migration Tip**: Start with the most common cross-cutting concern (usually logging) and gradually migrate others. The interceptor approach scales much better than scattered cross-cutting code.
 
@@ -762,11 +769,11 @@ ComplexService.register(in: container)
 
 ```swift
 // Service implementations
-class UserRepositoryImpl: UserRepository { 
+class UserRepositoryImpl: UserRepository {
     init(database: DatabaseService) { }
 }
 
-class EmailServiceImpl: EmailService { 
+class EmailServiceImpl: EmailService {
     init(smtpClient: SMTPClient) { }
 }
 
@@ -794,12 +801,12 @@ container.register(EmailService.self) { resolver in
 ```swift
 // Service implementations with macros
 @Injectable
-class UserRepositoryImpl: UserRepository { 
+class UserRepositoryImpl: UserRepository {
     init(database: DatabaseService) { }
 }
 
 @Injectable
-class EmailServiceImpl: EmailService { 
+class EmailServiceImpl: EmailService {
     init(smtpClient: SMTPClient) { }
 }
 
@@ -864,7 +871,7 @@ class ProductionLogger: Logger {
     init() { }
 }
 
-@Injectable  
+@Injectable
 class DebugLogger: Logger {
     init() { }
 }
@@ -873,7 +880,7 @@ class DebugLogger: Logger {
 func assemble(container: Container) {
     ProductionLogger.register(in: container)
     DebugLogger.register(in: container)
-    
+
     // Conditional binding to protocol
     if isProduction {
         container.register(Logger.self) { resolver in
@@ -893,16 +900,16 @@ func assemble(container: Container) {
 
 ### Phase 1: Preparation (No Code Changes)
 
-1. **Add SwinjectUtilityMacros to your project**
-2. **Import the library** in your service files
-3. **Run your existing tests** to ensure nothing breaks
+1. **Add SwinjectMacros to your project**
+1. **Import the library** in your service files
+1. **Run your existing tests** to ensure nothing breaks
 
 ### Phase 2: Migrate Simple Services
 
 1. **Identify services with no dependencies**
-2. **Add `@Injectable` annotation**
-3. **Update assembly to use generated `register` method**
-4. **Test and verify behavior**
+1. **Add `@Injectable` annotation**
+1. **Update assembly to use generated `register` method**
+1. **Test and verify behavior**
 
 ```swift
 // Start with the simplest services
@@ -918,26 +925,26 @@ LoggerService.register(in: container)  // <- Replace manual registration
 ### Phase 3: Migrate Services with Dependencies
 
 1. **Migrate leaf services first** (services that others depend on)
-2. **Work your way up the dependency tree**
-3. **Update each service one by one**
+1. **Work your way up the dependency tree**
+1. **Update each service one by one**
 
 ### Phase 4: Migrate Factories
 
 1. **Identify services that need runtime parameters**
-2. **Replace manual factory code with `@AutoFactory`**
-3. **Update factory registration in assembly**
+1. **Replace manual factory code with `@AutoFactory`**
+1. **Update factory registration in assembly**
 
 ### Phase 5: Migrate Tests
 
 1. **Add `@TestContainer` to test classes**
-2. **Remove manual mock setup code**
-3. **Verify all tests still pass**
+1. **Remove manual mock setup code**
+1. **Verify all tests still pass**
 
 ### Phase 6: Cleanup
 
 1. **Remove old registration code from assemblies**
-2. **Delete manual factory implementations**
-3. **Clean up unused imports and files**
+1. **Delete manual factory implementations**
+1. **Clean up unused imports and files**
 
 ## Troubleshooting
 
@@ -1073,30 +1080,35 @@ container.register(MyProtocol.self) { resolver in
 Use this checklist to track your migration progress:
 
 ### Pre-Migration
-- [ ] Add SwinjectUtilityMacros dependency
+
+- [ ] Add SwinjectMacros dependency
 - [ ] Run existing tests to establish baseline
 - [ ] Document current assembly structure
 
 ### Service Migration
+
 - [ ] Identify all services in dependency graph
 - [ ] Migrate leaf services (no dependencies) first
 - [ ] Add `@Injectable` annotations
 - [ ] Update assembly registration calls
 - [ ] Test each service as you migrate it
 
-### Factory Migration  
+### Factory Migration
+
 - [ ] Identify factory patterns in codebase
 - [ ] Replace manual factories with `@AutoFactory`
 - [ ] Update factory registrations
 - [ ] Test factory creation and usage
 
 ### Test Migration
+
 - [ ] Add `@TestContainer` to test classes
 - [ ] Remove manual mock setup code
 - [ ] Verify all tests pass
 - [ ] Clean up unused test helper code
 
 ### Cleanup
+
 - [ ] Remove old manual registration code
 - [ ] Delete unused factory implementations
 - [ ] Update documentation
@@ -1104,6 +1116,7 @@ Use this checklist to track your migration progress:
 - [ ] Performance test if needed
 
 ### Validation
+
 - [ ] All services resolve correctly
 - [ ] Object scoping works as expected
 - [ ] Named services resolve properly
@@ -1115,15 +1128,16 @@ Use this checklist to track your migration progress:
 After completing your migration:
 
 1. **Explore Advanced Features**: Look into upcoming macros like `@Interceptor` and `@PerformanceTracked`
-2. **Optimize Your Architecture**: Consider refactoring to take advantage of cleaner dependency injection
-3. **Share Your Experience**: Help others by documenting your migration experience
-4. **Stay Updated**: Watch for new macro releases and features
+1. **Optimize Your Architecture**: Consider refactoring to take advantage of cleaner dependency injection
+1. **Share Your Experience**: Help others by documenting your migration experience
+1. **Stay Updated**: Watch for new macro releases and features
 
----
+______________________________________________________________________
 
-**Need Help?** 
+**Need Help?**
+
 - Check the [main README](README.md) for detailed macro documentation
 - Browse [Examples/GettingStarted.md](Examples/GettingStarted.md) for practical tutorials
 - Open an issue on GitHub if you encounter migration challenges
 
-**Migration taking too long?** Consider migrating incrementally - SwinjectUtilityMacros works alongside existing Swinject code, so you can take your time! 🚀
+**Migration taking too long?** Consider migrating incrementally - SwinjectMacros works alongside existing Swinject code, so you can take your time! 🚀

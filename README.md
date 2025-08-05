@@ -1,15 +1,15 @@
-# SwinjectUtilityMacros
+# SwinjectMacros
 
 **Advanced Dependency Injection Utilities for Swift using Compile-Time Macros**
 
-SwinjectUtilityMacros brings the power of Swift Macros to dependency injection, dramatically reducing boilerplate code while maintaining type safety and performance. Built on top of the proven [Swinject](https://github.com/Swinject/Swinject) framework, it provides 25+ compile-time macros for modern Swift applications.
+SwinjectMacros brings the power of Swift Macros to dependency injection, dramatically reducing boilerplate code while maintaining type safety and performance. Built on top of the proven [Swinject](https://github.com/Swinject/Swinject) framework, it provides 25+ compile-time macros for modern Swift applications.
 
 [![Swift](https://img.shields.io/badge/swift-5.9+-orange.svg)](https://swift.org)
 [![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20macOS%20%7C%20watchOS%20%7C%20tvOS-lightgrey.svg)](https://swift.org)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](<>)
 
-## 🎯 Why SwinjectUtilityMacros?
+## 🎯 Why SwinjectMacros?
 
 Traditional dependency injection in Swift requires significant boilerplate code:
 
@@ -21,7 +21,7 @@ class UserService {
     private let apiClient: APIClient
     private let database: DatabaseService
     private let logger: LoggerService
-    
+
     init(apiClient: APIClient, database: DatabaseService, logger: LoggerService) {
         self.apiClient = apiClient
         self.database = database
@@ -32,18 +32,18 @@ class UserService {
 // Manual Registration (Repetitive & Error-Prone)
 class AppAssembly: Assembly {
     func assemble(container: Container) {
-        container.register(APIClient.self) { _ in 
-            APIClientImpl() 
+        container.register(APIClient.self) { _ in
+            APIClientImpl()
         }.inObjectScope(.container)
-        
-        container.register(DatabaseService.self) { _ in 
-            DatabaseServiceImpl() 
+
+        container.register(DatabaseService.self) { _ in
+            DatabaseServiceImpl()
         }.inObjectScope(.container)
-        
-        container.register(LoggerService.self) { _ in 
-            LoggerServiceImpl() 
+
+        container.register(LoggerService.self) { _ in
+            LoggerServiceImpl()
         }.inObjectScope(.graph)
-        
+
         container.register(UserService.self) { resolver in
             UserService(
                 apiClient: resolver.resolve(APIClient.self)!,
@@ -55,16 +55,16 @@ class AppAssembly: Assembly {
 }
 ```
 
-### ✅ **After: SwinjectUtilityMacros (Clean & Concise)**
+### ✅ **After: SwinjectMacros (Clean & Concise)**
 
 ```swift
 // Service Definition with Auto-Registration
 @Injectable
 class UserService {
     private let apiClient: APIClient
-    private let database: DatabaseService  
+    private let database: DatabaseService
     private let logger: LoggerService
-    
+
     init(apiClient: APIClient, database: DatabaseService, logger: LoggerService) {
         self.apiClient = apiClient
         self.database = database
@@ -75,7 +75,7 @@ class UserService {
 @Injectable(scope: .container)
 class APIClientImpl: APIClient { /* implementation */ }
 
-@Injectable(scope: .container) 
+@Injectable(scope: .container)
 class DatabaseServiceImpl: DatabaseService { /* implementation */ }
 
 @Injectable
@@ -97,48 +97,54 @@ class LoggerServiceImpl: LoggerService { /* implementation */ }
 ## 📋 Table of Contents
 
 ### 🚀 Getting Started
+
 - [📦 Installation](#-installation)
 - [📋 Requirements](#-requirements)
-- [🏗️ Complete Example: Real-World Application](#️-complete-example-real-world-application)
+- [🏗️ Complete Example: Real-World Application](#%EF%B8%8F-complete-example-real-world-application)
 
 ### 🎓 Core Macros Guide
+
 - [1. @Injectable - Automatic Service Registration](#1-injectable---automatic-service-registration)
+
   - [🤔 Why @Injectable?](#-why-injectable)
   - [📖 How It Works](#-how-it-works)
   - [🔧 Basic Usage](#-basic-usage)
-  - [⚙️ Advanced Configuration](#️-advanced-configuration)
+  - [⚙️ Advanced Configuration](#%EF%B8%8F-advanced-configuration)
     - [Object Scopes](#object-scopes)
     - [Named Services](#named-services)
     - [Optional Dependencies](#optional-dependencies)
   - [🎯 Smart Dependency Classification](#-smart-dependency-classification)
 
 - [2. @AutoFactory - Factory Pattern Generation](#2-autofactory---factory-pattern-generation)
+
   - [🤔 Why @AutoFactory?](#-why-autofactory)
   - [📖 How It Works](#-how-it-works-1)
   - [🔧 Basic Usage](#-basic-usage-1)
-  - [⚙️ Advanced Configuration](#️-advanced-configuration-1)
+  - [⚙️ Advanced Configuration](#%EF%B8%8F-advanced-configuration-1)
     - [Async/Throws Support](#asyncthrows-support)
     - [Custom Factory Names](#custom-factory-names)
     - [Factory Registration and Usage](#factory-registration-and-usage)
 
 - [3. @TestContainer - Test Mock Generation](#3-testcontainer---test-mock-generation)
+
   - [🤔 Why @TestContainer?](#-why-testcontainer)
   - [📖 How It Works](#-how-it-works-2)
   - [🔧 Basic Usage](#-basic-usage-2)
-  - [⚙️ Advanced Configuration](#️-advanced-configuration-2)
+  - [⚙️ Advanced Configuration](#%EF%B8%8F-advanced-configuration-2)
     - [Custom Mock Prefix](#custom-mock-prefix)
     - [Custom Scope](#custom-scope)
     - [Manual Mock Control](#manual-mock-control)
     - [Spy Generation (Future Feature)](#spy-generation-future-feature)
 
 - [4. @Interceptor - Aspect-Oriented Programming](#4-interceptor---aspect-oriented-programming)
+
   - [🤔 Why @Interceptor?](#-why-interceptor)
   - [📖 How It Works](#-how-it-works-3)
   - [🔧 Basic Usage](#-basic-usage-3)
-  - [⚙️ Advanced Configuration](#️-advanced-configuration-3)
+  - [⚙️ Advanced Configuration](#%EF%B8%8F-advanced-configuration-3)
     - [Async/Throws Support](#asyncthrows-support-1)
     - [Static Method Interception](#static-method-interception)
-  - [🛠️ Creating Custom Interceptors](#️-creating-custom-interceptors)
+  - [🛠️ Creating Custom Interceptors](#%EF%B8%8F-creating-custom-interceptors)
   - [🏭 Built-in Interceptors](#-built-in-interceptors)
     - [LoggingInterceptor](#logginginterceptor)
     - [PerformanceInterceptor](#performanceinterceptor)
@@ -147,37 +153,39 @@ class LoggerServiceImpl: LoggerService { /* implementation */ }
   - [⚡ Performance Benefits](#-performance-benefits)
 
 ### 📚 Guides & Best Practices
+
 - [🎯 Best Practices](#-best-practices)
   - [Service Design Guidelines](#1-service-design-guidelines)
   - [Scope Selection](#2-scope-selection)
   - [Factory vs Injectable Decision](#3-factory-vs-injectable-decision)
   - [Testing Strategy](#4-testing-strategy)
-- [⚠️ Common Pitfalls & Solutions](#️-common-pitfalls--solutions)
+- [⚠️ Common Pitfalls & Solutions](#%EF%B8%8F-common-pitfalls--solutions)
   - [Circular Dependencies](#1-circular-dependencies)
   - [Runtime Parameters in @Injectable](#2-runtime-parameters-in-injectable)
   - [Missing Protocol Registrations](#3-missing-protocol-registrations)
 
 ### 🔗 Resources
+
 - [🤝 Contributing](#-contributing)
 - [📄 License](#-license)
 - [🙏 Acknowledgments](#-acknowledgments)
 
----
+______________________________________________________________________
 
 ## 📦 Installation
 
 ### Swift Package Manager
 
-Add SwinjectUtilityMacros to your project via Xcode or by adding it to your `Package.swift`:
+Add SwinjectMacros to your project via Xcode or by adding it to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/brunogama/SwinjectUtilityMacros.git", from: "1.0.0")
+    .package(url: "https://github.com/brunogama/SwinjectMacros.git", from: "1.0.0")
 ],
 targets: [
     .target(
         name: "YourTarget",
-        dependencies: ["SwinjectUtilityMacros"]
+        dependencies: ["SwinjectMacros"]
     )
 ]
 ```
@@ -197,6 +205,7 @@ The `@Injectable` macro automatically generates dependency injection registratio
 #### 🤔 **Why @Injectable?**
 
 **Problem**: Manually writing registration code for every service is:
+
 - Repetitive and error-prone
 - Hard to maintain when dependencies change
 - Requires updating multiple places when refactoring
@@ -207,15 +216,16 @@ The `@Injectable` macro automatically generates dependency injection registratio
 #### 📖 **How It Works**
 
 The macro examines your class/struct initializer and:
+
 1. **Identifies service dependencies** (types ending in Service, Repository, Client, etc.)
-2. **Generates resolver calls** for each dependency
-3. **Creates a static `register(in:)` method** 
-4. **Adds `Injectable` protocol conformance**
+1. **Generates resolver calls** for each dependency
+1. **Creates a static `register(in:)` method**
+1. **Adds `Injectable` protocol conformance**
 
 #### 🔧 **Basic Usage**
 
 ```swift
-import SwinjectUtilityMacros
+import SwinjectMacros
 import Swinject
 
 // Simple service with dependencies
@@ -223,12 +233,12 @@ import Swinject
 class UserService {
     private let apiClient: APIClient
     private let database: DatabaseService
-    
+
     init(apiClient: APIClient, database: DatabaseService) {
         self.apiClient = apiClient
         self.database = database
     }
-    
+
     func getUser(id: String) async throws -> User {
         let userData = try await apiClient.fetchUser(id: id)
         try await database.save(userData)
@@ -238,6 +248,7 @@ class UserService {
 ```
 
 **Generated Code** (you don't write this!):
+
 ```swift
 extension UserService: Injectable {
     static func register(in container: Container) {
@@ -288,7 +299,7 @@ class StripePaymentProcessor: PaymentProcessor {
     init(apiKey: String) { /* ... */ }
 }
 
-@Injectable(name: "paypal") 
+@Injectable(name: "paypal")
 class PayPalPaymentProcessor: PaymentProcessor {
     init(clientId: String, secret: String) { /* ... */ }
 }
@@ -307,7 +318,7 @@ Handle optional dependencies gracefully:
 class AnalyticsService {
     private let logger: LoggerService?  // Optional dependency
     private let database: DatabaseService // Required dependency
-    
+
     init(logger: LoggerService?, database: DatabaseService) {
         self.logger = logger
         self.database = database
@@ -323,12 +334,12 @@ class AnalyticsService {
 
 The macro automatically classifies your parameters:
 
-| Parameter Type | Classification | Resolution Strategy |
-|---|---|---|
-| `UserService`, `APIClient` | Service Dependency | `resolver.resolve(Type.self)!` |
-| `any DatabaseProtocol` | Protocol Dependency | `resolver.resolve(Protocol.self)!` |
-| `String`, `Int`, `Bool` | Runtime Parameter | ⚠️ Warning - consider `@AutoFactory` |
-| `String = "default"` | Configuration Parameter | Use default value |
+| Parameter Type             | Classification          | Resolution Strategy                  |
+| -------------------------- | ----------------------- | ------------------------------------ |
+| `UserService`, `APIClient` | Service Dependency      | `resolver.resolve(Type.self)!`       |
+| `any DatabaseProtocol`     | Protocol Dependency     | `resolver.resolve(Protocol.self)!`   |
+| `String`, `Int`, `Bool`    | Runtime Parameter       | ⚠️ Warning - consider `@AutoFactory` |
+| `String = "default"`       | Configuration Parameter | Use default value                    |
 
 ### 2. @AutoFactory - Factory Pattern Generation
 
@@ -337,12 +348,14 @@ The `@AutoFactory` macro generates factory protocols and implementations for ser
 #### 🤔 **Why @AutoFactory?**
 
 **Problem**: Some services need both injected dependencies AND runtime parameters:
+
 - User input (search terms, user IDs, etc.)
 - Dynamic configuration
 - Request-specific data
 - You can't pre-register these in the container
 
 **Traditional Solution** (lots of boilerplate):
+
 ```swift
 // Manual factory - lots of repetitive code
 protocol UserSearchServiceFactory {
@@ -351,11 +364,11 @@ protocol UserSearchServiceFactory {
 
 class UserSearchServiceFactoryImpl: UserSearchServiceFactory {
     private let resolver: Resolver
-    
+
     init(resolver: Resolver) {
         self.resolver = resolver
     }
-    
+
     func makeUserSearchService(query: String, filters: [Filter]) -> UserSearchService {
         return UserSearchService(
             apiClient: resolver.resolve(APIClient.self)!,
@@ -367,7 +380,8 @@ class UserSearchServiceFactoryImpl: UserSearchServiceFactory {
 }
 ```
 
-**SwinjectUtilityMacros Solution** (automatic):
+**SwinjectMacros Solution** (automatic):
+
 ```swift
 @AutoFactory
 class UserSearchService {
@@ -375,7 +389,7 @@ class UserSearchService {
     private let database: DatabaseService // Injected dependency
     private let query: String            // Runtime parameter
     private let filters: [Filter]        // Runtime parameter
-    
+
     init(apiClient: APIClient, database: DatabaseService, query: String, filters: [Filter]) {
         // implementation
     }
@@ -385,10 +399,11 @@ class UserSearchService {
 #### 📖 **How It Works**
 
 The macro analyzes your initializer and:
+
 1. **Separates injected dependencies** from runtime parameters
-2. **Generates a factory protocol** with a `make` method for runtime parameters only
-3. **Generates a factory implementation** that resolves dependencies and accepts runtime parameters
-4. **Handles async/throws automatically**
+1. **Generates a factory protocol** with a `make` method for runtime parameters only
+1. **Generates a factory implementation** that resolves dependencies and accepts runtime parameters
+1. **Handles async/throws automatically**
 
 #### 🔧 **Basic Usage**
 
@@ -399,15 +414,15 @@ class ReportGenerator {
     private let emailService: EmailService // Injected
     private let reportType: ReportType     // Runtime parameter
     private let dateRange: DateRange       // Runtime parameter
-    
-    init(database: DatabaseService, emailService: EmailService, 
+
+    init(database: DatabaseService, emailService: EmailService,
          reportType: ReportType, dateRange: DateRange) {
         self.database = database
         self.emailService = emailService
         self.reportType = reportType
         self.dateRange = dateRange
     }
-    
+
     func generateAndSend() async throws {
         let report = try await database.generateReport(type: reportType, range: dateRange)
         try await emailService.send(report)
@@ -416,20 +431,21 @@ class ReportGenerator {
 ```
 
 **Generated Code**:
+
 ```swift
 // Factory Protocol
 protocol ReportGeneratorFactory {
     func makeReportGenerator(reportType: ReportType, dateRange: DateRange) -> ReportGenerator
 }
 
-// Factory Implementation  
+// Factory Implementation
 class ReportGeneratorFactoryImpl: ReportGeneratorFactory, BaseFactory {
     let resolver: Resolver
-    
+
     init(resolver: Resolver) {
         self.resolver = resolver
     }
-    
+
     func makeReportGenerator(reportType: ReportType, dateRange: DateRange) -> ReportGenerator {
         ReportGenerator(
             database: resolver.resolve(DatabaseService.self)!,
@@ -450,7 +466,7 @@ class ReportGeneratorFactoryImpl: ReportGeneratorFactory, BaseFactory {
 class AsyncDataProcessor {
     private let apiClient: APIClient  // Injected
     private let data: Data           // Runtime parameter
-    
+
     init(apiClient: APIClient, data: Data) async throws {
         self.apiClient = apiClient
         // Async initialization logic
@@ -483,7 +499,7 @@ class AppAssembly: Assembly {
         // Register your services
         container.register(DatabaseService.self) { _ in DatabaseServiceImpl() }
         container.register(EmailService.self) { _ in EmailServiceImpl() }
-        
+
         // Register the factory
         container.registerFactory(ReportGeneratorFactory.self)
     }
@@ -492,18 +508,18 @@ class AppAssembly: Assembly {
 // Usage in your application
 class ReportsViewController: UIViewController {
     private let reportFactory: ReportGeneratorFactory
-    
+
     init(reportFactory: ReportGeneratorFactory) {
         self.reportFactory = reportFactory
         super.init(nibName: nil, bundle: nil)
     }
-    
+
     @IBAction func generateReport() {
         let generator = reportFactory.makeReportGenerator(
             reportType: .monthly,
             dateRange: DateRange(start: startDate, end: endDate)
         )
-        
+
         Task {
             try await generator.generateAndSend()
         }
@@ -518,12 +534,14 @@ The `@TestContainer` macro automatically generates test container setup with moc
 #### 🤔 **Why @TestContainer?**
 
 **Problem**: Setting up dependency injection for tests is tedious:
+
 - Creating mock objects for every dependency
-- Registering all mocks in the test container  
+- Registering all mocks in the test container
 - Maintaining test setup as dependencies change
 - Ensuring test isolation
 
 **Traditional Approach** (lots of test boilerplate):
+
 ```swift
 class UserServiceTests: XCTestCase {
     var container: Container!
@@ -531,34 +549,35 @@ class UserServiceTests: XCTestCase {
     var mockDatabase: MockDatabaseService!
     var mockLogger: MockLoggerService!
     var userService: UserService!
-    
+
     override func setUp() {
         super.setUp()
         container = Container()
-        
+
         // Create all mocks manually
         mockAPIClient = MockAPIClient()
         mockDatabase = MockDatabaseService()
         mockLogger = MockLoggerService()
-        
+
         // Register all mocks manually
         container.register(APIClient.self) { _ in self.mockAPIClient }
         container.register(DatabaseService.self) { _ in self.mockDatabase }
         container.register(LoggerService.self) { _ in self.mockLogger }
-        
+
         userService = container.resolve(UserService.self)!
     }
 }
 ```
 
-**SwinjectUtilityMacros Approach** (automatic):
+**SwinjectMacros Approach** (automatic):
+
 ```swift
 @TestContainer
 class UserServiceTests: XCTestCase {
     var apiClient: APIClient!
     var database: DatabaseService!
     var logger: LoggerService!
-    
+
     // Container setup is automatically generated!
 }
 ```
@@ -566,36 +585,37 @@ class UserServiceTests: XCTestCase {
 #### 📖 **How It Works**
 
 The macro scans your test class properties and:
+
 1. **Identifies service properties** (types ending in Service, Repository, Client, etc.)
-2. **Generates a `setupTestContainer()` method** that creates and configures a container
-3. **Generates mock registration helpers** for each service type
-4. **Supports custom mock prefixes and scopes**
+1. **Generates a `setupTestContainer()` method** that creates and configures a container
+1. **Generates mock registration helpers** for each service type
+1. **Supports custom mock prefixes and scopes**
 
 #### 🔧 **Basic Usage**
 
 ```swift
 import XCTest
-import SwinjectUtilityMacros
+import SwinjectMacros
 
 @TestContainer
 class UserServiceTests: XCTestCase {
     var container: Container!
-    
+
     // These properties are detected as services needing mocks
     var apiClient: APIClient!
     var database: DatabaseService!
     var logger: LoggerService!
-    
+
     override func setUp() {
         super.setUp()
         container = setupTestContainer() // Generated method!
-        
+
         // Services are automatically registered with mocks
         apiClient = container.resolve(APIClient.self)!
         database = container.resolve(DatabaseService.self)!
         logger = container.resolve(LoggerService.self)!
     }
-    
+
     func testUserCreation() {
         // Your test logic here
         // All dependencies are automatically mocked
@@ -604,26 +624,27 @@ class UserServiceTests: XCTestCase {
 ```
 
 **Generated Code**:
+
 ```swift
 extension UserServiceTests {
     func setupTestContainer() -> Container {
         let container = Container()
-        
+
         registerAPIClient(mock: MockAPIClient())
         registerDatabaseService(mock: MockDatabaseService())
         registerLoggerService(mock: MockLoggerService())
-        
+
         return container
     }
-    
+
     func registerAPIClient(mock: APIClient) {
         container.register(APIClient.self) { _ in mock }.inObjectScope(.graph)
     }
-    
+
     func registerDatabaseService(mock: DatabaseService) {
         container.register(DatabaseService.self) { _ in mock }.inObjectScope(.graph)
     }
-    
+
     func registerLoggerService(mock: LoggerService) {
         container.register(LoggerService.self) { _ in mock }.inObjectScope(.graph)
     }
@@ -660,15 +681,15 @@ class UserServiceTests: XCTestCase {
 @TestContainer(autoMock: false)
 class UserServiceTests: XCTestCase {
     var apiClient: APIClient!
-    
+
     override func setUp() {
         super.setUp()
         container = setupTestContainer()
-        
+
         // Provide your own mock implementation
         let customMock = MyCustomAPIClientMock()
         registerAPIClient(mock: customMock)
-        
+
         apiClient = container.resolve(APIClient.self)!
     }
 }
@@ -680,11 +701,11 @@ class UserServiceTests: XCTestCase {
 @TestContainer(generateSpies: true)
 class UserServiceTests: XCTestCase {
     var apiClient: APIClient!
-    
+
     func testAPIClientCalled() {
         // Generated spy functionality
         userService.performAction()
-        
+
         XCTAssertEqual(apiClientSpy.fetchUserCalls.count, 1)
         XCTAssertEqual(apiClientSpy.fetchUserCalls.first?.userId, "123")
     }
@@ -713,23 +734,23 @@ class PaymentService {
         // Logging
         logger.log("Processing payment: \(amount)")
         let startTime = Date()
-        
+
         // Security validation
         guard SecurityValidator.validateToken(cardToken) else {
             logger.error("Invalid card token")
             throw PaymentError.invalidToken
         }
-        
+
         // Business logic (buried in boilerplate)
         let result = doActualPaymentProcessing(amount: amount, token: cardToken)
-        
+
         // More logging
         let duration = Date().timeIntervalSince(startTime)
         logger.log("Payment completed in \(duration)ms")
-        
+
         // Audit logging
         auditLogger.log("Payment processed: \(result)")
-        
+
         return result
     }
 }
@@ -755,11 +776,11 @@ class PaymentService {
 The `@Interceptor` macro generates an intercepted version of your method that:
 
 1. **Creates rich context** with method name, parameters, types, and execution metadata
-2. **Executes before interceptors** in specified order for setup/validation
-3. **Calls your original method** with full error handling
-4. **Executes after interceptors** in reverse order (LIFO) for cleanup
-5. **Handles errors** with dedicated error interceptors
-6. **Provides performance metrics** with execution timing
+1. **Executes before interceptors** in specified order for setup/validation
+1. **Calls your original method** with full error handling
+1. **Executes after interceptors** in reverse order (LIFO) for cleanup
+1. **Handles errors** with dedicated error interceptors
+1. **Provides performance metrics** with execution timing
 
 #### 🔧 **Basic Usage**
 
@@ -820,14 +841,14 @@ class CustomLoggingInterceptor: MethodInterceptor {
         print("🚀 [\(context.executionId.uuidString.prefix(8))] Starting \(context.methodName)")
         print("   Parameters: \(context.parameters)")
     }
-    
+
     func after(context: InterceptorContext, result: Any?) throws {
         print("✅ [\(context.executionId.uuidString.prefix(8))] Completed in \(context.executionTime)ms")
         if let result = result {
             print("   Result: \(result)")
         }
     }
-    
+
     func onError(context: InterceptorContext, error: Error) throws {
         print("❌ [\(context.executionId.uuidString.prefix(8))] Failed: \(error)")
         // Transform or re-throw error as needed
@@ -838,9 +859,10 @@ class CustomLoggingInterceptor: MethodInterceptor {
 
 #### 🏭 **Built-in Interceptors**
 
-SwinjectUtilityMacros provides several production-ready interceptors:
+SwinjectMacros provides several production-ready interceptors:
 
 ##### LoggingInterceptor
+
 ```swift
 // Provides structured logging with execution IDs
 InterceptorRegistry.register(interceptor: LoggingInterceptor(), name: "LoggingInterceptor")
@@ -853,6 +875,7 @@ InterceptorRegistry.register(interceptor: LoggingInterceptor(), name: "LoggingIn
 ```
 
 ##### PerformanceInterceptor
+
 ```swift
 // Tracks execution times and identifies slow methods
 InterceptorRegistry.register(interceptor: PerformanceInterceptor(), name: "PerformanceInterceptor")
@@ -876,11 +899,11 @@ InterceptorRegistry.registerDefaults()  // Registers built-in interceptors
 
 // Register custom interceptors
 InterceptorRegistry.register(
-    interceptor: CustomSecurityInterceptor(), 
+    interceptor: CustomSecurityInterceptor(),
     name: "SecurityInterceptor"
 )
 InterceptorRegistry.register(
-    interceptor: CustomCacheInterceptor(), 
+    interceptor: CustomCacheInterceptor(),
     name: "CacheInterceptor"
 )
 ```
@@ -898,7 +921,7 @@ class OrderService {
         // Pure business logic - all concerns handled by interceptors
         return try OrderProcessor.createOrder(customerId: customerId, items: items)
     }
-    
+
     @Interceptor(before: ["CacheInterceptor"])
     func getOrderHistory(customerId: String) async -> [Order] {
         return await OrderRepository.findByCustomer(customerId)
@@ -907,6 +930,7 @@ class OrderService {
 ```
 
 **Generated method calls:**
+
 ```swift
 // The macro generates intercepted versions you can call explicitly
 let order = orderService.createOrderIntercepted(customerId: "123", items: orderItems)
@@ -930,7 +954,7 @@ Here's a complete example showing how all three macros work together in a real i
 ### Domain Layer
 
 ```swift
-import SwinjectUtilityMacros
+import SwinjectMacros
 
 // MARK: - Core Services
 
@@ -939,20 +963,20 @@ class NetworkClient: APIClient {
     init() {
         // Network configuration
     }
-    
+
     func fetchUser(id: String) async throws -> UserData {
         // Network implementation
     }
 }
 
-@Injectable(scope: .container) 
+@Injectable(scope: .container)
 class DatabaseManager: DatabaseService {
     init() {
         // Database setup
     }
-    
+
     func save(_ user: UserData) async throws {
-        // Database implementation  
+        // Database implementation
     }
 }
 
@@ -961,7 +985,7 @@ class LoggerService {
     init() {
         // Logger setup
     }
-    
+
     func log(_ message: String) {
         print("📱 \(message)")
     }
@@ -974,13 +998,13 @@ class UserService {
     private let apiClient: APIClient
     private let database: DatabaseService
     private let logger: LoggerService
-    
+
     init(apiClient: APIClient, database: DatabaseService, logger: LoggerService) {
         self.apiClient = apiClient
-        self.database = database  
+        self.database = database
         self.logger = logger
     }
-    
+
     func getUser(id: String) async throws -> User {
         logger.log("Fetching user: \(id)")
         let userData = try await apiClient.fetchUser(id: id)
@@ -994,18 +1018,18 @@ class UserService {
 @AutoFactory
 class UserSearchService {
     private let apiClient: APIClient    // Injected
-    private let database: DatabaseService // Injected 
+    private let database: DatabaseService // Injected
     private let query: String           // Runtime parameter
     private let filters: [SearchFilter] // Runtime parameter
-    
-    init(apiClient: APIClient, database: DatabaseService, 
+
+    init(apiClient: APIClient, database: DatabaseService,
          query: String, filters: [SearchFilter]) {
         self.apiClient = apiClient
         self.database = database
         self.query = query
         self.filters = filters
     }
-    
+
     func search() async throws -> [User] {
         // Search implementation
         return []
@@ -1017,16 +1041,16 @@ class UserSearchService {
 
 ```swift
 import Swinject
-import SwinjectUtilityMacros
+import SwinjectMacros
 
 class AppAssembly: Assembly {
     func assemble(container: Container) {
         // All @Injectable services register themselves!
         NetworkClient.register(in: container)
-        DatabaseManager.register(in: container)  
+        DatabaseManager.register(in: container)
         LoggerService.register(in: container)
         UserService.register(in: container)
-        
+
         // Register factories for services with runtime parameters
         container.registerFactory(UserSearchServiceFactory.self)
     }
@@ -1035,11 +1059,11 @@ class AppAssembly: Assembly {
 @main
 struct MyApp: App {
     let container = Container()
-    
+
     init() {
         let assembler = Assembler([AppAssembly()], container: container)
     }
-    
+
     var body: some Scene {
         WindowGroup {
             ContentView()
@@ -1058,19 +1082,19 @@ struct ContentView: View {
     @EnvironmentObject var userService: UserService
     @State private var searchQuery = ""
     @State private var users: [User] = []
-    
+
     // Inject the factory for services with runtime parameters
     private let searchFactory: UserSearchServiceFactory
-    
+
     init(searchFactory: UserSearchServiceFactory = Container.shared.resolve(UserSearchServiceFactory.self)!) {
         self.searchFactory = searchFactory
     }
-    
+
     var body: some View {
         NavigationView {
             VStack {
                 SearchBar(text: $searchQuery, onSearchButtonClicked: performSearch)
-                
+
                 List(users, id: \.id) { user in
                     UserRow(user: user)
                 }
@@ -1078,14 +1102,14 @@ struct ContentView: View {
             .navigationTitle("Users")
         }
     }
-    
+
     private func performSearch() {
         Task {
             let searchService = searchFactory.makeUserSearchService(
                 query: searchQuery,
                 filters: [.active, .verified]
             )
-            
+
             do {
                 users = try await searchService.search()
             } catch {
@@ -1105,42 +1129,42 @@ import XCTest
 @TestContainer
 class UserServiceTests: XCTestCase {
     var container: Container!
-    
+
     // Service properties automatically detected
     var apiClient: APIClient!
     var database: DatabaseService!
     var logger: LoggerService!
-    
+
     var userService: UserService!
-    
+
     override func setUp() {
         super.setUp()
-        
+
         // Generated method creates container with mocks
         container = setupTestContainer()
-        
+
         // Resolve mocked dependencies
         apiClient = container.resolve(APIClient.self)!
         database = container.resolve(DatabaseService.self)!
         logger = container.resolve(LoggerService.self)!
-        
+
         // Your service under test gets the mocks automatically
         UserService.register(in: container)
         userService = container.resolve(UserService.self)!
     }
-    
+
     func testGetUser() async throws {
         // Setup mock behavior
         let mockAPI = apiClient as! MockAPIClient
         mockAPI.fetchUserResult = UserData(id: "123", name: "John Doe")
-        
+
         // Test your service
         let user = try await userService.getUser(id: "123")
-        
+
         // Verify behavior
         XCTAssertEqual(user.name, "John Doe")
         XCTAssertTrue(mockAPI.fetchUserCalled)
-        
+
         let mockDB = database as! MockDatabaseService
         XCTAssertTrue(mockDB.saveCalled)
     }
@@ -1157,7 +1181,7 @@ class UserServiceTests: XCTestCase {
 class UserAuthenticationService {
     private let apiClient: APIClient
     private let tokenStorage: TokenStorage
-    
+
     init(apiClient: APIClient, tokenStorage: TokenStorage) {
         self.apiClient = apiClient
         self.tokenStorage = tokenStorage
@@ -1165,7 +1189,7 @@ class UserAuthenticationService {
 }
 
 // ❌ AVOID: Too many dependencies (code smell)
-@Injectable  
+@Injectable
 class GodService {
     // 15+ dependencies - consider breaking this down
     init(dep1: Dep1, dep2: Dep2, /* ... */, dep15: Dep15) { }
@@ -1221,7 +1245,7 @@ class ComplexServiceTests: XCTestCase {
     override func setUp() {
         super.setUp()
         container = setupTestContainer()
-        
+
         // Use sophisticated mocks
         registerAPIClient(mock: RecordingMockAPIClient())
     }
@@ -1239,7 +1263,7 @@ class ServiceA {
     init(serviceB: ServiceB) { }
 }
 
-@Injectable  
+@Injectable
 class ServiceB {
     init(serviceA: ServiceA) { }  // Circular!
 }
@@ -1291,7 +1315,7 @@ let client = container.resolve(APIClient.self)  // nil! Not registered
 class AppAssembly: Assembly {
     func assemble(container: Container) {
         ConcreteAPIClient.register(in: container)
-        
+
         // Also register the protocol
         container.register(APIClient.self) { resolver in
             resolver.resolve(ConcreteAPIClient.self)!
@@ -1302,20 +1326,23 @@ class AppAssembly: Assembly {
 
 ## 🔮 Roadmap
 
-SwinjectUtilityMacros is actively developed with 25+ macros planned. Here's what's coming:
+SwinjectMacros is actively developed with 25+ macros planned. Here's what's coming:
 
 ### ✅ **Phase 1: Complete** (Current)
+
 - `@Injectable` - Service registration
-- `@AutoFactory` - Factory pattern generation  
+- `@AutoFactory` - Factory pattern generation
 - `@TestContainer` - Test mock setup
 
 ### 🚧 **Phase 2: AOP & Interceptors** (Next)
+
 - `@Interceptor` - Method interception with before/after/onError hooks
 - `@PerformanceTracked` - Automatic performance monitoring
 - `@Retry` - Automatic retry logic with backoff strategies
 - `@CircuitBreaker` - Circuit breaker pattern implementation
 
 ### 📋 **Phase 3: Advanced DI Patterns**
+
 - `@LazyInject` - Lazy dependency resolution
 - `@WeakInject` - Weak reference injection
 - `@AsyncInject` - Async dependency initialization
@@ -1323,18 +1350,21 @@ SwinjectUtilityMacros is actively developed with 25+ macros planned. Here's what
 - `@NamedInject` - Named dependency injection
 
 ### 🧪 **Phase 4: Testing & Validation**
+
 - `@Spy` - Automatic spy generation
 - `@MockResponse` - HTTP response mocking
 - `@StubService` - Service stubbing utilities
 - `@ValidatedContainer` - Container validation at compile-time
 
 ### ⚙️ **Phase 5: Configuration & Features**
+
 - `@FeatureToggle` - Feature flag integration
 - `@ConfigurableService` - Configuration-driven services
 - `@ConditionalRegistration` - Conditional service registration
 - `@EnvironmentService` - Environment-specific implementations
 
 ### 🔧 **Phase 6: SwiftUI & Combine**
+
 - `@EnvironmentInject` - SwiftUI Environment integration
 - `@ViewModelInject` - MVVM pattern support
 - `@InjectedStateObject` - State management integration
@@ -1347,15 +1377,15 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 ### Development Setup
 
 ```bash
-git clone https://github.com/brunogama/SwinjectUtilityMacros.git
-cd SwinjectUtilityMacros
+git clone https://github.com/brunogama/SwinjectMacros.git
+cd SwinjectMacros
 swift build
 swift test
 ```
 
 ## 📄 License
 
-SwinjectUtilityMacros is released under the MIT License. See [LICENSE](LICENSE) for details.
+SwinjectMacros is released under the MIT License. See [LICENSE](LICENSE) for details.
 
 ## 🙏 Acknowledgments
 
@@ -1363,6 +1393,6 @@ SwinjectUtilityMacros is released under the MIT License. See [LICENSE](LICENSE) 
 - Powered by Swift Macros introduced in Swift 5.9
 - Inspired by dependency injection frameworks from other ecosystems
 
----
+______________________________________________________________________
 
-**Ready to eliminate dependency injection boilerplate?** Get started with SwinjectUtilityMacros today! 🚀
+**Ready to eliminate dependency injection boilerplate?** Get started with SwinjectMacros today! 🚀
