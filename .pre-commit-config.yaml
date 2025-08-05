@@ -93,6 +93,17 @@ repos:
     types: [ swift ]
     require_serial: true
 
+## Swift Test Hook
+- repo: local
+  hooks:
+  - id: swift-test
+    name: "Test - Runs Swift test suite to ensure code quality"
+    entry: swift test
+    language: system
+    pass_filenames: false
+    types: [ swift ]
+    require_serial: true
+
 ### Markdown
 - repo: https://github.com/hukkin/mdformat
   rev: 0.7.22
