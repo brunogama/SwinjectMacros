@@ -30,6 +30,13 @@ public final class ModuleScope: ObjectScopeProtocol {
 
     // MARK: - ObjectScopeProtocol Implementation
 
+    /// Stores an instance in the module scope
+    /// - Parameters:
+    ///   - instance: The instance to store
+    ///   - key: The key to store the instance under
+    ///   - moduleIdentifier: The module identifier to scope the instance to.
+    ///                       If nil, uses "global" as the default module.
+    ///                       This allows instances to be isolated per module.
     public func store(
         instance: some Any,
         key: String,
@@ -47,6 +54,13 @@ public final class ModuleScope: ObjectScopeProtocol {
         instances[moduleKey]?[key] = instance
     }
 
+    /// Retrieves an instance from the module scope
+    /// - Parameters:
+    ///   - key: The key the instance was stored under
+    ///   - moduleIdentifier: The module identifier to retrieve the instance from.
+    ///                       If nil, uses "global" as the default module.
+    ///                       Must match the identifier used when storing the instance.
+    /// - Returns: The stored instance if found and of the correct type, nil otherwise
     public func instance<Service>(
         for key: String,
         moduleIdentifier: String? = nil
@@ -115,6 +129,10 @@ final class ModuleScopeStorage: InstanceStorage {
 
     // MARK: - Initialization
 
+    /// Creates a new module scope storage
+    /// - Parameter moduleIdentifier: The identifier for this module's storage.
+    ///                              Defaults to "default". This identifier is used
+    ///                              as a fallback when ModuleContext.current is nil.
     init(moduleIdentifier: String = "default") {
         self.moduleIdentifier = moduleIdentifier
     }

@@ -95,7 +95,8 @@ final class StressTests: XCTestCase {
         }
 
         // Verify weak references are working
-        let (hasDelegate, hasObserver) = services.first!.checkReferences()
+        XCTAssertFalse(services.isEmpty, "Services array should not be empty")
+        let (hasDelegate, hasObserver) = services.first?.checkReferences() ?? (false, false)
         XCTAssertTrue(hasDelegate || hasObserver, "At least some weak references should be resolved")
 
         // Clear strong references

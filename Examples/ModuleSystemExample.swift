@@ -96,8 +96,11 @@ struct UserModule {
     static func configure(_ container: Container) {
         // Register user service with dependencies from other modules
         container.register(UserServiceInterface.self) { resolver in
-            let httpClient = resolver.resolve(HTTPClientInterface.self)!
-            let database = resolver.resolve(DatabaseInterface.self)!
+            guard let httpClient = resolver.resolve(HTTPClientInterface.self),
+                  let database = resolver.resolve(DatabaseInterface.self)
+            else {
+                fatalError("Failed to resolve required dependencies for UserService")
+            }
             return UserService(httpClient: httpClient, database: database)
         }.inObjectScope(.container)
 
@@ -142,7 +145,9 @@ struct AnalyticsModule {
 struct PaymentModule {
     static func configure(_ container: Container) {
         container.register(PaymentProcessor.self) { resolver in
-            let httpClient = resolver.resolve(HTTPClientInterface.self)!
+            guard let httpClient = resolver.resolve(HTTPClientInterface.self) else {
+                fatalError("Failed to resolve HTTPClientInterface for PaymentProcessor")
+            }
             return StripePaymentProcessor(httpClient: httpClient)
         }
     }
@@ -152,8 +157,11 @@ struct PaymentModule {
 struct ChatModule {
     static func configure(_ container: Container) {
         container.register(ChatService.self) { resolver in
-            let httpClient = resolver.resolve(HTTPClientInterface.self)!
-            let database = resolver.resolve(DatabaseInterface.self)!
+            guard let httpClient = resolver.resolve(HTTPClientInterface.self),
+                  let database = resolver.resolve(DatabaseInterface.self)
+            else {
+                fatalError("Failed to resolve required dependencies for ChatService")
+            }
             return ChatService(httpClient: httpClient, database: database)
         }
     }
@@ -180,9 +188,14 @@ struct AppModule {
     static func configure(_ container: Container) {
         // App-level service registrations
         container.register(AppCoordinator.self) { resolver in
-            AppCoordinator(
-                userService: resolver.resolve(UserServiceInterface.self)!,
-                analytics: resolver.resolve(AnalyticsInterface.self)!
+            guard let userService = resolver.resolve(UserServiceInterface.self),
+                  let analytics = resolver.resolve(AnalyticsInterface.self)
+            else {
+                fatalError("Failed to resolve required dependencies for AppCoordinator")
+            }
+            return AppCoordinator(
+                userService: userService,
+                analytics: analytics
             )
         }
     }
