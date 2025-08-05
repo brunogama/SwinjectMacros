@@ -180,7 +180,7 @@ Add SwinjectMacros to your project via Xcode or by adding it to your `Package.sw
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/brunogama/SwinjectMacros.git", from: "1.0.0")
+    .package(url: "https://github.com/brunogama/SwinjectMacros.git", from: "1.0.1")
 ],
 targets: [
     .target(
