@@ -138,6 +138,10 @@ public actor ModulePerformanceOptimizer {
     private var unloadTasks: [String: Task<Void, Never>] = [:]
     private let logger = Logger(subsystem: "com.swinjectmacros", category: "performance")
 
+    // Cache hit/miss tracking
+    private var cacheHits: [String: UInt64] = [:]
+    private var cacheMisses: [String: UInt64] = [:]
+
     /// Shared instance
     public static let shared = ModulePerformanceOptimizer()
 
@@ -253,6 +257,11 @@ public actor ModulePerformanceOptimizer {
             return cached.service as? T
         }
 
+        // Cache miss - track it
+        if let config = configurations[moduleId], config.enableCaching {
+            updateCacheMiss(for: moduleId)
+        }
+
         // Resolve service
         let service = await resolveService(serviceType, name: name, moduleId: moduleId)
 
@@ -275,10 +284,12 @@ public actor ModulePerformanceOptimizer {
     public func handleMemoryPressure() async {
         logger.info("Handling memory pressure - clearing caches and unloading unused modules")
 
-        // Clear service cache
+        // Clear service cache and cache statistics
         let cacheSize = serviceCache.count
         serviceCache.removeAll()
-        logger.info("Cleared service cache (\(cacheSize) entries)")
+        cacheHits.removeAll()
+        cacheMisses.removeAll()
+        logger.info("Cleared service cache (\(cacheSize) entries) and cache statistics")
 
         // Unload low-priority modules that haven't been accessed recently
         let threshold = Date().addingTimeInterval(-300) // 5 minutes ago
@@ -339,6 +350,13 @@ public actor ModulePerformanceOptimizer {
             report += "    Load Time: \(String(format: "%.3f", metrics.loadTime * 1000))ms\n"
             report += "    Memory: \(formatBytes(metrics.memoryUsage))\n"
             report += "    Cache Hit Rate: \(String(format: "%.1f", metrics.cacheHitRate * 100))%\n"
+
+            let hits = cacheHits[metrics.moduleId] ?? 0
+            let misses = cacheMisses[metrics.moduleId] ?? 0
+            if hits > 0 || misses > 0 {
+                report += "    Cache Hits: \(hits), Misses: \(misses)\n"
+            }
+
             report += "    Access Count: \(metrics.accessCount)\n"
         }
 
@@ -369,7 +387,7 @@ public actor ModulePerformanceOptimizer {
         // Implement memory optimization strategies
         if let maxMemory = config.maxMemoryUsage {
             // Monitor and enforce memory limits
-            logger.info("Optimizing memory usage for module \(moduleId) (max: \(self.formatBytes(maxMemory)))")
+            logger.info("Optimizing memory usage for module \(moduleId) (max: \(formatBytes(maxMemory)))")
         }
 
         // Set up unload timer if configured
@@ -555,8 +573,63 @@ public actor ModulePerformanceOptimizer {
     }
 
     private func updateCacheHit(for moduleId: String) {
-        // Update cache hit rate calculation
-        // This is a simplified implementation
+        // Increment cache hit counter
+        cacheHits[moduleId] = (cacheHits[moduleId] ?? 0) + 1
+
+        // Update cache hit rate in metrics
+        guard var current = metrics[moduleId] else { return }
+
+        let totalHits = cacheHits[moduleId] ?? 0
+        let totalMisses = cacheMisses[moduleId] ?? 0
+        let totalAccesses = totalHits + totalMisses
+
+        let cacheHitRate = totalAccesses > 0 ? Double(totalHits) / Double(totalAccesses) : 0.0
+
+        current = ModulePerformanceMetrics(
+            moduleId: current.moduleId,
+            loadTime: current.loadTime,
+            initializationTime: current.initializationTime,
+            memoryUsage: current.memoryUsage,
+            resolutionTime: current.resolutionTime,
+            cacheHitRate: cacheHitRate,
+            dependencyCount: current.dependencyCount,
+            lastAccessed: Date(),
+            accessCount: current.accessCount,
+            errorCount: current.errorCount
+        )
+        metrics[moduleId] = current
+
+        logger.debug("Cache hit for module \(moduleId): hit rate = \(String(format: "%.2f%%", cacheHitRate * 100))")
+    }
+
+    private func updateCacheMiss(for moduleId: String) {
+        // Increment cache miss counter
+        cacheMisses[moduleId] = (cacheMisses[moduleId] ?? 0) + 1
+
+        // Update cache hit rate in metrics
+        guard var current = metrics[moduleId] else { return }
+
+        let totalHits = cacheHits[moduleId] ?? 0
+        let totalMisses = cacheMisses[moduleId] ?? 0
+        let totalAccesses = totalHits + totalMisses
+
+        let cacheHitRate = totalAccesses > 0 ? Double(totalHits) / Double(totalAccesses) : 0.0
+
+        current = ModulePerformanceMetrics(
+            moduleId: current.moduleId,
+            loadTime: current.loadTime,
+            initializationTime: current.initializationTime,
+            memoryUsage: current.memoryUsage,
+            resolutionTime: current.resolutionTime,
+            cacheHitRate: cacheHitRate,
+            dependencyCount: current.dependencyCount,
+            lastAccessed: Date(),
+            accessCount: current.accessCount,
+            errorCount: current.errorCount
+        )
+        metrics[moduleId] = current
+
+        logger.debug("Cache miss for module \(moduleId): hit rate = \(String(format: "%.2f%%", cacheHitRate * 100))")
     }
 
     private func updateErrorCount(for moduleId: String) {

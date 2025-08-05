@@ -34,6 +34,10 @@ This project follows Apple's Swift-NIO code style conventions. Please refer to `
 - **Run performance benchmarks**: `swift test --filter PerformanceBenchmarkTests`
 - **Run stress tests**: `swift test --filter StressTests`
 
+### COMMITING Commands
+
+**NEVER USE SKIP PRE-COMMIT OR --NO-VERIFY**
+
 ## Project Architecture
 
 ### High-Level Structure
