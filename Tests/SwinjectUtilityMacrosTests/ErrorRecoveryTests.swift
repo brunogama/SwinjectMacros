@@ -253,7 +253,7 @@ final class ErrorRecoveryTests: XCTestCase {
                 )
                 CircuitBreakerRegistry.recordCall(blockedCall, for: circuitKey)
 
-                throw CircuitBreakerError.circuitOpen(circuitName: circuitKey)
+                throw CircuitBreakerError.circuitOpen(circuitName: circuitKey, lastFailureTime: circuitBreaker.lastOpenedTime)
             }
 
             // Execute the method with circuit breaker protection
@@ -664,13 +664,11 @@ final class ErrorRecoveryTests: XCTestCase {
 
 // CircuitBreakerState is imported from SwinjectUtilityMacros
 
-public enum CircuitBreakerError: Error {
-    case circuitOpen(circuitName: String)
-    case noFallbackAvailable(circuitName: String)
-}
+// CircuitBreakerError is imported from SwinjectUtilityMacros
 
 public class MockCircuitBreaker {
     public let currentState: CircuitBreakerState = .closed
+    public let lastOpenedTime: Date? = nil
 
     public init() {}
 
