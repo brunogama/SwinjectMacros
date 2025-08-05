@@ -245,6 +245,7 @@ public actor ModuleDebugTools {
     private var eventHistory: [DebugEvent] = []
     private var errorLog: [ErrorInfo] = []
     private let logger = Logger(subsystem: "com.swinjectmacros", category: "debug")
+    private var monitoringTask: Task<Void, Never>?
 
     /// Shared instance
     public static let shared = ModuleDebugTools()
@@ -253,6 +254,10 @@ public actor ModuleDebugTools {
         Task {
             await setupDebugEnvironment()
         }
+    }
+
+    deinit {
+        monitoringTask?.cancel()
     }
 
     // MARK: - Configuration
@@ -379,12 +384,31 @@ public actor ModuleDebugTools {
     public func startRealTimeMonitoring() {
         logger.info("Starting real-time module monitoring")
 
-        Task {
-            while true {
+        // Cancel any existing monitoring task
+        monitoringTask?.cancel()
+
+        // Create and store new monitoring task
+        monitoringTask = Task {
+            while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 5_000_000_000) // 5 seconds
-                await performRealTimeCheck()
+                if !Task.isCancelled {
+                    await performRealTimeCheck()
+                }
             }
+            logger.info("Real-time monitoring stopped")
         }
+    }
+
+    /// Stop real-time monitoring
+    public func stopRealTimeMonitoring() {
+        logger.info("Stopping real-time module monitoring")
+        monitoringTask?.cancel()
+        monitoringTask = nil
+    }
+
+    /// Check if real-time monitoring is active
+    public var isMonitoringActive: Bool {
+        monitoringTask != nil && !monitoringTask!.isCancelled
     }
 
     /// Record debug event
