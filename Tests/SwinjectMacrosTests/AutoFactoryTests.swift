@@ -51,7 +51,7 @@ final class AutoFactoryTests: XCTestCase {
 
     func testAutoFactoryMacroRegistration() {
         // Verify the macro is properly registered in the plugin
-        let plugin = SwinjectUtilityMacrosPlugin()
+        let plugin = SwinjectMacrosPlugin()
         let macroTypes = plugin.providingMacros
 
         XCTAssertTrue(macroTypes.contains { $0 == AutoFactoryMacro.self })
