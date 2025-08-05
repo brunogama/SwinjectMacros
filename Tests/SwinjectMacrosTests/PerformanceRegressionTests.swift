@@ -292,10 +292,16 @@ final class PerformanceRegressionTests: XCTestCase {
     // MARK: - Lazy Injection Performance
 
     func testLazyInjectPerformance() {
+        // Store the original shared container
+        let originalShared = Container.shared
+        defer { Container.shared = originalShared }
+
+        // Set our test container as shared
+        Container.shared = container
+
         container.register(ExpensiveDependency.self) { _ in ExpensiveDependency() }
         container.register(TestDependency1.self) { _ in TestDependency1() }
         container.register(TestDependency2.self) { _ in TestDependency2() }
-        // Use container parameter instead of Container.shared for test isolation
 
         let service = LazyPerformanceService()
 
@@ -310,6 +316,18 @@ final class PerformanceRegressionTests: XCTestCase {
     }
 
     func testLazyInjectFirstAccessPerformance() {
+        // Store the original shared container
+        let originalShared = Container.shared
+        defer { Container.shared = originalShared }
+
+        // Set our test container as shared
+        Container.shared = container
+
+        // Register required dependencies once before the test
+        container.register(ExpensiveDependency.self) { _ in ExpensiveDependency() }
+        container.register(TestDependency1.self) { _ in TestDependency1() }
+        container.register(TestDependency2.self) { _ in TestDependency2() }
+
         // Test the performance of first access (when resolution happens)
         measure {
             for i in 0..<500 {
@@ -365,6 +383,9 @@ final class PerformanceRegressionTests: XCTestCase {
         container.register(TestDependency1.self) { _ in TestDependency1() }
         ConcurrentTestService.register(in: container)
 
+        // Use synchronized resolver for concurrent access
+        let synchronizedResolver = container.synchronize()
+
         measure {
             let group = DispatchGroup()
             let queue = DispatchQueue.global(qos: .default)
@@ -373,7 +394,7 @@ final class PerformanceRegressionTests: XCTestCase {
                 group.enter()
                 queue.async {
                     for _ in 0..<100 {
-                        let service = self.container.resolve(ConcurrentTestService.self)
+                        let service = synchronizedResolver.resolve(ConcurrentTestService.self)
                         XCTAssertNotNil(service)
                     }
                     group.leave()

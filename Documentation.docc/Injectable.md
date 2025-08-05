@@ -337,6 +337,7 @@ class ReportService {
 ```
 
 **Warning message:**
+
 ```
 warning: Runtime parameter 'reportType' detected in @Injectable service.
 Consider using @AutoFactory for services that need runtime parameters.
@@ -584,6 +585,7 @@ class AppAssembly: Assembly {
 ### Common Issues
 
 **Issue:** Circular dependencies
+
 ```
 error: Circular dependency detected: UserService -> OrderService -> UserService
 ```
@@ -607,6 +609,7 @@ class OrderService {
 ```
 
 **Issue:** Missing protocol registration
+
 ```
 fatal error: Unable to resolve dependency: APIClient
 ```

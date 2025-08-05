@@ -109,17 +109,8 @@ public final class ModuleScope: ObjectScopeProtocol {
 
 // MARK: - Swinject Extension for Module Scope
 
-// extension ObjectScope {
-//     /// Module-level singleton scope
-//     /// Services are shared within the same module but isolated between modules
-//     public static let module = ObjectScope(
-//         storageFactory: ModuleScopeStorage.init,
-//         description: "module"
-//     )
-// }
-
 /// Storage implementation for module scope
-final class ModuleScopeStorage: InstanceStorage {
+public final class ModuleScopeStorage: InstanceStorage {
 
     // MARK: - Properties
 
@@ -130,16 +121,14 @@ final class ModuleScopeStorage: InstanceStorage {
     // MARK: - Initialization
 
     /// Creates a new module scope storage
-    /// - Parameter moduleIdentifier: The identifier for this module's storage.
-    ///                              Defaults to "default". This identifier is used
-    ///                              as a fallback when ModuleContext.current is nil.
-    init(moduleIdentifier: String = "default") {
-        self.moduleIdentifier = moduleIdentifier
+    /// Uses "default" as the default module identifier if no ModuleContext is active
+    public init() {
+        moduleIdentifier = "default"
     }
 
     // MARK: - InstanceStorage Implementation
 
-    var instance: Any? {
+    public var instance: Any? {
         get {
             lock.lock()
             defer { lock.unlock() }
@@ -291,6 +280,11 @@ register(serviceType, name: name, factory: factory)
 // MARK: - ModuleScoped Property Wrapper
 
 /// Property wrapper for module-scoped dependency injection
+/// Test helper for ModuleScoped property wrapper
+public final class ModuleScopedTestHelper {
+    public static var overrideModuleSystem: ModuleSystem?
+}
+
 @propertyWrapper
 public struct ModuleScoped<Service> {
 
@@ -298,6 +292,11 @@ public struct ModuleScoped<Service> {
     private let name: String?
     private let module: String?
     private var cached: Service?
+
+    /// Get the ModuleSystem to use - either test override or shared instance
+    private var moduleSystem: ModuleSystem {
+        ModuleScopedTestHelper.overrideModuleSystem ?? ModuleSystem.shared
+    }
 
     public init(
         _ serviceType: Service.Type,
@@ -322,11 +321,11 @@ public struct ModuleScoped<Service> {
                 // Resolve within specific module context
                 let context = ModuleContext(identifier: module)
                 resolved = context.execute {
-                    ModuleSystem.shared.resolve(serviceType, name: name, from: module)
+                    moduleSystem.resolve(serviceType, name: name, from: module)
                 }
             } else {
                 // Resolve from current module context
-                resolved = ModuleSystem.shared.resolve(serviceType, name: name)
+                resolved = moduleSystem.resolve(serviceType, name: name)
             }
 
             guard let service = resolved else {

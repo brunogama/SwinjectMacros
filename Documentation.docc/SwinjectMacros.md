@@ -1,4 +1,4 @@
-# ``SwinjectMacros``
+# `SwinjectMacros`
 
 Advanced Dependency Injection Utilities for Swift using Compile-Time Macros
 

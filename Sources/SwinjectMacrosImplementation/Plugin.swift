@@ -54,9 +54,6 @@ struct SwinjectMacrosPlugin: CompilerPlugin {
 
         // MARK: - Module System Macros
         ModuleMacro.self
-        // ModuleInterfaceMacro.self, // TODO: Fix syntax issues
-        // ProvidesMacro.self, // TODO: Defined in disabled ModuleInterfaceMacro.swift
-        // IncludeMacro.self // TODO: Defined in disabled ModuleInterfaceMacro.swift
     ]
 }
 

@@ -448,9 +448,9 @@ class AppAssembly: Assembly {
 ## What Just Happened?
 
 1. **`@Injectable`** automatically generated registration code for your services
-2. **`@AutoFactory`** created a factory for services needing runtime parameters
-3. **`@TestContainer`** set up your test environment with mocks
-4. **All at compile-time** with zero runtime overhead!
+1. **`@AutoFactory`** created a factory for services needing runtime parameters
+1. **`@TestContainer`** set up your test environment with mocks
+1. **All at compile-time** with zero runtime overhead!
 
 ## Next Steps
 

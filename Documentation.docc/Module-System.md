@@ -135,6 +135,7 @@ await ModulePerformanceOptimizer.shared.configureModule(config)
 ```
 
 **Available Strategies:**
+
 - `.lazyLoading` - Load modules on-demand
 - `.preloading` - Pre-load critical dependencies
 - `.memoryOptimized` - Minimize memory footprint
@@ -162,6 +163,7 @@ await ModuleDebugTools.shared.startRealTimeMonitoring()
 ```
 
 **Visualization Formats:**
+
 - `.mermaid` - Mermaid diagram format
 - `.dot` - Graphviz DOT format
 - `.html` - Interactive HTML visualization
@@ -294,11 +296,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 ## Best Practices
 
 1. **Module Granularity**: Keep modules focused on specific business domains
-2. **Dependency Management**: Minimize inter-module dependencies
-3. **Lifecycle Hooks**: Use lifecycle hooks for cleanup and resource management
-4. **Performance Monitoring**: Regularly analyze performance metrics
-5. **Hot-Swap Planning**: Design modules with hot-swapping in mind from the start
-6. **Debug Integration**: Integrate debug tools into development workflows
+1. **Dependency Management**: Minimize inter-module dependencies
+1. **Lifecycle Hooks**: Use lifecycle hooks for cleanup and resource management
+1. **Performance Monitoring**: Regularly analyze performance metrics
+1. **Hot-Swap Planning**: Design modules with hot-swapping in mind from the start
+1. **Debug Integration**: Integrate debug tools into development workflows
 
 ## See Also
 

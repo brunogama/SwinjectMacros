@@ -201,7 +201,7 @@ public final class ModuleDependencyGraphAnalyzer {
             moduleExports[moduleName] = node.exports
 
             // Check what each module actually uses from others
-            if let container = node.container {
+            if node.container != nil {
                 // This would require runtime inspection of container registrations
                 // For now, we'll mark all exports as potentially used
                 allImports.formUnion(node.exports)
@@ -428,7 +428,7 @@ public final class ModuleDependencyGraphAnalyzer {
         report += "Summary:\n"
         report += "  Total Modules: \(result.nodes.count)\n"
         report += "  Total Dependencies: \(result.edges.filter { $0.type == .dependency }.count)\n"
-        report += "  Circular Dependencies: \(result.circularDependencies.count > 0 ? "YES ⚠️" : "None ✅")\n"
+        report += "  Circular Dependencies: \(!result.circularDependencies.isEmpty ? "YES ⚠️" : "None ✅")\n"
         report +=
             "  Missing Dependencies: \(result.missingDependencies.isEmpty ? "None ✅" : "\(result.missingDependencies.count) ⚠️")\n"
         report += "\n"

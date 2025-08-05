@@ -26,20 +26,20 @@ uninitialized → initializing → initialized → starting → active
 
 ### State Descriptions
 
-| State | Description | Valid Transitions |
-|-------|-------------|-------------------|
-| `uninitialized` | Module not yet initialized | `initializing` |
-| `initializing` | Module initialization in progress | `initialized`, `failed` |
-| `initialized` | Module ready but not started | `starting`, `destroyed` |
-| `starting` | Module startup in progress | `active`, `failed` |
-| `active` | Module running normally | `pausing`, `stopping`, `failed` |
-| `pausing` | Module being paused | `paused`, `failed` |
-| `paused` | Module temporarily suspended | `resuming`, `stopping` |
-| `resuming` | Module resuming from pause | `active`, `failed` |
-| `stopping` | Module shutdown in progress | `stopped`, `failed` |
-| `stopped` | Module cleanly stopped | `destroyed`, `starting` |
-| `failed` | Module encountered error | `starting`, `destroyed` |
-| `destroyed` | Module resources cleaned up | (terminal state) |
+| State           | Description                       | Valid Transitions               |
+| --------------- | --------------------------------- | ------------------------------- |
+| `uninitialized` | Module not yet initialized        | `initializing`                  |
+| `initializing`  | Module initialization in progress | `initialized`, `failed`         |
+| `initialized`   | Module ready but not started      | `starting`, `destroyed`         |
+| `starting`      | Module startup in progress        | `active`, `failed`              |
+| `active`        | Module running normally           | `pausing`, `stopping`, `failed` |
+| `pausing`       | Module being paused               | `paused`, `failed`              |
+| `paused`        | Module temporarily suspended      | `resuming`, `stopping`          |
+| `resuming`      | Module resuming from pause        | `active`, `failed`              |
+| `stopping`      | Module shutdown in progress       | `stopped`, `failed`             |
+| `stopped`       | Module cleanly stopped            | `destroyed`, `starting`         |
+| `failed`        | Module encountered error          | `starting`, `destroyed`         |
+| `destroyed`     | Module resources cleaned up       | (terminal state)                |
 
 ## Basic Usage
 
@@ -415,12 +415,12 @@ enum LifecycleError: Error, LocalizedError {
 ## Best Practices
 
 1. **Always Register Hooks Early**: Register lifecycle hooks before any module operations
-2. **Handle All Result Cases**: Always handle all cases of `LifecycleTransitionResult`
-3. **Use Dependency Order**: Initialize modules in dependency order
-4. **Implement Cleanup**: Always cleanup resources in failure scenarios
-5. **Monitor Performance**: Use performance hooks to identify slow transitions
-6. **Validate Prerequisites**: Check dependencies before state transitions
-7. **Log Comprehensively**: Use logging hooks for debugging and monitoring
+1. **Handle All Result Cases**: Always handle all cases of `LifecycleTransitionResult`
+1. **Use Dependency Order**: Initialize modules in dependency order
+1. **Implement Cleanup**: Always cleanup resources in failure scenarios
+1. **Monitor Performance**: Use performance hooks to identify slow transitions
+1. **Validate Prerequisites**: Check dependencies before state transitions
+1. **Log Comprehensively**: Use logging hooks for debugging and monitoring
 
 ## Thread Safety
 

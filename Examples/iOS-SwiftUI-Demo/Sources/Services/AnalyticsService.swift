@@ -274,7 +274,8 @@ class AnalyticsService: AnalyticsServiceProtocol {
     }
 
     private func setupPeriodicFlush() {
-        Timer.scheduledTimer(withTimeInterval: flushInterval, repeats: true) { _ in
+        Timer.scheduledTimer(withTimeInterval: flushInterval, repeats: true) { [weak self] _ in
+            guard let self else { return }
             Task {
                 try? await self.flush()
             }
