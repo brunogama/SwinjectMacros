@@ -330,11 +330,35 @@ public struct ModuleScoped<Service> {
             }
 
             guard let service = resolved else {
-                fatalError("Failed to resolve \(serviceType) with name: \(name ?? "default")")
+                // Log the error for debugging and provide a more helpful error message
+                let serviceName = name ?? "default"
+                let moduleInfo = module ?? "current module"
+                let errorMessage = "Failed to resolve \(serviceType) with name: \(serviceName) from \(moduleInfo). Ensure the service is registered in the module container."
+
+                // In production code, we should avoid fatalError. However, since this is a property wrapper
+                // that must return a value and dependency injection failure is typically a programmer error
+                // that should be caught during development, we use preconditionFailure which is appropriate
+                // for checking preconditions that should never fail in correct code.
+                preconditionFailure(errorMessage)
             }
 
             cached = service
             return service
+        }
+    }
+}
+
+// MARK: - Module Scope Errors
+
+/// Errors that can occur during module scope operations
+public enum ModuleScopeError: Error, LocalizedError {
+    case serviceResolutionFailed(serviceType: String, name: String?)
+
+    public var errorDescription: String? {
+        switch self {
+        case .serviceResolutionFailed(let serviceType, let name):
+            let serviceName = name.map { " named '\($0)'" } ?? ""
+            return "Failed to resolve service\(serviceName) of type '\(serviceType)' in module scope"
         }
     }
 }

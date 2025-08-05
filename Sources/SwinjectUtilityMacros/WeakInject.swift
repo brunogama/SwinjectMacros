@@ -2,6 +2,7 @@
 // Copyright © 2025 SwinjectUtilityMacros. All rights reserved.
 
 import Foundation
+import os.log
 import Swinject
 
 // MARK: - @WeakInject Macro
@@ -467,40 +468,33 @@ public class WeakInjectionMetrics {
 
     /// Prints a comprehensive weak reference report
     public static func printWeakReferenceReport() {
+        let logger = Logger(subsystem: "com.swinjectutilitymacros", category: "weak-injection")
         let stats = getStats()
         let properties = getAllProperties()
 
         guard !properties.isEmpty else {
-            print("🔗 No weak injection data available")
+            logger.info("🔗 No weak injection data available")
             return
         }
 
-        print("\n🔗 Weak Reference Report")
-        print("=" * 80)
-        print(String(format: "%-30s %-12s %8s %10s %12s", "Property", "State", "Resolved", "Container", "AutoResolve"))
-        print("-" * 80)
+        logger.info("🔗 Weak Reference Report")
+        logger.info("Property analysis: \(properties.count) properties found")
 
         for property in properties.sorted(by: { $0.propertyName < $1.propertyName }) {
             let resolvedCount = property.resolutionCount
             let autoResolveStr = property.autoResolve ? "Yes" : "No"
 
-            print(String(
-                format: "%-30s %-12s %8d %10s %12s",
-                property.propertyName.suffix(30),
-                property.state.description,
-                resolvedCount,
-                property.containerName.suffix(10),
-                autoResolveStr
-            ))
+            logger
+                .debug(
+                    "WeakProperty: \(property.propertyName) State: \(property.state.description) Resolved: \(resolvedCount) Container: \(property.containerName) AutoResolve: \(autoResolveStr)"
+                )
         }
 
-        print("-" * 80)
-        print("Summary:")
-        print("  Total Properties: \(stats.totalWeakProperties)")
-        print("  Active References: \(stats.activeReferences)")
-        print("  Deallocated: \(stats.deallocatedReferences)")
-        print("  Failed: \(stats.failedReferences)")
-        print("  Average Resolutions: \(String(format: "%.1f", stats.averageResolutionCount))")
+        logger.info("Summary: Total Properties: \(stats.totalWeakProperties)")
+        logger.info("Active References: \(stats.activeReferences)")
+        logger.info("Deallocated: \(stats.deallocatedReferences)")
+        logger.info("Failed: \(stats.failedReferences)")
+        logger.info("Average Resolutions: \(String(format: "%.1f", stats.averageResolutionCount))")
     }
 
     /// Gets properties that are currently active (non-nil)
