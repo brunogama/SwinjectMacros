@@ -273,7 +273,11 @@ public actor ModuleHotSwapManager {
             if let rollbackPoint = context.rollbackPoint,
                let snapshot = rollbackPoints[rollbackPoint]
             {
-                await performRollback(moduleId: moduleId, snapshot: snapshot, context: context)
+                do {
+                    try await performRollback(moduleId: moduleId, snapshot: snapshot, context: context)
+                } catch {
+                    logger.error("Rollback failed during hot-swap: \(error)")
+                }
             }
 
             activeOperations.removeValue(forKey: context.operationId)
@@ -283,7 +287,7 @@ public actor ModuleHotSwapManager {
 
     /// Rollback to previous version
     public func rollback(moduleId: String, rollbackPointId: String) async -> HotSwapResult {
-        guard let currentModule = registeredModules[moduleId] else {
+        guard registeredModules[moduleId] != nil else {
             return .failure(error: HotSwapError.moduleNotFound(moduleId))
         }
 
@@ -299,7 +303,7 @@ public actor ModuleHotSwapManager {
         )
 
         do {
-            await performRollback(moduleId: moduleId, snapshot: snapshot, context: context)
+            try await performRollback(moduleId: moduleId, snapshot: snapshot, context: context)
             return .success(moduleId: moduleId, operation: .rollback)
         } catch {
             return .failure(error: error)
@@ -344,7 +348,7 @@ public actor ModuleHotSwapManager {
         try await Task.sleep(nanoseconds: 100_000_000)
     }
 
-    private func performRollback(moduleId: String, snapshot: Data, context: HotSwapContext) async {
+    private func performRollback(moduleId: String, snapshot: Data, context: HotSwapContext) async throws {
         do {
             await notifyListeners(HotSwapEvent(context: context, phase: .rollingBack))
 

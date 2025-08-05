@@ -369,7 +369,7 @@ public actor ModulePerformanceOptimizer {
         // Implement memory optimization strategies
         if let maxMemory = config.maxMemoryUsage {
             // Monitor and enforce memory limits
-            logger.info("Optimizing memory usage for module \(moduleId) (max: \(formatBytes(maxMemory)))")
+            logger.info("Optimizing memory usage for module \(moduleId) (max: \(self.formatBytes(maxMemory)))")
         }
 
         // Set up unload timer if configured

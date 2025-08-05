@@ -243,7 +243,11 @@ public actor ModuleLifecycleManager {
 
         failureCounts[moduleId] = (failureCounts[moduleId] ?? 0) + 1
         await setState(moduleId, .failed)
-        await notifyHooks(.didFail, module: moduleId)
+        do {
+            try await notifyHooks(.didFail, module: moduleId)
+        } catch {
+            logger.error("Failed to notify hooks for failure: \(error)")
+        }
     }
 
     /// Update module metadata
@@ -301,7 +305,7 @@ public actor ModuleLifecycleManager {
             await setState(moduleId, targetState)
 
             // Notify hooks
-            await notifyHooks(event, module: moduleId)
+            try await notifyHooks(event, module: moduleId)
 
             // Perform action
             await action()
@@ -395,13 +399,9 @@ public actor ModuleLifecycleManager {
         }
     }
 
-    private func notifyHooks(_ event: ModuleLifecycleEvent, module: String) async {
+    private func notifyHooks(_ event: ModuleLifecycleEvent, module: String) async throws {
         for hook in lifecycleHooks {
-            do {
-                try await hook.onLifecycleEvent(event, module: module)
-            } catch {
-                logger.error("Lifecycle hook failed for event \(event.rawValue): \(error.localizedDescription)")
-            }
+            try await hook.onLifecycleEvent(event, module: module)
         }
     }
 
@@ -410,27 +410,47 @@ public actor ModuleLifecycleManager {
     private func completeInitialization(_ moduleId: String) async {
         initializationTimes[moduleId] = Date()
         await setState(moduleId, .initialized)
-        await notifyHooks(.didInitialize, module: moduleId)
+        do {
+            try await notifyHooks(.didInitialize, module: moduleId)
+        } catch {
+            logger.error("Failed to notify hooks for initialization: \(error)")
+        }
     }
 
     private func completeStart(_ moduleId: String) async {
         await setState(moduleId, .active)
-        await notifyHooks(.didStart, module: moduleId)
+        do {
+            try await notifyHooks(.didStart, module: moduleId)
+        } catch {
+            logger.error("Failed to notify hooks for start: \(error)")
+        }
     }
 
     private func completePause(_ moduleId: String) async {
         await setState(moduleId, .paused)
-        await notifyHooks(.didPause, module: moduleId)
+        do {
+            try await notifyHooks(.didPause, module: moduleId)
+        } catch {
+            logger.error("Failed to notify hooks for pause: \(error)")
+        }
     }
 
     private func completeResume(_ moduleId: String) async {
         await setState(moduleId, .active)
-        await notifyHooks(.didResume, module: moduleId)
+        do {
+            try await notifyHooks(.didResume, module: moduleId)
+        } catch {
+            logger.error("Failed to notify hooks for resume: \(error)")
+        }
     }
 
     private func completeStop(_ moduleId: String) async {
         await setState(moduleId, .stopped)
-        await notifyHooks(.didStop, module: moduleId)
+        do {
+            try await notifyHooks(.didStop, module: moduleId)
+        } catch {
+            logger.error("Failed to notify hooks for stop: \(error)")
+        }
     }
 
     private func completeDestroy(_ moduleId: String) async {
@@ -444,7 +464,11 @@ public actor ModuleLifecycleManager {
         failureCounts.removeValue(forKey: moduleId)
         moduleMetadata.removeValue(forKey: moduleId)
 
-        await notifyHooks(.didDestroy, module: moduleId)
+        do {
+            try await notifyHooks(.didDestroy, module: moduleId)
+        } catch {
+            logger.error("Failed to notify hooks for destroy: \(error)")
+        }
         logger.info("Module \(moduleId) destroyed and cleaned up")
     }
 }
