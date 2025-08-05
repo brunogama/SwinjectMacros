@@ -36,7 +36,7 @@ This project follows Apple's Swift-NIO code style conventions. Please refer to `
 
 ### COMMITING Commands
 
-**NEVER USE SKIP PRE-COMMIT OR --NO-VERIFY**
+**NEVER USE SKIP PRE-COMMIT OR --NO-VERIFY** its prohibited to use `KIP=swift-test,swiftformat,mdformat `
 
 ## Project Architecture
 

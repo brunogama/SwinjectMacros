@@ -22,35 +22,30 @@ final class AsyncActorIntegrationTests: XCTestCase {
         }
         """, expandedSource: """
         actor UserActor {
-            @LazyInject var userService: UserServiceProtocol
-            @LazyInject var logger: LoggerProtocol
+            var userService: UserServiceProtocol {
+                get {
+                    if _userServiceLazyResolved {
+                        return _userServiceLazyValue!
+                    }
 
-            func processUser(_ id: String) async -> User? {
-                return await userService.getUser(id: id)
-            }
-            private var _userServiceBacking: UserServiceProtocol?
-            private var _userServiceOnceToken: Bool = false
-            private let _userServiceOnceTokenLock = NSLock()
+                    // Thread-safe resolution
+                    _userServiceLazyLock.lock()
+                    defer { _userServiceLazyLock.unlock() }
 
-            private func _userServiceLazyAccessor() -> UserServiceProtocol {
-                // Thread-safe lazy initialization
-                _userServiceOnceTokenLock.lock()
-                defer { _userServiceOnceTokenLock.unlock() }
+                    // Double-check after acquiring lock
+                    if _userServiceLazyResolved {
+                        return _userServiceLazyValue!
+                    }
 
-                if !_userServiceOnceToken {
-                    _userServiceOnceToken = true
-                    let startTime = CFAbsoluteTimeGetCurrent()
-
-                    // Register property for metrics tracking
+                    // Track resolution
                     let pendingInfo = LazyPropertyInfo(
                         propertyName: "userService",
                         propertyType: "UserServiceProtocol",
                         containerName: "default",
                         serviceName: nil,
                         isRequired: true,
-                        state: .resolving,
-                        resolutionTime: Date(),
-                        threadInfo: ThreadInfo()
+                        state: .pending,
+                        resolutionTime: Date()
                     )
                     LazyInjectionMetrics.recordResolution(pendingInfo)
 
@@ -59,7 +54,6 @@ final class AsyncActorIntegrationTests: XCTestCase {
                         guard let resolved = Container.shared.synchronizedResolve(UserServiceProtocol.self) else {
                             let error = LazyInjectionError.serviceNotRegistered(serviceName: nil, type: "UserServiceProtocol")
 
-                            // Record failed resolution
                             let failedInfo = LazyPropertyInfo(
                                 propertyName: "userService",
                                 propertyType: "UserServiceProtocol",
@@ -68,19 +62,15 @@ final class AsyncActorIntegrationTests: XCTestCase {
                                 isRequired: true,
                                 state: .failed,
                                 resolutionTime: Date(),
-                                resolutionError: error,
-                                threadInfo: ThreadInfo()
+                                resolutionError: error
                             )
                             LazyInjectionMetrics.recordResolution(failedInfo)
 
-                            fatalError("Required lazy property 'userService' of type 'UserServiceProtocol' could not be resolved: \\(error.localizedDescription)")
+                            fatalError("[LazyInject] Failed to resolve required dependency: \\(error)")
                         }
 
-                        _userServiceBacking = resolved
-
-                        // Record successful resolution
-                        let endTime = CFAbsoluteTimeGetCurrent()
-                        let resolutionDuration = endTime - startTime
+                        _userServiceLazyValue = resolved
+                        _userServiceLazyResolved = true
 
                         let resolvedInfo = LazyPropertyInfo(
                             propertyName: "userService",
@@ -89,17 +79,12 @@ final class AsyncActorIntegrationTests: XCTestCase {
                             serviceName: nil,
                             isRequired: true,
                             state: .resolved,
-                            resolutionTime: Date(),
-                            resolutionDuration: resolutionDuration,
-                            threadInfo: ThreadInfo()
+                            resolutionTime: Date()
                         )
                         LazyInjectionMetrics.recordResolution(resolvedInfo)
 
+                        return resolved
                     } catch {
-                        // Record failed resolution
-                        let endTime = CFAbsoluteTimeGetCurrent()
-                        let resolutionDuration = endTime - startTime
-
                         let failedInfo = LazyPropertyInfo(
                             propertyName: "userService",
                             propertyType: "UserServiceProtocol",
@@ -108,47 +93,41 @@ final class AsyncActorIntegrationTests: XCTestCase {
                             isRequired: true,
                             state: .failed,
                             resolutionTime: Date(),
-                            resolutionDuration: resolutionDuration,
-                            resolutionError: error,
-                            threadInfo: ThreadInfo()
+                            resolutionError: error
                         )
                         LazyInjectionMetrics.recordResolution(failedInfo)
 
-                        if true {
-                            fatalError("Failed to resolve required lazy property 'userService': \\(error.localizedDescription)")
-                        }
+                        fatalError("[LazyInject] Failed to resolve required dependency: \\(error)")
                     }
                 }
-
-                guard let resolvedValue = _userServiceBacking else {
-                    let error = LazyInjectionError.requiredServiceUnavailable(propertyName: "userService", type: "UserServiceProtocol")
-                    fatalError("Lazy property 'userService' could not be resolved: \\(error.localizedDescription)")
-                }
-                return resolvedValue
             }
-            private var _loggerBacking: LoggerProtocol?
-            private var _loggerOnceToken: Bool = false
-            private let _loggerOnceTokenLock = NSLock()
+            private var _userServiceLazyValue: UserServiceProtocol?
+            private var _userServiceLazyResolved: Bool = false
+            private let _userServiceLazyLock = NSLock()
+            var logger: LoggerProtocol {
+                get {
+                    if _loggerLazyResolved {
+                        return _loggerLazyValue!
+                    }
 
-            private func _loggerLazyAccessor() -> LoggerProtocol {
-                // Thread-safe lazy initialization
-                _loggerOnceTokenLock.lock()
-                defer { _loggerOnceTokenLock.unlock() }
+                    // Thread-safe resolution
+                    _loggerLazyLock.lock()
+                    defer { _loggerLazyLock.unlock() }
 
-                if !_loggerOnceToken {
-                    _loggerOnceToken = true
-                    let startTime = CFAbsoluteTimeGetCurrent()
+                    // Double-check after acquiring lock
+                    if _loggerLazyResolved {
+                        return _loggerLazyValue!
+                    }
 
-                    // Register property for metrics tracking
+                    // Track resolution
                     let pendingInfo = LazyPropertyInfo(
                         propertyName: "logger",
                         propertyType: "LoggerProtocol",
                         containerName: "default",
                         serviceName: nil,
                         isRequired: true,
-                        state: .resolving,
-                        resolutionTime: Date(),
-                        threadInfo: ThreadInfo()
+                        state: .pending,
+                        resolutionTime: Date()
                     )
                     LazyInjectionMetrics.recordResolution(pendingInfo)
 
@@ -157,7 +136,6 @@ final class AsyncActorIntegrationTests: XCTestCase {
                         guard let resolved = Container.shared.synchronizedResolve(LoggerProtocol.self) else {
                             let error = LazyInjectionError.serviceNotRegistered(serviceName: nil, type: "LoggerProtocol")
 
-                            // Record failed resolution
                             let failedInfo = LazyPropertyInfo(
                                 propertyName: "logger",
                                 propertyType: "LoggerProtocol",
@@ -166,19 +144,15 @@ final class AsyncActorIntegrationTests: XCTestCase {
                                 isRequired: true,
                                 state: .failed,
                                 resolutionTime: Date(),
-                                resolutionError: error,
-                                threadInfo: ThreadInfo()
+                                resolutionError: error
                             )
                             LazyInjectionMetrics.recordResolution(failedInfo)
 
-                            fatalError("Required lazy property 'logger' of type 'LoggerProtocol' could not be resolved: \\(error.localizedDescription)")
+                            fatalError("[LazyInject] Failed to resolve required dependency: \\(error)")
                         }
 
-                        _loggerBacking = resolved
-
-                        // Record successful resolution
-                        let endTime = CFAbsoluteTimeGetCurrent()
-                        let resolutionDuration = endTime - startTime
+                        _loggerLazyValue = resolved
+                        _loggerLazyResolved = true
 
                         let resolvedInfo = LazyPropertyInfo(
                             propertyName: "logger",
@@ -187,17 +161,12 @@ final class AsyncActorIntegrationTests: XCTestCase {
                             serviceName: nil,
                             isRequired: true,
                             state: .resolved,
-                            resolutionTime: Date(),
-                            resolutionDuration: resolutionDuration,
-                            threadInfo: ThreadInfo()
+                            resolutionTime: Date()
                         )
                         LazyInjectionMetrics.recordResolution(resolvedInfo)
 
+                        return resolved
                     } catch {
-                        // Record failed resolution
-                        let endTime = CFAbsoluteTimeGetCurrent()
-                        let resolutionDuration = endTime - startTime
-
                         let failedInfo = LazyPropertyInfo(
                             propertyName: "logger",
                             propertyType: "LoggerProtocol",
@@ -206,25 +175,23 @@ final class AsyncActorIntegrationTests: XCTestCase {
                             isRequired: true,
                             state: .failed,
                             resolutionTime: Date(),
-                            resolutionDuration: resolutionDuration,
-                            resolutionError: error,
-                            threadInfo: ThreadInfo()
+                            resolutionError: error
                         )
                         LazyInjectionMetrics.recordResolution(failedInfo)
 
-                        if true {
-                            fatalError("Failed to resolve required lazy property 'logger': \\(error.localizedDescription)")
-                        }
+                        fatalError("[LazyInject] Failed to resolve required dependency: \\(error)")
                     }
                 }
+            }
+            private var _loggerLazyValue: LoggerProtocol?
+            private var _loggerLazyResolved: Bool = false
+            private let _loggerLazyLock = NSLock()
 
-                guard let resolvedValue = _loggerBacking else {
-                    let error = LazyInjectionError.requiredServiceUnavailable(propertyName: "logger", type: "LoggerProtocol")
-                    fatalError("Lazy property 'logger' could not be resolved: \\(error.localizedDescription)")
-                }
-                return resolvedValue
+            func processUser(_ id: String) async -> User? {
+                return await userService.getUser(id: id)
             }
         }
+
         """, macros: testMacros)
     }
 

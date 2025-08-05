@@ -304,6 +304,30 @@ public actor ModulePerformanceOptimizer {
         }
     }
 
+    /// Reset all internal state for testing purposes
+    public func reset() async {
+        logger.info("Resetting ModulePerformanceOptimizer state")
+
+        // Clear all internal state
+        configurations.removeAll()
+        metrics.removeAll()
+        lazyLoadingStates.removeAll()
+        serviceCache.removeAll()
+        preloadQueue.removeAll()
+
+        // Cancel all unload tasks
+        for task in unloadTasks.values {
+            task.cancel()
+        }
+        unloadTasks.removeAll()
+
+        // Clear cache statistics
+        cacheHits.removeAll()
+        cacheMisses.removeAll()
+
+        logger.info("ModulePerformanceOptimizer state reset completed")
+    }
+
     // MARK: - Metrics and Monitoring
 
     /// Get performance metrics for a module
@@ -387,7 +411,8 @@ public actor ModulePerformanceOptimizer {
         // Implement memory optimization strategies
         if let maxMemory = config.maxMemoryUsage {
             // Monitor and enforce memory limits
-            logger.info("Optimizing memory usage for module \(moduleId) (max: \(formatBytes(maxMemory)))")
+            let maxMemoryStr = formatBytes(maxMemory)
+            logger.info("Optimizing memory usage for module \(moduleId) (max: \(maxMemoryStr))")
         }
 
         // Set up unload timer if configured

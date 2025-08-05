@@ -349,7 +349,7 @@ final class StressTests: XCTestCase {
 
     // MARK: - Error Recovery Stress Tests
 
-    func disabled_testErrorRecoveryResilience() {
+    func testErrorRecoveryResilience() {
         // DISABLED: Test takes too long and may hang
         class RecoveryTestService {
             private var isHealthy = false

@@ -14,6 +14,8 @@ final class ModulePerformanceOptimizerTests: XCTestCase {
     }
 
     override func tearDown() async throws {
+        // Reset the singleton's internal state to avoid test pollution
+        await optimizer.reset()
         optimizer = nil
         try await super.tearDown()
     }
@@ -329,6 +331,49 @@ final class ModulePerformanceOptimizerTests: XCTestCase {
     func testGetMetricsForNonExistentModule() async throws {
         let metrics = await optimizer.getMetrics(for: "NonExistentModule")
         XCTAssertNil(metrics)
+    }
+
+    // MARK: - Reset Tests
+
+    func testResetClearsAllState() async throws {
+        // Configure multiple modules
+        let moduleIds = ["Module1", "Module2", "Module3"]
+        for moduleId in moduleIds {
+            let config = ModulePerformanceConfig(
+                moduleId: moduleId,
+                strategy: .lazyLoading,
+                priority: .normal,
+                enableCaching: true
+            )
+            await optimizer.configureModule(config)
+        }
+
+        // Verify modules are configured
+        for moduleId in moduleIds {
+            let config = await optimizer.getConfiguration(for: moduleId)
+            XCTAssertNotNil(config, "Module \(moduleId) should be configured")
+        }
+
+        // Reset the optimizer
+        await optimizer.reset()
+
+        // Verify all state is cleared
+        for moduleId in moduleIds {
+            let config = await optimizer.getConfiguration(for: moduleId)
+            XCTAssertNil(config, "Module \(moduleId) configuration should be cleared after reset")
+
+            let metrics = await optimizer.getMetrics(for: moduleId)
+            XCTAssertNil(metrics, "Module \(moduleId) metrics should be cleared after reset")
+        }
+
+        // Verify aggregated metrics are empty
+        let aggregatedMetrics = await optimizer.getAggregatedMetrics()
+        XCTAssertTrue(aggregatedMetrics.isEmpty, "Aggregated metrics should be empty after reset")
+
+        // Verify performance summary shows zero values
+        let summary = await optimizer.getPerformanceSummary()
+        XCTAssertEqual(summary.totalModules, 0, "Total modules should be 0 after reset")
+        XCTAssertEqual(summary.cacheSize, 0, "Cache size should be 0 after reset")
     }
 }
 
