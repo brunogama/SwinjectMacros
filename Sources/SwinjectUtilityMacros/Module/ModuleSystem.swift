@@ -114,7 +114,8 @@ public final class ModuleSystem {
             try validateDependencies()
 
             lifecycleState = .initialized
-            logger.info("Module system initialized successfully with \(modules.count) modules")
+            // swiftformat:disable:next redundantSelf
+            logger.info("Module system initialized successfully with \(self.modules.count) modules")
 
         } catch {
             lifecycleState = .failed(error)

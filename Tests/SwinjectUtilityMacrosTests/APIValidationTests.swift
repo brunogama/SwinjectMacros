@@ -260,6 +260,9 @@ final class APIValidationTests: XCTestCase {
     func testConcurrentResolution() {
         GraphScopedService.register(in: container)
 
+        // Use synchronized resolver for thread-safe access
+        let synchronizedResolver = container.synchronize()
+
         let expectation = expectation(description: "Concurrent resolution")
         expectation.expectedFulfillmentCount = 100
 
@@ -269,7 +272,7 @@ final class APIValidationTests: XCTestCase {
 
         for _ in 0..<100 {
             queue.async {
-                if let service = self.container.resolve(GraphScopedService.self) {
+                if let service = synchronizedResolver.resolve(GraphScopedService.self) {
                     lock.lock()
                     services.append(service)
                     lock.unlock()
