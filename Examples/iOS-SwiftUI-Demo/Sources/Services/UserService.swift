@@ -1,9 +1,9 @@
 // UserService.swift - User management service demonstrating @Injectable and @Retry
-// Copyright © 2025 SwinJectMacros Demo. All rights reserved.
+// Copyright © 2025 SwinjectMacros Demo. All rights reserved.
 
 import Foundation
 import Swinject
-import SwinjectUtilityMacros
+import SwinjectMacros
 
 // MARK: - User Service Protocol
 

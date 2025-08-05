@@ -1,9 +1,9 @@
 // NavigationCoordinator.swift - Navigation coordination service demonstrating @Injectable
-// Copyright © 2025 SwinJectMacros Demo. All rights reserved.
+// Copyright © 2025 SwinjectMacros Demo. All rights reserved.
 
 import SwiftUI
 import Swinject
-import SwinjectUtilityMacros
+import SwinjectMacros
 
 // MARK: - Navigation Protocol
 

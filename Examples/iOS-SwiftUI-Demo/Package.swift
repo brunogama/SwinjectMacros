@@ -1,23 +1,23 @@
 // swift-tools-version: 5.9
-// Package.swift for SwinJectMacros iOS SwiftUI Demo
+// Package.swift for SwinjectMacros iOS SwiftUI Demo
 // Demonstrates all macro capabilities in a real iOS application
 
 import PackageDescription
 
 let package = Package(
-    name: "SwinJectMacrosiOSDemo",
+    name: "SwinjectMacrosiOSDemo",
     platforms: [
         .iOS(.v15),
         .macOS(.v12)
     ],
     products: [
         .executable(
-            name: "SwinJectMacrosiOSDemo",
-            targets: ["SwinJectMacrosiOSDemo"]
+            name: "SwinjectMacrosiOSDemo",
+            targets: ["SwinjectMacrosiOSDemo"]
         )
     ],
     dependencies: [
-        // Local dependency on SwinJectMacros
+        // Local dependency on SwinjectMacros
         .package(path: "../.."),
 
         // Additional dependencies for demo features
@@ -25,18 +25,18 @@ let package = Package(
     ],
     targets: [
         .executableTarget(
-            name: "SwinJectMacrosiOSDemo",
+            name: "SwinjectMacrosiOSDemo",
             dependencies: [
-                "SwinJectUtilityMacros",
+                "SwinjectMacros",
                 .product(name: "Swinject", package: "Swinject")
             ],
             path: "Sources"
         )
         // .testTarget(
-        //     name: "SwinJectMacrosiOSDemoTests",
+        //     name: "SwinjectMacrosiOSDemoTests",
         //     dependencies: [
-        //         "SwinJectMacrosiOSDemo",
-        //         .product(name: "SwinJectMacros", package: "SwinJectMacros")
+        //         "SwinjectMacrosiOSDemo",
+        //         .product(name: "SwinjectMacros", package: "SwinjectMacros")
         //     ],
         //     path: "Tests"
         // )

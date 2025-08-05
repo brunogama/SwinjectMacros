@@ -2,7 +2,7 @@
 // Copyright © 2025 SwinJectMacros. All rights reserved.
 
 import Swinject
-@testable import SwinjectUtilityMacros
+@testable import SwinjectMacros
 import XCTest
 
 final class SwinjectIntegrationTests: XCTestCase {

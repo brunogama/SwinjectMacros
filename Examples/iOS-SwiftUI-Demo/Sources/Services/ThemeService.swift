@@ -1,9 +1,9 @@
 // ThemeService.swift - Theme management service demonstrating @Injectable and @ScopedService
-// Copyright © 2025 SwinJectMacros Demo. All rights reserved.
+// Copyright © 2025 SwinjectMacros Demo. All rights reserved.
 
 import SwiftUI
 import Swinject
-import SwinjectUtilityMacros
+import SwinjectMacros
 
 // MARK: - Theme Protocol
 

@@ -73,4 +73,4 @@ swift test --filter NameManglingTests
 
 All contributors will be recognized in this file and in the project's release notes.
 
-Thank you for contributing to SwinjectUtilityMacros! 🙏
+Thank you for contributing to SwinjectMacros! 🙏

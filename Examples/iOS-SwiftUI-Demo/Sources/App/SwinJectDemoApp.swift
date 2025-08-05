@@ -1,9 +1,9 @@
 // SwinJectDemoApp.swift - Main application demonstrating SwinJectMacros capabilities
-// Copyright © 2025 SwinJectMacros Demo. All rights reserved.
+// Copyright © 2025 SwinjectMacros Demo. All rights reserved.
 
 import SwiftUI
 import Swinject
-import SwinjectUtilityMacros
+import SwinjectMacros
 
 @main
 struct SwinJectDemoApp: App {
@@ -49,7 +49,7 @@ struct SwinJectDemoApp: App {
     }
 
     private func logContainerSetup() {
-        print("🚀 SwinJectMacros Demo App Starting")
+        print("🚀 SwinjectMacros Demo App Starting")
         print("📊 Container registrations: \(Self.container.getRegistrationStats().count)")
 
         #if DEBUG

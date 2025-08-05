@@ -1,10 +1,10 @@
 # API Reference
 
-Comprehensive reference for all SwinjectUtilityMacros APIs, protocols, and utilities.
+Comprehensive reference for all SwinjectMacros APIs, protocols, and utilities.
 
 ## Overview
 
-SwinjectUtilityMacros provides a rich set of APIs for dependency injection, aspect-oriented programming, and testing. This reference covers all public APIs with detailed descriptions, parameters, and usage examples.
+SwinjectMacros provides a rich set of APIs for dependency injection, aspect-oriented programming, and testing. This reference covers all public APIs with detailed descriptions, parameters, and usage examples.
 
 ## Core Protocols
 
@@ -103,7 +103,7 @@ Automatically generates dependency injection registration code.
 public macro Injectable(
     scope: ObjectScope = .graph,
     name: String? = nil
-) = #externalMacro(module: "SwinjectUtilityMacrosImplementation", type: "InjectableMacro")
+) = #externalMacro(module: "SwinjectMacrosImplementation", type: "InjectableMacro")
 ```
 
 **Parameters**:
@@ -149,7 +149,7 @@ public macro AutoFactory(
     async: Bool = false,
     throws: Bool = false,
     name: String? = nil
-) = #externalMacro(module: "SwinjectUtilityMacrosImplementation", type: "AutoFactoryMacro")
+) = #externalMacro(module: "SwinjectMacrosImplementation", type: "AutoFactoryMacro")
 ```
 
 **Parameters**:
@@ -197,7 +197,7 @@ public macro TestContainer(
     mockPrefix: String = "Mock",
     scope: ObjectScope = .graph,
     autoMock: Bool = true
-) = #externalMacro(module: "SwinjectUtilityMacrosImplementation", type: "TestContainerMacro")
+) = #externalMacro(module: "SwinjectMacrosImplementation", type: "TestContainerMacro")
 ```
 
 **Parameters**:

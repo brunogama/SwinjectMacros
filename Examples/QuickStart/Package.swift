@@ -15,7 +15,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/Swinject/Swinject.git", from: "2.9.1")
-        // In a real project, you'd reference SwinJectMacros here:
+        // In a real project, you'd reference SwinjectMacros here:
         // .package(path: "../..") // or from GitHub
     ],
     targets: [
@@ -23,7 +23,7 @@ let package = Package(
             name: "QuickStartExample",
             dependencies: [
                 "Swinject"
-                // "SwinJectMacros" // Uncomment when using the real package
+                // "SwinjectMacros" // Uncomment when using the real package
             ]
         )
     ]

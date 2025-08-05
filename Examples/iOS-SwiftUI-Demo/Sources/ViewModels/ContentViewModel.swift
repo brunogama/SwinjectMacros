@@ -1,10 +1,10 @@
 // ContentViewModel.swift - Main content view model demonstrating @Injectable and dependency injection patterns
-// Copyright © 2025 SwinJectMacros Demo. All rights reserved.
+// Copyright © 2025 SwinjectMacros Demo. All rights reserved.
 
 import Combine
 import SwiftUI
 import Swinject
-import SwinjectUtilityMacros
+import SwinjectMacros
 
 // MARK: - Content View Model Protocol
 

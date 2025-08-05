@@ -8,7 +8,7 @@ import SwiftSyntax
 
 /// Command-line tool for discovering and generating service registrations
 enum ServiceDiscoveryTool {
-    private static let logger = Logger(subsystem: "com.swinjectutilitymacros", category: "service-discovery")
+    private static let logger = Logger(subsystem: "com.swinjectmacros", category: "service-discovery")
 
     static func main() throws {
         let arguments = CommandLine.arguments
@@ -235,7 +235,7 @@ enum ServiceDiscoveryError: Error, LocalizedError {
 do {
     try ServiceDiscoveryTool.main()
 } catch {
-    let logger = Logger(subsystem: "com.swinjectutilitymacros", category: "service-discovery")
+    let logger = Logger(subsystem: "com.swinjectmacros", category: "service-discovery")
     logger.critical("Fatal error: \(error.localizedDescription)")
     exit(1)
 }

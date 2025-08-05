@@ -3,7 +3,7 @@
 
 import Foundation
 import Swinject
-import SwinjectUtilityMacros
+import SwinjectMacros
 
 // MARK: - Module Interfaces
 
