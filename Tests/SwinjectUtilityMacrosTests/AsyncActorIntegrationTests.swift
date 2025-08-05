@@ -944,7 +944,7 @@ final class AsyncActorIntegrationTests: XCTestCase {
                         initialResolutionTime: Date(),
                         threadInfo: ThreadInfo()
                     )
-                    WeakInjectionMetrics.recordAccess(pendingInfo)
+                    WeakInjectionMetrics.recordOperation(pendingInfo)
 
                     do {
                         // Resolve dependency as weak reference
@@ -964,7 +964,7 @@ final class AsyncActorIntegrationTests: XCTestCase {
                                 resolutionCount: 1,
                                 threadInfo: ThreadInfo()
                             )
-                            WeakInjectionMetrics.recordAccess(resolvedInfo)
+                            WeakInjectionMetrics.recordOperation(resolvedInfo)
                         } else {
                             // Service not found - record failure
                             let error = WeakInjectionError.serviceNotRegistered(serviceName: nil, type: "AsyncServiceDelegate")
@@ -980,7 +980,7 @@ final class AsyncActorIntegrationTests: XCTestCase {
                                 resolutionError: error,
                                 threadInfo: ThreadInfo()
                             )
-                            WeakInjectionMetrics.recordAccess(failedInfo)
+                            WeakInjectionMetrics.recordOperation(failedInfo)
                         }
                     } catch {
                         // Record failed resolution
@@ -995,7 +995,7 @@ final class AsyncActorIntegrationTests: XCTestCase {
                             resolutionError: error,
                             threadInfo: ThreadInfo()
                         )
-                        WeakInjectionMetrics.recordAccess(failedInfo)
+                        WeakInjectionMetrics.recordOperation(failedInfo)
                     }
                 }
 
@@ -1024,7 +1024,7 @@ final class AsyncActorIntegrationTests: XCTestCase {
                         deallocationTime: Date(),
                         threadInfo: ThreadInfo()
                     )
-                    WeakInjectionMetrics.recordAccess(deallocatedInfo)
+                    WeakInjectionMetrics.recordOperation(deallocatedInfo)
                 }
 
                 return _delegateWeakBacking
@@ -1182,13 +1182,13 @@ final class AsyncActorIntegrationTests: XCTestCase {
                 // Check cache first
                 if let cachedResult = cache.get(cacheKey) as? ProcessedResult {
                     // Record cache hit
-                    let cacheHit = CacheAccess(
-                        key: cacheKey,
+                    let cacheHit = CacheOperation(
                         wasHit: true,
-                        accessTime: Date(),
-                        computationTime: 0.0
+                        key: cacheKey,
+                        responseTime: 0.0,
+                        valueSize: 0
                     )
-                    CacheRegistry.recordAccess(cacheHit, for: cacheKey)
+                    CacheRegistry.recordOperation(cacheHit, for: cacheKey)
 
                     return cachedResult
                 }
@@ -1206,13 +1206,13 @@ final class AsyncActorIntegrationTests: XCTestCase {
                     cache.set(cacheKey, value: result)
 
                     // Record cache miss and computation
-                    let cacheMiss = CacheAccess(
-                        key: cacheKey,
+                    let cacheMiss = CacheOperation(
                         wasHit: false,
-                        accessTime: Date(),
-                        computationTime: computationTime
+                        key: cacheKey,
+                        responseTime: computationTime,
+                        valueSize: MemoryLayout.size(ofValue: result)
                     )
-                    CacheRegistry.recordAccess(cacheMiss, for: cacheKey)
+                    CacheRegistry.recordOperation(cacheMiss, for: cacheKey)
 
                     return result
                 } catch {
@@ -1220,14 +1220,14 @@ final class AsyncActorIntegrationTests: XCTestCase {
                     let endTime = CFAbsoluteTimeGetCurrent()
                     let computationTime = (endTime - startTime) * 1000
 
-                    let failedAccess = CacheAccess(
-                        key: cacheKey,
+                    let failedAccess = CacheOperation(
                         wasHit: false,
-                        accessTime: Date(),
-                        computationTime: computationTime,
+                        key: cacheKey,
+                        responseTime: computationTime,
+                        valueSize: 0,
                         error: error
                     )
-                    CacheRegistry.recordAccess(failedAccess, for: cacheKey)
+                    CacheRegistry.recordOperation(failedAccess, for: cacheKey)
 
                     throw error
                 }
@@ -1323,18 +1323,27 @@ struct AsyncCircuitBreakerCall {
     }
 }
 
-struct CacheAccess {
-    let key: String
+struct CacheOperation {
+    let timestamp: Date
     let wasHit: Bool
-    let accessTime: Date
-    let computationTime: TimeInterval
+    let key: String
+    let responseTime: TimeInterval
+    let valueSize: Int
     let error: Error?
 
-    init(key: String, wasHit: Bool, accessTime: Date, computationTime: TimeInterval, error: Error? = nil) {
-        self.key = key
+    init(
+        timestamp: Date = Date(),
+        wasHit: Bool,
+        key: String,
+        responseTime: TimeInterval,
+        valueSize: Int,
+        error: Error? = nil
+    ) {
+        self.timestamp = timestamp
         self.wasHit = wasHit
-        self.accessTime = accessTime
-        self.computationTime = computationTime
+        self.key = key
+        self.responseTime = responseTime
+        self.valueSize = valueSize
         self.error = error
     }
 }
@@ -1345,14 +1354,14 @@ struct CacheAccess {
 enum CacheRegistry {
     static func getCache(
         for key: String,
-        maxSize: Int,
         ttl: TimeInterval,
+        maxEntries: Int,
         evictionPolicy: CacheEvictionPolicy
     ) -> AsyncTestMockCache {
         AsyncTestMockCache()
     }
 
-    static func recordAccess(_ access: CacheAccess, for key: String) {}
+    static func recordOperation(_ operation: CacheOperation, for key: String) {}
 }
 
 enum CacheEvictionPolicy {
@@ -1362,6 +1371,6 @@ enum CacheEvictionPolicy {
 // Using MockCircuitBreaker from TestUtilities.swift
 
 struct AsyncTestMockCache {
-    func get(_ key: String) -> Any? { nil }
-    func set(_ key: String, value: Any) {}
+    func get<T>(key: String, type: T.Type) -> T? { nil }
+    func set(key: String, value: some Any) {}
 }
