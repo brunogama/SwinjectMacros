@@ -26,61 +26,79 @@ SwinjectMacros brings the power of Swift Macros to dependency injection, dramati
 
 ### Getting Started
 
-- <doc:Installation>
 - <doc:Quick-Start>
-- <doc:Migration-Guide>
 
-### Core Dependency Injection
+### Core Dependency Injection Macros
 
-- <doc:Injectable>
-- <doc:AutoFactory>
-- <doc:Container-Management>
+- `Injectable` - Automatic service registration
+- `AutoFactory` - Factory protocol generation for runtime parameters
+- `Named` - Named service registration with compile-time validation
 
-### Module System (v1.0.1+)
+### Testing Macros
+
+- `TestContainer` - Automatic test container generation
+- `Spy` - Test spy generation for behavior verification
+- `MockResponse` - Mock response configuration
+- `StubService` - Stub service generation
+
+### Lifecycle Management Macros
+
+- `LazyInject` - Lazy dependency resolution
+- `WeakInject` - Weak reference injection
+- `AsyncInject` - Asynchronous dependency resolution
+- `OptionalInject` - Optional dependency with fallback support
+
+### Aspect-Oriented Programming (AOP) Macros
+
+- `Interceptor` - Method interception with hooks
+- `PerformanceTracked` - Automatic performance monitoring
+- `Retry` - Configurable retry logic
+- `CircuitBreaker` - Circuit breaker pattern implementation
+- `Cache` - Method result caching
+
+### SwiftUI Integration Macros
+
+- `EnvironmentInject` - SwiftUI environment-based injection
+- `ViewModelInject` - ViewModel dependency injection
+- `InjectedStateObject` - Injected state object wrapper
+- `PublisherInject` - Combine publisher injection
+
+### Advanced Feature Macros
+
+- `ThreadSafe` - Thread-safe service wrapper
+- `Decorator` - Service decorator pattern
+- `ScopedService` - Custom scope service registration
+
+### Configuration & Debug Macros
+
+- `DebugContainer` - Debug container with diagnostics
+- `DependencyGraph` - Dependency graph visualization
+- `ValidatedContainer` - Container validation
+
+### Module System
 
 - <doc:Module-System>
 - <doc:Module-Lifecycle>
-- <doc:Module-Hot-Swap>
-- <doc:Module-Performance>
-- <doc:Module-Debug-Tools>
 
-### Testing Support
+### Core Protocols
 
-- <doc:TestContainer>
-- <doc:Testing-Strategies>
-- <doc:Mock-Generation>
+- `Injectable` - Protocol for injectable services
+- `ServiceFactory` - Base protocol for factory types
+- `Interceptor` - Protocol for method interceptors
+- `PerformanceTracker` - Protocol for performance tracking
 
-### Aspect-Oriented Programming
+### Core Types
 
-- <doc:Interceptor>
-- <doc:Performance-Tracking>
-- <doc:Retry-Logic>
-- <doc:Circuit-Breaker>
-- <doc:Caching>
+- `SwinjectUtilityMacros` - Library configuration and constants
+- `SwinJectError` - Error types for dependency injection
+- `ObjectScope` - Service lifecycle scopes
+- `DependencyInfo` - Runtime dependency metadata
 
-### Advanced Features
+### Container Extensions
 
-- <doc:Lifecycle-Management>
-- <doc:Thread-Safety>
-- <doc:Generic-Support>
-- <doc:SwiftUI-Integration>
+- `Container/registerGeneratedServices()` - Register all generated services
+- `Container/testContainer()` - Create test container
 
-### Best Practices
-
-- <doc:Design-Guidelines>
-- <doc:Performance-Optimization>
-- <doc:Error-Handling>
-- <doc:Troubleshooting>
-
-### API Reference
+## See Also
 
 - <doc:API-Reference>
-- <doc:Protocol-Reference>
-- <doc:Type-Reference>
-
-## Articles
-
-- <doc:Real-World-Examples>
-- <doc:Architecture-Patterns>
-- <doc:Performance-Benchmarks>
-- <doc:Contributing-Guide>
